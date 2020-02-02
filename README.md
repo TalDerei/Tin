@@ -7,6 +7,5 @@ This is the repository where all the work for "Team Tin" from CSE 216 Spring 202
 - Sang-jun Park <sap716@lehigh.edu>
 - Tal Derei <tad222@lehigh.edu>
 - Tori Dorn <vld222@lehigh.edu>
-## TA
-- Andrew Johnson <agj221@lehigh.edu>
+- Andrew Johnson <agj221@lehigh.edu> (TA)
 
