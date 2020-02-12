@@ -1,29 +1,12 @@
-# README #
+# CSE 216
+This is an individual student repository. It is inteded for use during phase 0.
 
-This README would normally document whatever steps are necessary to get your application up and running.
+## Details
+- Semester: Spring 2020
+- Student ID: Tad222
+- Bitbucket Repository: 
+https://talderei@bitbucket.org/talderei/practice_tad222.git
 
-### What is this repository for? ###
+## Contributors
+1. Tal Derei
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
-
-### How do I get set up? ###
-
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
-
-### Contribution guidelines ###
-
-* Writing tests
-* Code review
-* Other guidelines
-
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
