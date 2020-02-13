@@ -1,0 +1,4 @@
+#Wed Feb 12 22:51:51 EST 2020
+base.0=C\:\\Users\\Tori Dorn\\spring20\\cse216_team_tin\\android\\app\\build\\intermediates\\dex\\debug\\mergeDexDebug\\out\\classes.dex
+path.0=classes.dex
+renamed.0=classes.dex
