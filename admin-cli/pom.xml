@@ -14,9 +14,26 @@
       <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.1.1</version>
+    </dependency>
   </dependencies>
   <properties>
     <maven.compiler.source>1.7</maven.compiler.source>
     <maven.compiler.target>1.7</maven.compiler.target> 
   </properties>
+  <build>
+  <plugins>
+    <plugin>
+      <groupId>org.codehaus.mojo</groupId>
+      <artifactId>exec-maven-plugin</artifactId>
+      <version>1.6.0</version>
+      <configuration>
+        <mainClass>edu.lehigh.cse216.tad222.admin.App</mainClass>
+      </configuration>
+    </plugin>
+  </plugins>
+</build>
 </project>
