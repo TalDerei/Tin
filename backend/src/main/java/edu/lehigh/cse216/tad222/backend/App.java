@@ -16,6 +16,9 @@ public class App {
         // Get the port on which to listen for requests
         Spark.port(getIntFromEnv("PORT", 4567));
 
+        String db_url = System.getenv().get("postgres://azexrkxulzlqss:b12fcddc21a71c8cc0b04de34d8ab4bc99a726bdb0b2e455b63865e0cdbb3442@ec2-3-234-109-123.compute-1.amazonaws.com:5432/d9aki869as2d5b");
+        
+
         // gson provides us with a way to turn JSON into objects, and objects
         // into JSON.
         //
@@ -33,7 +36,7 @@ public class App {
         //     with IDs starting over from 0.
         final DataStore dataStore = new DataStore();
 
-        // GET route that returns all message titles and Ids.  All we do is get 
+        // GET route that returns all message titles and Ids.  All we do is get s
         // the data, embed it in a StructuredResponse, turn it into JSON, and 
         // return it.  If there's no data, we return "[]", so there's no need 
         // for error handling.
