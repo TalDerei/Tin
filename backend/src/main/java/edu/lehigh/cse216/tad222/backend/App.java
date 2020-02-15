@@ -81,5 +81,40 @@ public class App {
                 return gson.toJson(new StructuredResponse("ok", "" + newId, null));
             }
         });
+
+        // PUT route for updating a row in the DataStore.  This is almost 
+        // exactly the same as POST
+        Spark.put("/messages/:id", (request, response) -> {
+            // If we can't get an ID or can't parse the JSON, Spark will send
+            // a status 500
+            int idx = Integer.parseInt(request.params("id"));
+            SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
+            // ensure status 200 OK, with a MIME type of JSON
+            response.status(200);
+            response.type("application/json");
+            DataRow result = dataStore.updateOne(idx, req.mTitle, req.mMessage);
+            if (result == null) {
+                return gson.toJson(new StructuredResponse("error", "unable to update row " + idx, null));
+            } else {
+                return gson.toJson(new StructuredResponse("ok", null, result));
+            }
+        });
+
+        // DELETE route for removing a row from the DataStore
+        Spark.delete("/messages/:id", (request, response) -> {
+            // If we can't get an ID, Spark will send a status 500
+            int idx = Integer.parseInt(request.params("id"));
+            // ensure status 200 OK, with a MIME type of JSON
+            response.status(200);
+            response.type("application/json");
+            // NB: we won't concern ourselves too much with the quality of the 
+            //     message sent on a successful delete
+            boolean result = dataStore.deleteOne(idx);
+            if (!result) {
+                return gson.toJson(new StructuredResponse("error", "unable to delete row " + idx, null));
+            } else {
+                return gson.toJson(new StructuredResponse("ok", null, null));
+            }
+        });
     }
 }
