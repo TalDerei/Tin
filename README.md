@@ -19,10 +19,11 @@ To run the backend, the process might be more involved. You should have python,
 pip, virtualenv installed. Things might be better if you are running a bash from
 your mac or windows (wsl bash).
 
-First, delete your whole `backend` directory. From the `cse80` directory, run
+First, delete your whole `backend` directory. From the `cse216` directory, run
 `virtualenv backend`. This will make a folder named backend. After this run
 `git pull origin short-term-project`. This will get all the backend code you previously
-deleted back to your local branch.
+deleted back to your local branch. If this doesn't work, simply copy and paste the code
+from server.py (server directory) and index.html (static directory) onto your repository.
 
 Now go into the backend directory with `cd backend` and run `source bin/activate`.
 This will run a python virtuall shell. From there do run
