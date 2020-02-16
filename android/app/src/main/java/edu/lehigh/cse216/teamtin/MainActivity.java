@@ -4,6 +4,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -14,6 +16,11 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -35,7 +42,20 @@ public class MainActivity extends AppCompatActivity {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        Log.d("vld222", "Response is: " + response);
+                        final ArrayList<String> myList = new ArrayList<>();
+                        try {
+                            JSONArray jStringArray = new JSONArray(response);
+                            for (int i = 0; i < jStringArray.length(); ++i) {
+                                myList.add(jStringArray.getString(i));
+                            }
+                        } catch (final JSONException e) {
+                            Log.d("mfs409", "Error parsing JSON file..." + e.getMessage());
+                        }
+                        ListView mListView = findViewById(R.id.datum_list_view);
+                        ArrayAdapter adapter = new ArrayAdapter<>(MainActivity.this,
+                                android.R.layout.simple_list_item_1,
+                                myList);
+                        mListView.setAdapter(adapter);
                     }
                 }, new Response.ErrorListener() {
             @Override
