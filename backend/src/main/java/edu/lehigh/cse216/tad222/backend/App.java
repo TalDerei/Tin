@@ -150,4 +150,8 @@ public class App {
             }
             return defaultVal;
         }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> project2/Master

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -132,3 +133,9 @@ dmypy.json
 bin
 include
 .vscode
+=======
+*/*/.classpath
+*/*/.project
+*/*/.vscode/*
+*/*/.settings/*
+>>>>>>> project2/Master
