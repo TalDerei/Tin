@@ -4,10 +4,12 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.ListView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -94,8 +96,17 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         Log.d("vld222", "Successfully parsed JSON file.");
-        ListView mListView = findViewById(R.id.datum_list_view);
+        RecyclerView rv = findViewById(R.id.datum_list_view);
+        rv.setLayoutManager(new LinearLayoutManager(this));
         ItemListAdapter adapter = new ItemListAdapter(this, mData);
-        mListView.setAdapter(adapter);
+        rv.setAdapter(adapter);
+
+        adapter.setClickListener(new ItemListAdapter.ClickListener() {
+            @Override
+            public void onClick(Datum d) {
+                Toast.makeText(MainActivity.this, d.mIndex + " --> " + d.mText,
+                        Toast.LENGTH_LONG).show();
+            }
+        });
     }
 }
