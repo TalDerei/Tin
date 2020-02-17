@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import logo from './logo.svg';
+import Buzz from './Buzz.png'
 import './App.css';
 import GoogleLogin from 'react-google-login';
 
@@ -26,7 +26,7 @@ const App = () => {
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" id="App-logo" />
+        <img src={Buzz} className="App-logo" alt="logo" id="App-logo" />
         <div id="login-button">
           <GoogleLogin
             className="googleLoginButton"
