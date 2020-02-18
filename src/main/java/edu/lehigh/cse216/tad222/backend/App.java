@@ -18,6 +18,13 @@ public class App {
 
         String db_url = System.getenv().get("postgres://azexrkxulzlqss:b12fcddc21a71c8cc0b04de34d8ab4bc99a726bdb0b2e455b63865e0cdbb3442@ec2-3-234-109-123.compute-1.amazonaws.com:5432/d9aki869as2d5b");
         
+        String cors_enabled = System.getenv().get("CORS_ENABLED");
+        if (cors_enabled.equals("True")) {
+            final String acceptCrossOriginRequestsFrom = "*";
+            final String acceptedCrossOriginRoutes = "GET,PUT,POST,DELETE,OPTIONS";
+            final String supportedRequestHeaders = "Content-Type,Authorization,X-Requested-With,Content-Length,Accept,Origin";
+            enableCORS(acceptCrossOriginRequestsFrom, acceptedCrossOriginRoutes, supportedRequestHeaders);
+        }
 
         // gson provides us with a way to turn JSON into objects, and objects
         // into JSON.
@@ -132,7 +139,6 @@ public class App {
          * 
          * @returns The best answer we could come up with for a value for envar
          */
-
     }
             /**
          * Get an integer environment varible if it exists, and otherwise return the
@@ -149,5 +155,39 @@ public class App {
                 return Integer.parseInt(processBuilder.environment().get(envar));
             }
             return defaultVal;
+        }
+        
+
+          /**
+         * Set up CORS headers for the OPTIONS verb, and for every response that the
+         * server sends.  This only needs to be called once.
+         * 
+         * @param origin The server that is allowed to send requests to this server
+         * @param methods The allowed HTTP verbs from the above origin
+         * @param headers The headers that can be sent with a request from the above
+         *                origin
+         */
+        private static void enableCORS(String origin, String methods, String headers) {
+            // Create an OPTIONS route that reports the allowed CORS headers and methods
+            Spark.options("/*", (request, response) -> {
+                String accessControlRequestHeaders = request.headers("Access-Control-Request-Headers");
+                if (accessControlRequestHeaders != null) {
+                    response.header("Access-Control-Allow-Headers", accessControlRequestHeaders);
+                }
+                String accessControlRequestMethod = request.headers("Access-Control-Request-Method");
+                if (accessControlRequestMethod != null) {
+                    response.header("Access-Control-Allow-Methods", accessControlRequestMethod);
+                }
+                return "OK";
+            });
+
+            // 'before' is a decorator, which will run before any 
+            // get/post/put/delete.  In our case, it will put three extra CORS
+            // headers into the response
+            Spark.before((request, response) -> {
+                response.header("Access-Control-Allow-Origin", origin);
+                response.header("Access-Control-Request-Method", methods);
+                response.header("Access-Control-Allow-Headers", headers);
+            });
         }
 }
