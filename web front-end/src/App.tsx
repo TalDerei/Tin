@@ -10,7 +10,7 @@ const App = () => {
   const [userName, setUserName] = useState<string>('Patient0');
 
   const responseGoogle = (response: any) => {
-    // console.log(response);
+    console.log(response.details);
     const user = response.Qt.Ad;
     setUserName(user);
     response.Ca ? setSignedIn(true) : setSignedIn(false);
@@ -37,8 +37,8 @@ const App = () => {
         <div id="login-button">
           <GoogleLogin
             className="googleLoginButton"
-            // clientId="372884561524-22jfggk3pefbnanh83o92mqqlmkbvvd9.apps.googleusercontent.com" // for localhost
-            clientId="131496045117-k91913gk3j5li0i9k4ov52vg187j56hu.apps.googleusercontent.com" // for heroku
+            clientId="372884561524-22jfggk3pefbnanh83o92mqqlmkbvvd9.apps.googleusercontent.com" // localhost
+            // clientId="131496045117-k91913gk3j5li0i9k4ov52vg187j56hu.apps.googleusercontent.com" // for heroku
             buttonText="Login"
             onSuccess={responseGoogle}
             onFailure={responseGoogle}

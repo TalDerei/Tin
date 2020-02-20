@@ -44,3 +44,11 @@
 .Display-picture {
   border-radius: 50%;
 }
+
+button {
+  height: 43px;
+}
+
+#profile {
+  margin-right: 100px;
+}
