@@ -15,11 +15,14 @@ const App = () => {
     setUserName(user);
     response.Ca ? setSignedIn(true) : setSignedIn(false);
     const appLogo = document.getElementById("App-logo");
+    const messageDiv = document.getElementById("messages");
     const loginButton = document.getElementById("login-button");
     loginButton!.style.display = "none";
     if (appLogo!.style.display === "none") {
       appLogo!.style.display = "block";
+      messageDiv!.style.display = "none";
     } else {
+      messageDiv!.style.display = "block";
       appLogo!.style.display = "none";
     }
   }
