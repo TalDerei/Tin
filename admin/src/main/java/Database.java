@@ -116,11 +116,6 @@ public class Database {
         // Attempt to create all of our prepared statements.  If any of these
         // fail, the whole getDatabase() call should fail
         try {
-            // NB: we can easily get ourselves in trouble here by typing the
-            //     SQL incorrectly.  We really should have things like "tblData"
-            //     as constants, and then build the strings for the statements
-            //     from those constants.
-
             // Note: no "IF NOT EXISTS" or "IF EXISTS" checks on table
             // creation/deletion, so multiple executions will cause an exception
             db.mCreateTable = db.mConnection.prepareStatement(

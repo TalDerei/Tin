@@ -109,6 +109,7 @@ public class App {
     public static void main(String[] argv) {
         // get the Postgres configuration from the property files
         Properties prop = new Properties();
+        //String config = "config.properties";
         String config = "config.properties";
         try {
             InputStream input = App.class.getClassLoader().getResourceAsStream(config);
