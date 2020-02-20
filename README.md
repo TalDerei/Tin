@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # CSE216 Team Tin Repository
 This is the repository where all the work for "Team Tin" from CSE 216 Spring 2020 will be committed into.
 
@@ -45,3 +46,4 @@ any other program. To get out of the python shell run `deactivate`.
 - Tori Dorn <vld222@lehigh.edu>
 - Andrew Johnson <agj221@lehigh.edu> (TA)
 
+=======
