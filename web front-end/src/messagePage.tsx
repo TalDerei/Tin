@@ -14,7 +14,7 @@ const MessagePage = (props: any): JSX.Element | null => {
   function handleSubmit(event: any) {
     event.preventDefault();
     (props.messagesArray as Array<Object>).push({ name: props.userName, message: enteredMessage.value, upVote: 0, downVote: 0 });
-    console.log(props.messagesArray);
+    // console.log(props.messagesArray);
     const inputDisplays = document.getElementById("input-items");
     inputDisplays!.style.display = "none";
 
