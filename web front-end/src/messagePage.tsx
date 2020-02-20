@@ -5,7 +5,7 @@ import { GoogleLogout } from 'react-google-login';
 const MessagePage = (props: any): JSX.Element | null => {
   if (props.signedIn)
     return <p id="messages">
-      Here I am <br />
+      {props.userName} <br />
       <GoogleLogout
         className="googleLogoutButton"
         clientId="372884561524-22jfggk3pefbnanh83o92mqqlmkbvvd9.apps.googleusercontent.com"
