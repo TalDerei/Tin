@@ -17,12 +17,15 @@ const App = () => {
     const appLogo = document.getElementById("App-logo");
     const messageDiv = document.getElementById("messages");
     const loginButton = document.getElementById("login-button");
+    const inputDisplays = document.getElementById("input-items");
     loginButton!.style.display = "none";
     if (appLogo!.style.display === "none") {
       appLogo!.style.display = "block";
+      inputDisplays!.style.display = "none";
       messageDiv!.style.display = "none";
     } else {
       messageDiv!.style.display = "block";
+      inputDisplays!.style.display = "block";
       appLogo!.style.display = "none";
     }
   }
@@ -34,8 +37,8 @@ const App = () => {
         <div id="login-button">
           <GoogleLogin
             className="googleLoginButton"
-            clientId="372884561524-22jfggk3pefbnanh83o92mqqlmkbvvd9.apps.googleusercontent.com" // for localhost
-            // clientId="131496045117-k91913gk3j5li0i9k4ov52vg187j56hu.apps.googleusercontent.com" // for heroku
+            // clientId="372884561524-22jfggk3pefbnanh83o92mqqlmkbvvd9.apps.googleusercontent.com" // for localhost
+            clientId="131496045117-k91913gk3j5li0i9k4ov52vg187j56hu.apps.googleusercontent.com" // for heroku
             buttonText="Login"
             onSuccess={responseGoogle}
             onFailure={responseGoogle}
