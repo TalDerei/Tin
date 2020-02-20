@@ -3,18 +3,23 @@ import { GoogleLogout } from 'react-google-login';
 
 
 const MessagePage = (props: any): JSX.Element | null => {
-  const [enteredMessage, setEnteredMessage] = useState<string>(`Hi, What's up?`);
+  const [enteredMessage, setEnteredMessage] = useState<any>({ value: `Hi, What's up?` });
 
-  function handleMessageInputChange() {
-    setEnteredMessage(enteredMessage);
+  function handleMessageInputChange(event: any) {
+    setEnteredMessage({ value: event.target.value });
+  }
+
+  function handleSubmit(event: any) {
+    event.preventDefault();
+    console.log(enteredMessage.value);
   }
   if (props.signedIn)
-    return <p id="messages">
+    return (<p id="messages">
       {props.userName} <br />
-      <form>
+      <form onSubmit={handleSubmit}>
         <label>
           Enter the message:
-    <input type="text" name="name" value={enteredMessage} onChange={handleMessageInputChange} />
+    <input type="text" name="name" value={enteredMessage.value} onChange={handleMessageInputChange} />
         </label>
         <input type="submit" value="Submit" />
       </form>
@@ -25,7 +30,7 @@ const MessagePage = (props: any): JSX.Element | null => {
         onLogoutSuccess={onLogout}
       >
       </GoogleLogout>
-    </p>;
+    </p>);
   else
     return null;
 }
