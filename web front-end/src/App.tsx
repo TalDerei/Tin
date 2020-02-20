@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Buzz from './Buzz.png'
 import './App.css';
 import GoogleLogin from 'react-google-login';
+import MessagePage from './messagePage';
 
 const App = () => {
 
@@ -30,11 +31,17 @@ const App = () => {
         <div id="login-button">
           <GoogleLogin
             className="googleLoginButton"
-            clientId="131496045117-k91913gk3j5li0i9k4ov52vg187j56hu.apps.googleusercontent.com"
+            clientId="372884561524-22jfggk3pefbnanh83o92mqqlmkbvvd9.apps.googleusercontent.com"
             buttonText="Login"
             onSuccess={responseGoogle}
             onFailure={responseGoogle}
             cookiePolicy={'single_host_origin'}
+          />
+        </div>
+        <div id="messagePage" >
+          <MessagePage
+            signedIn={signedIn}
+            userName={userName}
           />
         </div>
       </header>

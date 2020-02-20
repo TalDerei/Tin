@@ -12,12 +12,13 @@
     animation: App-logo-spin infinite 20s linear;
   }
 }
+
 .googleLoginButton {
   margin: 50px;
 }
 
 .App-header {
-  background-color: #282c34;
+  background-color: #61dafb;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
