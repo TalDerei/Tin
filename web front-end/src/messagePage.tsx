@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import { GoogleLogout } from 'react-google-login';
-import Display from './Display.jpg';
+import DisplayPosts from './displayPosts';
 
 
 const MessagePage = (props: any): JSX.Element | null => {
@@ -15,22 +15,27 @@ const MessagePage = (props: any): JSX.Element | null => {
     event.preventDefault();
     (props.messagesArray as Array<Object>).push({ name: props.userName, message: enteredMessage.value, upVote: 0, downVote: 0 });
     console.log(props.messagesArray);
-    ReactDOM.render(<p>
-      <img src={Display} className="Display-picture" alt="dp" id="Display-picture" width="100" height="100" />
-      {(props.messagesArray)[0].message}
-    </p>
-      , document.getElementById('gibberish'));
+    const inputDisplays = document.getElementById("input-items");
+    inputDisplays!.style.display = "none";
+
+    ReactDOM.render(<DisplayPosts
+      messagesArray={props.messagesArray}
+    />
+      , document.getElementById('posts'));
   }
   if (props.signedIn)
     return (<div id="messages">
-      {props.userName} <br />
-      <form onSubmit={handleSubmit}>
-        <label>
-          Enter the message:
-        <input type="text" name="name" value={enteredMessage.value} onChange={handleMessageInputChange} />
-        </label>
-        <input type="submit" value="Submit" />
-      </form>
+      <div id="input-items">
+        {props.userName} <br />
+        <form onSubmit={handleSubmit}>
+          <label>
+            What would you like to post today?<br></br>
+            <input type="text" name="name" value={enteredMessage.value} onChange={handleMessageInputChange} />
+          </label>
+          <input type="submit" value="Post" />
+        </form>
+      </div>
+      <div id="posts"></div>
       <GoogleLogout
         className="googleLogoutButton"
         clientId="372884561524-22jfggk3pefbnanh83o92mqqlmkbvvd9.apps.googleusercontent.com"
@@ -38,7 +43,6 @@ const MessagePage = (props: any): JSX.Element | null => {
         onLogoutSuccess={onLogout}
       >
       </GoogleLogout>
-      <div id="gibberish"></div>
     </div>
     );
   else
