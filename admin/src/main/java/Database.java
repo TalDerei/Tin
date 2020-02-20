@@ -94,6 +94,7 @@ public class Database {
     *
     * @return A Database object, or null if we cannot connect properly
     */
+
     static Database getDatabase(String ip, String port, String user, String pass) {
         // Create an un-configured Database object
         Database db = new Database();
@@ -101,7 +102,6 @@ public class Database {
         // Give the Database object a connection, fail if we cannot get one
         try {
             Connection conn = DriverManager.getConnection("jdbc:postgresql://" + ip + ":" + port + "/", user, pass);
-            //Connection conn = DriverManager.getConnection("jdbc:postgresql://localhost/cse216");
             if (conn == null) {
                 System.err.println("Error: DriverManager.getConnection() returned a null object");
                 return null;
@@ -140,8 +140,9 @@ public class Database {
             db.disconnect();
             return null;
         }
-    return db;
+        return db;
     }
+
 
     static Database getDatabaseFromUri(String Uri) {
         // Create an un-configured Database object

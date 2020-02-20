@@ -5,7 +5,6 @@ import java.io.InputStreamReader;
 import java.io.IOException;
 
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -108,27 +107,19 @@ public class App {
      * @param argv Command-line options.  Ignored by this program.
      */
     public static void main(String[] argv) {
-        // get the Postgres configuration from the environment
-        //Map<String, String> env = System.getenv();
-        //String ip = env.get("POSTGRES_IP");
-        //String port = env.get("POSTGRES_PORT");
-        //String user = env.get("POSTGRES_USER");
-        //String pass = env.get("POSTGRES_PASS");
-        //String db_url = env.get("DATABASE_URL");
-
+        // get the Postgres configuration from the property files
         Properties prop = new Properties();
+        String config = "config.properties";
         try {
-            InputStream input = App.class.getClassLoader().getResourceAsStream("config.properties");
+            InputStream input = App.class.getClassLoader().getResourceAsStream(config);
             prop.load(input);
         } catch (IOException ex) {
             ex.printStackTrace();
         }
         String db_url = prop.getProperty("DATABASE_URL");
-        System.out.println(db_url);
 
         // Get a fully-configured connection to the database, or exit
         // immediately
-        //Database db = Database.getDatabase(ip, port, user, pass);
         Database db = Database.getDatabaseFromUri(db_url);
         if (db == null)
             return;
