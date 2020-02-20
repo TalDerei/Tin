@@ -40,3 +40,7 @@
     transform: rotate(360deg);
   }
 }
+
+.Display-picture {
+  border-radius: 50%;
+}

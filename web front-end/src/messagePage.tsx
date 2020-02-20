@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
 import { GoogleLogout } from 'react-google-login';
+import Display from './Display.jpg';
 
 
 const MessagePage = (props: any): JSX.Element | null => {
@@ -11,15 +13,21 @@ const MessagePage = (props: any): JSX.Element | null => {
 
   function handleSubmit(event: any) {
     event.preventDefault();
-    console.log(enteredMessage.value);
+    (props.messagesArray as Array<Object>).push({ name: props.userName, message: enteredMessage.value, upVote: 0, downVote: 0 });
+    console.log(props.messagesArray);
+    ReactDOM.render(<p>
+      <img src={Display} className="Display-picture" alt="dp" id="Display-picture" width="100" height="100" />
+      {(props.messagesArray)[0].message}
+    </p>
+      , document.getElementById('gibberish'));
   }
   if (props.signedIn)
-    return (<p id="messages">
+    return (<div id="messages">
       {props.userName} <br />
       <form onSubmit={handleSubmit}>
         <label>
           Enter the message:
-    <input type="text" name="name" value={enteredMessage.value} onChange={handleMessageInputChange} />
+        <input type="text" name="name" value={enteredMessage.value} onChange={handleMessageInputChange} />
         </label>
         <input type="submit" value="Submit" />
       </form>
@@ -30,7 +38,9 @@ const MessagePage = (props: any): JSX.Element | null => {
         onLogoutSuccess={onLogout}
       >
       </GoogleLogout>
-    </p>);
+      <div id="gibberish"></div>
+    </div>
+    );
   else
     return null;
 }
@@ -40,15 +50,9 @@ function onLogout(): void {
   const loginButton = document.getElementById("login-button");
   const messageDiv = document.getElementById("messages");
   loginButton!.style.display = "none";
-  // if (appLogo!.style.display === "none") {
-  //   appLogo!.style.display = "block";
-  //   loginButton!.style.display = "block";
-  //   messageDiv!.style.display = "block";
-  // } else {
   appLogo!.style.display = "block";
   loginButton!.style.display = "block";
   messageDiv!.style.display = "none";
-  // }
 }
 
 export default MessagePage;
