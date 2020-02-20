@@ -5,12 +5,12 @@ import GoogleLogin from 'react-google-login';
 import MessagePage from './messagePage';
 
 const App = () => {
-  const messagesArray = new Array<Object>();
+  let messagesArray = new Array<Object>();
   const [signedIn, setSignedIn] = useState<boolean>(false);
   const [userName, setUserName] = useState<string>('Patient0');
 
   const responseGoogle = (response: any) => {
-    console.log(response.details);
+    // console.log(response);
     const user = response.Qt.Ad;
     setUserName(user);
     response.Ca ? setSignedIn(true) : setSignedIn(false);
