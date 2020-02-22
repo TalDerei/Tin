@@ -16,6 +16,7 @@ public class App {
         // Get the port on which to listen for requests
         Spark.port(getIntFromEnv("PORT", 4567));
 
+        // Database URL
         String db_url = System.getenv().get("postgres://azexrkxulzlqss:b12fcddc21a71c8cc0b04de34d8ab4bc99a726bdb0b2e455b63865e0cdbb3442@ec2-3-234-109-123.compute-1.amazonaws.com:5432/d9aki869as2d5b");
         
         String cors_enabled = System.getenv().get("CORS_ENABLED");
@@ -35,13 +36,15 @@ public class App {
         // https://stackoverflow.com/questions/10380835/is-it-ok-to-use-gson-instance-as-a-static-field-in-a-model-bean-reuse
         final Gson gson = new Gson();
 
+        Database db =  Database.getDatabase(db_url); //remote Postgres database object
+
         // dataStore holds all of the data that has been provided via HTTP 
         // requests
         //
         // NB: every time we shut down the server, we will lose all data, and 
         //     every time we start the server, we'll have an empty dataStore,
-        //     with IDs starting over from 0.
-        final DataStore dataStore = new DataStore();
+        //     with IDs starting over from 0. 
+        //final DataStore dataStore = new DataStore(); //local database object
 
         // GET route that returns all message titles and Ids.  All we do is get s
         // the data, embed it in a StructuredResponse, turn it into JSON, and 
@@ -51,7 +54,10 @@ public class App {
             // ensure status 200 OK, with a MIME type of JSON
             response.status(200);
             response.type("application/json");
-            return gson.toJson(new StructuredResponse("ok", null, dataStore.readAll()));
+            if (db == null){
+                
+            }
+            return gson.toJson(new StructuredResponse("ok", null, db.selectAll()));
         });
 
         // GET route that returns everything for a single row in the DataStore.
@@ -60,12 +66,12 @@ public class App {
         // ":id" isn't a number, Spark will reply with a status 500 Internal
         // Server Error.  Otherwise, we have an integer, and the only possible 
         // error is that it doesn't correspond to a row with data.
-        Spark.get("/messages/:id", (request, response) -> {
+        Spark.get("/messages/:id", (request, response) -> { //QUERY PARAMETER
             int idx = Integer.parseInt(request.params("id"));
             // ensure status 200 OK, with a MIME type of JSON
             response.status(200);
             response.type("application/json");
-            DataRow data = dataStore.readOne(idx);
+            Database.RowData data = db.selectOne(idx);
             if (data == null) {
                 return gson.toJson(new StructuredResponse("error", idx + " not found", null));
             } else {
@@ -87,7 +93,7 @@ public class App {
             response.status(200);
             response.type("application/json");
             // NB: createEntry checks for null title and message
-            int newId = dataStore.createEntry(req.mTitle, req.mMessage);
+            int newId = db.insertRow(req.mTitle, req.mMessage);
             if (newId == -1) {
                 return gson.toJson(new StructuredResponse("error", "error performing insertion", null));
             } else {
@@ -105,8 +111,8 @@ public class App {
             // ensure status 200 OK, with a MIME type of JSON
             response.status(200);
             response.type("application/json");
-            DataRow result = dataStore.updateOne(idx, req.mTitle, req.mMessage);
-            if (result == null) {
+            int result = db.updateOne(idx, req.mMessage);
+            if (result == -1) {
                 return gson.toJson(new StructuredResponse("error", "unable to update row " + idx, null));
             } else {
                 return gson.toJson(new StructuredResponse("ok", null, result));
@@ -122,8 +128,8 @@ public class App {
             response.type("application/json");
             // NB: we won't concern ourselves too much with the quality of the 
             //     message sent on a successful delete
-            boolean result = dataStore.deleteOne(idx);
-            if (!result) {
+            int result = db.deleteRow(idx);
+            if (result == -1) {
                 return gson.toJson(new StructuredResponse("error", "unable to delete row " + idx, null));
             } else {
                 return gson.toJson(new StructuredResponse("ok", null, null));
