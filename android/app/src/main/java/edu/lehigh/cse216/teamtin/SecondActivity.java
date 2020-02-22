@@ -10,6 +10,10 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+/** This activity is where the user will add a message to post.
+ * They can post a message or cancel and go back to the list of all the messages.
+ */
+
 public class SecondActivity extends AppCompatActivity {
 
     @Override
@@ -20,12 +24,12 @@ public class SecondActivity extends AppCompatActivity {
         // Get the parameter from the calling activity, and put it in the TextView
         Intent input = getIntent();
         String label_contents = input.getStringExtra("label_contents");
-        TextView tv = (TextView) findViewById(R.id.specialMessage);
+        TextView tv = findViewById(R.id.specialMessage);
         tv.setText(label_contents);
 
         // The OK button gets the text from the input box and returns it to the calling activity
-        final EditText et = (EditText) findViewById(R.id.editText);
-        Button bOk = (Button) findViewById(R.id.buttonOk);
+        final EditText et = findViewById(R.id.editText);
+        Button bOk = findViewById(R.id.buttonOk);
         bOk.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -39,7 +43,7 @@ public class SecondActivity extends AppCompatActivity {
         });
 
         // The Cancel button returns to the caller without sending any data
-        Button bCancel = (Button) findViewById(R.id.buttonCancel);
+        Button bCancel = findViewById(R.id.buttonCancel);
         bCancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

@@ -30,7 +30,8 @@
             tools:layout_editor_absoluteX="0dp"
             android:layout_below="@+id/specialMessage"
             android:layout_alignParentLeft="true"
-            android:layout_alignParentStart="true" />
+            android:layout_alignParentStart="true"
+            android:autofillHints="Type here" />
 
         <Button
             android:id="@+id/buttonCancel"

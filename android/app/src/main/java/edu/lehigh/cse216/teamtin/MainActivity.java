@@ -25,7 +25,6 @@ import org.json.JSONException;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
-
     /**
      * mData holds the data we get from Volley
      */
@@ -33,12 +32,11 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Creates our main app layout
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        //Log.d("vld222", "Debug Message from onCreate");
 
         // Instantiate the RequestQueue.
         RequestQueue queue = Volley.newRequestQueue(this);
@@ -78,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (id == R.id.action_settings) {
             Intent i = new Intent(getApplicationContext(), SecondActivity.class);
-            i.putExtra("label_contents", "CSE216 is the best");
+            i.putExtra("label_contents", "Type a message to post:");
             startActivityForResult(i, 789); // 789 is the number that will come back to us
             return true;
         }
@@ -107,8 +105,13 @@ public class MainActivity extends AppCompatActivity {
         adapter.setClickListener(new ItemListAdapter.ClickListener() {
             @Override
             public void onClick(Datum d) {
-                Toast.makeText(MainActivity.this, d.mIndex + " --> " + d.mText,
-                        Toast.LENGTH_LONG).show();
+                //this intent will bring us to a page where you can up and down vote
+                Intent j = new Intent(getApplicationContext(), SecondActivity.class);
+                j.putExtra("label_contents", "Type a message to post:");
+                startActivityForResult(j, 789); // 789 is the number that will come back to us
+
+                //Toast.makeText(MainActivity.this, d.mIndex + " --> " + d.mText,
+                        //Toast.LENGTH_LONG).show();
             }
         });
     }
@@ -121,7 +124,11 @@ public class MainActivity extends AppCompatActivity {
             // Make sure the request was successful
             if (resultCode == RESULT_OK) {
                 // Get the "extra" string of data
-                Toast.makeText(MainActivity.this, data.getStringExtra("result"), Toast.LENGTH_LONG).show();
+                Intent i = new Intent(getApplicationContext(), MainActivity.class);
+                i.putExtra("label_contents", "Type a message to post:");
+                startActivityForResult(i, 789); // 789 is the number that will come back to us
+
+                Toast.makeText(MainActivity.this, "message posted", Toast.LENGTH_LONG).show();
             }
         }
     }
