@@ -7,7 +7,7 @@ describe('The Buzz tests', () => {
   before(() => {
     cy.visit('/');
   });
-
+  let message = 'This is a test message I wrote for app tests!!';
   // test that the landing page was loaded correctly
   it('successfully loads login page', () => {
     cy.get('.App-logo').should('be.visible'); // check that app-logo is visible
@@ -23,8 +23,40 @@ describe('The Buzz tests', () => {
     cy.contains('Logout');
   });
 
-  it('lets use post messages', () => {
-    cy.get('label > input').clear().type('This is a test message to wrote for app tests!!');
-    cy.get('[type="submit"]').click();
+  it('lets user post messages', () => {
+    cy.get('label > input').clear().type(message); // type custom message
+    cy.get('[type="submit"]').click(); // post the custom message
+  });
+
+  it('User name is displayed', () => {
+    cy.get('u').contains('Patient0:'); // check for user named "Patient0"
+  });
+
+  it('posted message is displayed', () => {
+    cy.contains(message); // post custom message
+  });
+
+  it('Display picture is visible', () => {
+    cy.get('#Display-picture').should('be.visible'); // get display picture
+  });
+
+  it('displays upvote and downvote buttons', () => {
+    cy.get('#posts > :nth-child(1) > :nth-child(3)').should('be.visible'); // upvote button
+    cy.get('#posts > :nth-child(1) > :nth-child(4)').should('be.visible'); // downvote button
+  });
+
+  it('Upvote is reflected in the DOM', () => {
+    cy.contains('Upvote').click(); // upvote once
+    cy.get('#posts > :nth-child(1)').contains('1'); // check for upvote score
+  });
+
+  it('Downvote is reflected in the DOM', () => {
+    cy.contains('Downvote').dblclick(); // downvote twice
+    cy.get('#posts > :nth-child(1)').contains('2'); // check for downvote score
+  });
+
+  it('Logout of app', () => {
+    cy.get('.googleLogoutButton').should('be.visible'); //check if logout button is visible
+    cy.contains('Logout').click(); //click the logout button
   });
 });
