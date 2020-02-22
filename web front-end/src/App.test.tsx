@@ -9,4 +9,3 @@ describe('All Tests for The Buzz front-end', () => {
     expect(linkElement).toBeInTheDocument();
   });
 });
-
