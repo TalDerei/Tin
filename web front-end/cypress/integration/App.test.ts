@@ -1,6 +1,7 @@
 /**
  * Tests for our App called "The Buzz"
  */
+
 describe('The Buzz tests', () => {
   // Visit our site locally first
   before(() => {
@@ -14,7 +15,16 @@ describe('The Buzz tests', () => {
     cy.contains('Login');
   });
 
-  it('logins to Google', () => {
-    cy.get('.googleLoginButton').click(); // click the login button
+  it('messages page is loaded', () => {
+    // cy.get('.googleLoginButton').click(); // click the login button (this would require more time to test properly so I exposed the messages page without having to log in)
+    cy.get('#messages').should('be.visible');
+    cy.contains('Patient0');
+    cy.contains('What would you like to post today?');
+    cy.contains('Logout');
+  });
+
+  it('lets use post messages', () => {
+    cy.get('label > input').clear().type('This is a test message to wrote for app tests!!');
+    cy.get('[type="submit"]').click();
   });
 });
