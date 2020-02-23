@@ -1,4 +1,6 @@
 
+import javafx.scene.chart.PieChart;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -20,6 +22,7 @@ public class App {
         System.out.println("Main Menu");
         System.out.println("  [T] Create tblData");
         System.out.println("  [D] Drop tblData");
+        System.out.println("  [S] Show all tables");
         System.out.println("  [1] Query for a specific row");
         System.out.println("  [*] Query for all rows");
         System.out.println("  [-] Delete a row");
@@ -38,7 +41,7 @@ public class App {
      */
     static char prompt(BufferedReader in) {
         // The valid actions:
-        String actions = "TD1*-+~q?";
+        String actions = "TDS1*-+~q?";
 
         // We repeat until a valid single-character option is selected
         while (true) {
@@ -109,8 +112,8 @@ public class App {
     public static void main(String[] argv) {
         // get the Postgres configuration from the property files
         Properties prop = new Properties();
-        //String config = "config.properties";
         String config = "config.properties";
+        //String config = "backend.properties";
         try {
             InputStream input = App.class.getClassLoader().getResourceAsStream(config);
             prop.load(input);
@@ -122,8 +125,10 @@ public class App {
         // Get a fully-configured connection to the database, or exit
         // immediately
         Database db = Database.getDatabaseFromUri(db_url);
-        if (db == null)
+        if (db == null) {
+            System.out.println("db is null!");
             return;
+        }
 
         // Start our basic command-line interpreter:
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
@@ -141,6 +146,15 @@ public class App {
                 db.createTable();
             } else if (action == 'D') {
                 db.dropTable();
+            } else if (action == 'S') {
+                ArrayList<Database.Table> table = db.showTable();
+                if (table == null)
+                    continue;
+                System.out.println("  Current Database Tables");
+                System.out.println("  -------------------------");
+                for (Database.Table rd : table ) {
+                    System.out.println(rd.mSchema + '|' + rd.mName + '|' + rd.mOwner);
+                }
             } else if (action == '1') {
                 int id = getInt(in, "Enter the row ID");
                 if (id == -1)

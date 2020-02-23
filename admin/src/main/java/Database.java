@@ -51,6 +51,10 @@ public class Database {
     */
     private PreparedStatement mDropTable;
 
+    /**
+     * A prepared statement for listing the table in our database
+     */
+    private PreparedStatement mShowTable;
 
     public static class RowData {
     /**
@@ -73,6 +77,20 @@ public class Database {
         mId = id;
         mSubject = subject;
         mMessage = message;
+        }
+    }
+
+    /**
+     * Construct a Table object by providing values for its fields
+     */
+    public static class Table {
+        String mSchema;
+        String mName;
+        String mOwner;
+        public Table(String schema, String name, String owner) {
+            mSchema = schema;
+            mName = name;
+            mOwner = owner;
         }
     }
 
@@ -112,29 +130,7 @@ public class Database {
             e.printStackTrace();
             return null;
         }
-
-        // Attempt to create all of our prepared statements.  If any of these
-        // fail, the whole getDatabase() call should fail
-        try {
-            // Note: no "IF NOT EXISTS" or "IF EXISTS" checks on table
-            // creation/deletion, so multiple executions will cause an exception
-            db.mCreateTable = db.mConnection.prepareStatement(
-                    "CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) "
-                            + "NOT NULL, message VARCHAR(500) NOT NULL)");
-            db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData");
-
-            // Standard CRUD operations
-            db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
-            db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?)");
-            db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject FROM tblData");
-            db.mSelectOne = db.mConnection.prepareStatement("SELECT * from tblData WHERE id=?");
-            db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
-        } catch (SQLException e) {
-            System.err.println("Error creating prepared statement");
-            e.printStackTrace();
-            db.disconnect();
-            return null;
-        }
+        setPrepareStatement(db);
         return db;
     }
 
@@ -149,7 +145,7 @@ public class Database {
             URI dbUri = new URI(Uri);
             String username = dbUri.getUserInfo().split(":")[0];
             String password = dbUri.getUserInfo().split(":")[1];
-            String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + dbUri.getPort() + dbUri.getPath();
+            String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + dbUri.getPort() + dbUri.getPath() + "?sslmode=require";
             Connection conn = DriverManager.getConnection(dbUrl, username, password);
             if (conn == null) {
                 System.err.println("Error: DriverManager.getConnection() returned a null object");
@@ -167,7 +163,34 @@ public class Database {
             System.out.println("URI Syntax Error");
             return null;
         }
+        setPrepareStatement(db);
     return db;
+    }
+
+    static void setPrepareStatement(Database db) {
+        // Attempt to create all of our prepared statements.  If any of these
+        // fail, the whole getDatabase() call should fail
+        try {
+            // Note: no "IF NOT EXISTS" or "IF EXISTS" checks on table
+            // creation/deletion, so multiple executions will cause an exception
+            db.mCreateTable = db.mConnection.prepareStatement(
+                    "CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) "
+                            + "NOT NULL, message VARCHAR(500) NOT NULL)");
+            db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData");
+
+            // Standard CRUD operations
+            db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
+            db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?)");
+            db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject FROM tblData");
+            db.mSelectOne = db.mConnection.prepareStatement("SELECT * from tblData WHERE id=?");
+            db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
+            db.mShowTable = db.mConnection.prepareStatement("SELECT * FROM pg_catalog.pg_tables " +
+                                                                 "WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema' ");
+        } catch (SQLException e) {
+            System.err.println("Error creating prepared statement");
+            e.printStackTrace();
+            db.disconnect();
+        }
     }
 
     /**
@@ -257,6 +280,29 @@ public class Database {
     }
 
     /**
+     * show tables from Database
+     *
+     * @return All rows, as an ArrayList
+     */
+    ArrayList<Table> showTable() {
+        ArrayList<Table> res = new ArrayList<Table>();
+        try {
+            ResultSet rs = mShowTable.executeQuery();
+            while (rs.next()) {
+                res.add(new Table(rs.getString("schemaname"), rs.getString("tablename"), rs.getString("tableowner")));
+            }
+            System.out.println("Success to read Tables...");
+            rs.close();
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Error at showTable()");
+            return null;
+        }
+    }
+
+
+    /**
      * Delete a row by ID
      *
      * @param id The id of the row to delete
@@ -299,6 +345,7 @@ public class Database {
      */
     void createTable() {
         try {
+            System.out.println("Create table...");
             mCreateTable.execute();
         } catch (SQLException e) {
             e.printStackTrace();
