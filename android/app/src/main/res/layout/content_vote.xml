@@ -23,9 +23,10 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="4"
-            android:background="#FFFFFF"
+            android:padding="10dp"
+            android:background="@color/white"
             android:text="Author Name"
-            android:textColor="#000000"
+            android:textColor="@color/black"
             android:textSize="20sp" />
 
         <TextView
@@ -34,6 +35,7 @@
             android:layout_height="match_parent"
             android:layout_gravity="center"
             android:layout_weight="1"
+            android:padding="5dp"
             android:text="Sample Text"
             android:textSize="20sp" />
 
@@ -46,18 +48,20 @@
 
 
             <ImageButton
+                android:id="@+id/buttonLike"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:background="#FFFFFF"
+                android:background="@color/white"
                 android:scaleType="fitCenter"
                 android:src="@drawable/thumb_up" />
 
             <ImageButton
+                android:id="@+id/buttonDislike"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:background="#FFFFFF"
+                android:background="@color/white"
                 android:scaleType="fitCenter"
                 android:src="@drawable/thumb_down" />
         </LinearLayout>
