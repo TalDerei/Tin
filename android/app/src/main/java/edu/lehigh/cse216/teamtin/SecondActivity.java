@@ -47,6 +47,7 @@ public class SecondActivity extends AppCompatActivity {
         bCancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+
                 setResult(Activity.RESULT_CANCELED);
                 finish();
             }

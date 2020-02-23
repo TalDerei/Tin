@@ -41,6 +41,10 @@ public class MainActivity extends AppCompatActivity {
         // Instantiate the RequestQueue.
         RequestQueue queue = Volley.newRequestQueue(this);
         String url = "http://www.cse.lehigh.edu/~spear/5k.json";
+        // connecting to the backend
+            // String url = "postgres://azexrkxulzlqss:b12fcddc21a71c8cc0b04de34d8ab4bc99a
+            //               726bdb0b2e455b63865e0cdbb3442@ec2-3-234-109-123.compute-1.amazonaws
+            //               .com:5432/d9aki869as2d5b
 
         // Request a string response from the provided URL.
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
@@ -106,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(Datum d) {
                 //this intent will bring us to a page where you can up and down vote
-                Intent j = new Intent(getApplicationContext(), SecondActivity.class);
+                Intent j = new Intent(getApplicationContext(), voteActivity.class);
                 j.putExtra("label_contents", "Type a message to post:");
                 startActivityForResult(j, 789); // 789 is the number that will come back to us
 
@@ -124,11 +128,13 @@ public class MainActivity extends AppCompatActivity {
             // Make sure the request was successful
             if (resultCode == RESULT_OK) {
                 // Get the "extra" string of data
-                Intent i = new Intent(getApplicationContext(), MainActivity.class);
-                i.putExtra("label_contents", "Type a message to post:");
-                startActivityForResult(i, 789); // 789 is the number that will come back to us
+                //Intent i = new Intent(getApplicationContext(), MainActivity.class);
+                //i.putExtra("label_contents", "Type a message to post:");
+                //startActivityForResult(i, 789); // 789 is the number that will come back to us
 
-                Toast.makeText(MainActivity.this, "message posted", Toast.LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, "Message Posted!", Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(MainActivity.this, "Message Cancelled.", Toast.LENGTH_LONG).show();
             }
         }
     }
