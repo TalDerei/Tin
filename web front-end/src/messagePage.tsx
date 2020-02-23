@@ -23,7 +23,8 @@ const MessagePage = (props: any): JSX.Element | null => {
     />
       , document.getElementById('posts'));
   }
-  if (props.signedIn)
+  // load messages page while testing too
+  if (props.signedIn || (window as any).Cypress)
     return (<div id="messages">
       <div id="input-items">
         {props.userName} <br />
