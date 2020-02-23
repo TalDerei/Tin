@@ -14,4 +14,13 @@ public class ExampleUnitTest {
     public void addition_isCorrect() {
         assertEquals(4, 2 + 2);
     }
+
+    @Test
+    public void Datum_constructor_sets_fields() throws Exception {
+        Datum d = new Datum(7, "hello world");
+        assertEquals(d.mIndex, 7);
+        assertEquals(d.mText, "hello world");
+    }
+
 }
+
