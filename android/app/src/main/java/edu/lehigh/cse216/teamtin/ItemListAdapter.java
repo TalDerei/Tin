@@ -50,6 +50,8 @@ class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ViewHolder> {
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         @SuppressLint("InflateParams") View view = mLayoutInflater.inflate(R.layout.list_item,
                 null);
+        // E/RecyclerView: No adapter attached
+        // try parent, false); instead of null but then it spaces thme out
         return new ViewHolder(view);
     }
 

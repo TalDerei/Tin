@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -35,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
         // Creates our main app layout
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -78,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        if (id == R.id.action_settings) {
+        if (id == R.id.action_post) {
             Intent i = new Intent(getApplicationContext(), SecondActivity.class);
             i.putExtra("label_contents", "Type a message to post:");
             startActivityForResult(i, 789); // 789 is the number that will come back to us
@@ -110,12 +112,20 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(Datum d) {
                 //this intent will bring us to a page where you can up and down vote
-                Intent j = new Intent(getApplicationContext(), voteActivity.class);
-                j.putExtra("label_contents", "Type a message to post:");
-                startActivityForResult(j, 789); // 789 is the number that will come back to us
+                Intent i = new Intent(getApplicationContext(), voteActivity.class);
+                i.putExtra("messageText", d.mText);
+                i.putExtra("messageUser", Integer.toString(d.mIndex));
+                startActivityForResult(i, 789); // 789 is the number that will come back to us
 
+
+                /*
+                setContentView(R.layout.activity_vote);
+                TextView head = findViewById(R.id.messageHeading);
+                head.setText("hey");
+                TextView body = findViewById(R.id.fullMessage);
+                body.setText("asdf");
                 //Toast.makeText(MainActivity.this, d.mIndex + " --> " + d.mText,
-                        //Toast.LENGTH_LONG).show();
+                  //      Toast.LENGTH_LONG).show();*/
             }
         });
     }

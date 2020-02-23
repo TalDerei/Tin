@@ -16,12 +16,15 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class voteActivity extends AppCompatActivity {
 
     ImageButton LikeButton;
     ImageButton DislikeButton;
+    TextView messageTextView;
+    TextView userTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,6 +32,13 @@ public class voteActivity extends AppCompatActivity {
         setContentView(R.layout.activity_vote);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        String message = getIntent().getStringExtra("messageText");
+        messageTextView = findViewById(R.id.fullMessage);
+        messageTextView.setText(message);
+        String user = getIntent().getStringExtra("messageUser");
+        userTextView = findViewById(R.id.messageHeading);
+        userTextView.setText(user);
 
         /*FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -56,7 +66,7 @@ public class voteActivity extends AppCompatActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        if (id == R.id.action_settings) {
+        if (id == R.id.action_post) {
             Intent i = new Intent(getApplicationContext(), SecondActivity.class);
             i.putExtra("label_contents", "Type a message to post:");
             startActivityForResult(i, 789); // 789 is the number that will come back to us
