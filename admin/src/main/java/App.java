@@ -23,14 +23,15 @@ public class App {
         System.out.println("  [a] Query for all Users");
         System.out.println("  [1] Query for a specific row");
         System.out.println("  [*] Query for all rows");
+        System.out.println("  [s] Query for a specific email");
         System.out.println("  [-] Delete a row");
         System.out.println("  [d] Delete a User by email");
         System.out.println("  [+] Insert a new row on tblData");
-        System.out.println("  [I] Insert a new row on tblData with User");
         System.out.println("  [i] Insert a new User on UserData");
         System.out.println("  [~] Update a row");
         System.out.println("  [u] Update a User");
         System.out.println("  [l] Update a like vote");
+        System.out.println("  [n] Update a nickname on UserData");
         System.out.println("  [q] Quit Program");
         System.out.println("  [?] Help (this message)");
     }
@@ -44,7 +45,7 @@ public class App {
      */
     static char prompt(BufferedReader in) {
         // The valid actions:
-        String actions = "TDAa1*-d+Ii~ulq?";
+        String actions = "TDAa1*s-d+i~ulnq?";
 
         // We repeat until a valid single-character option is selected
         while (true) {
@@ -234,6 +235,14 @@ public class App {
                 System.out.println("  -------------------------");
                 for (Database.UserData rd : res) {
                     System.out.println("  [" + rd.mId + "] " + " [email] " + rd.mEmail + " [nickname] " + rd.mNickname);
+                }
+            } else if (action == 's') {
+                String email = getString(in, "Enter the email");
+                ArrayList<Database.RowData> res = db.selectAllByUser(email);
+                System.out.println("  Current Database Contents by User");
+                System.out.println("  -------------------------");
+                for (Database.RowData rd : res) {
+                    System.out.println("[subject] " + rd.mSubject + " [message] " + rd.mMessage + " [nickname] " + rd.mNickname);
                 }
             } else if (action == 'd') {
                 String email = getString(in, "Enter the email");

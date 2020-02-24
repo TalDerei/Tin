@@ -81,6 +81,10 @@ public class Database {
      */
     private PreparedStatement mSelectAllUser;
 
+    /**
+     * A prepared statement for getting all data by given user_id in the database
+     */
+    private PreparedStatement mSelectAllByUser;
 
     /**
      * A prepared statement for deleting a row with user_id
@@ -128,15 +132,26 @@ public class Database {
     */
     int mUserId;
 
+
+    // able to set these value from UserData
+    String mEmail;
+    String mNickname;
+
+    public void setEmail(String email) {
+        mEmail = email;
+    }
+    public void setNickname(String nickname) {
+        mNickname = nickname;
+    }
     /**
     * Construct a RowData object by providing values for its fields
     */
-    public RowData(int id, String subject, String message) {
+    public RowData(int id, String subject, String message, int likes, int user_id) {
         mId = id;
         mSubject = subject;
         mMessage = message;
-        mLikes = 0;
-        mUserId = -1;
+        mLikes = likes;
+        mUserId = user_id;
         }
     }
     public static class UserData {
@@ -282,7 +297,10 @@ public class Database {
 
             // operations tblData using by UserData
             db.mUpdateUser = db.mConnection.prepareStatement("UPDATE tblData SET user_id = ? WHERE id = ?");
-            db.mDeleteOneByUser = db.mConnection.prepareStatement("DELETE FROM tblData USING UserData WHERE UserData.email = ?");
+            db.mSelectAllByUser = db.mConnection.prepareStatement("SELECT tblData.id, subject, message, nickname FROM tblData " +
+                    "INNER JOIN UserData ON tblData.user_id = UserData.id WHERE email = ?");
+            db.mDeleteOneByUser = db.mConnection.prepareStatement("DELETE FROM tblData USING UserData " +
+                    "WHERE tblData.user_id = UserData.id AND email = ?");
 
             // operations regarding to like
             db.mUpdateLike = db.mConnection.prepareStatement("UPDATE tblData SET likes = ? WHERE id = ?");
@@ -370,7 +388,8 @@ public class Database {
         try {
             ResultSet rs = mSelectAll.executeQuery();
             while (rs.next()) {
-                res.add(new RowData(rs.getInt("id"), rs.getString("subject"), null));
+                res.add(new RowData(rs.getInt("id"), rs.getString("subject"),
+                        null, -1, -1));
             }
             rs.close();
             return res;
@@ -402,6 +421,31 @@ public class Database {
     }
 
     /**
+     * Query the database for a list of all subjects and their IDs
+     *
+     * @return All rows, as an ArrayList
+     */
+    ArrayList<RowData> selectAllByUser(String email) {
+        ArrayList<RowData> res = new ArrayList<RowData>();
+        try {
+            mSelectAllByUser.setString(1, email);
+            ResultSet rs = mSelectAllByUser.executeQuery();
+            while (rs.next()) {
+                RowData rowData = new RowData(rs.getInt("id"), rs.getString("subject"),
+                        rs.getString("message"), -1, -1);
+                rowData.setNickname(rs.getString("nickname"));
+                res.add(rowData);
+            }
+            rs.close();
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+
+    /**
      * Get all data for a specific row, by ID
      *
      * @param id The id of the row being requested
@@ -415,7 +459,7 @@ public class Database {
             ResultSet rs = mSelectOne.executeQuery();
             if (rs.next()) {
                 res = new RowData(rs.getInt("id"), rs.getString("subject"),
-                        rs.getString("message"));
+                        rs.getString("message"), rs.getInt("likes"), rs.getInt("user_id"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -514,9 +558,9 @@ public class Database {
     int updateNickname(int id, String nickname) {
         int res = -1;
         try {
-            mUpdateUser.setString(1, nickname);
-            mUpdateUser.setInt(2, id);
-            res = mUpdateUser.executeUpdate();
+            mUpdateNickname.setString(1, nickname);
+            mUpdateNickname.setInt(2, id);
+            res = mUpdateNickname.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
