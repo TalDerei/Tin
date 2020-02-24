@@ -62,3 +62,7 @@ button.googleLogoutButton {
   bottom: 0; */
   margin-top: 30px;
 }
+
+#input-text {
+  width: 1000px;
+}
