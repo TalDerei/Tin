@@ -51,6 +51,66 @@ public class Database {
     */
     private PreparedStatement mDropTable;
 
+    /**
+     * A prepared statement for listing the table in our database
+     */
+    private PreparedStatement mShowTable;
+
+    /**
+     * A prepared statement for creating the Users table in our database
+     */
+    private PreparedStatement mCreateUsers;
+
+    /**
+     * A prepared statement for dropping the Users table in our database
+     */
+    private PreparedStatement mDropUsers;
+
+    /**
+     * A prepared statement for insert a new user into UserData
+     */
+    private PreparedStatement mInsertUser;
+
+    /**
+     * A prepared statement for update user profile in UserData
+     */
+    private PreparedStatement mUpdateNickname;
+
+    /**
+     * A prepared statement for getting all data in the database
+     */
+    private PreparedStatement mSelectAllUser;
+
+    /**
+     * A prepared statement for deleting a row from UserData
+     */
+    private PreparedStatement mDeleteUser;
+
+    /**
+     * A prepared statement for getting all data by given user_id in the database
+     */
+    private PreparedStatement mSelectAllByUser;
+
+    /**
+     * A prepared statement for deleting a row with user_id
+     */
+    private PreparedStatement mDeleteOneByUser;
+
+    /**
+     * A prepared statement for updating a 'like' vote
+     */
+    private PreparedStatement mUpdateLike;
+
+    /**
+     * A prepared statement for updating a serial user_id
+     */
+    private PreparedStatement mUpdateUser;
+
+    /**
+     * boolean for our database membership test
+     */
+    private boolean mHasUserData = false;
+
 
     public static class RowData {
     /**
@@ -67,12 +127,73 @@ public class Database {
     String mMessage;
 
     /**
+    * The vote
+    */
+    int mLikes;
+
+
+    /**
+    * user_id in UserData
+    */
+    int mUserId;
+
+
+    // able to set these value from UserData
+    String mEmail;
+    String mNickname;
+
+    public void setEmail(String email) {
+        mEmail = email;
+    }
+    public void setNickname(String nickname) {
+        mNickname = nickname;
+    }
+    /**
     * Construct a RowData object by providing values for its fields
     */
-    public RowData(int id, String subject, String message) {
+    public RowData(int id, String subject, String message, int likes, int user_id) {
         mId = id;
         mSubject = subject;
         mMessage = message;
+        mLikes = likes;
+        mUserId = user_id;
+        }
+    }
+    public static class UserData {
+        /**
+         * The ID of this row of UserData
+         */
+        int mId;
+        /**
+         * The ID when user's login
+         */
+        String mEmail;
+        /**
+         * Used nickname
+         */
+        String mNickname;
+
+        /**
+         * Construct a RowData object by providing values for its fields
+         */
+        public UserData(int id, String email, String nickname) {
+            mId = id;
+            mEmail = email;
+            mNickname = nickname;
+        }
+    }
+
+    /**
+     * Construct a Table object by providing values for its fields
+     */
+    public static class Table {
+        String mSchema;
+        String mName;
+        String mOwner;
+        public Table(String schema, String name, String owner) {
+            mSchema = schema;
+            mName = name;
+            mOwner = owner;
         }
     }
 
@@ -112,29 +233,7 @@ public class Database {
             e.printStackTrace();
             return null;
         }
-
-        // Attempt to create all of our prepared statements.  If any of these
-        // fail, the whole getDatabase() call should fail
-        try {
-            // Note: no "IF NOT EXISTS" or "IF EXISTS" checks on table
-            // creation/deletion, so multiple executions will cause an exception
-            db.mCreateTable = db.mConnection.prepareStatement(
-                    "CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) "
-                            + "NOT NULL, message VARCHAR(500) NOT NULL)");
-            db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData");
-
-            // Standard CRUD operations
-            db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
-            db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?)");
-            db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject FROM tblData");
-            db.mSelectOne = db.mConnection.prepareStatement("SELECT * from tblData WHERE id=?");
-            db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
-        } catch (SQLException e) {
-            System.err.println("Error creating prepared statement");
-            e.printStackTrace();
-            db.disconnect();
-            return null;
-        }
+        setPrepareStatement(db);
         return db;
     }
 
@@ -149,7 +248,7 @@ public class Database {
             URI dbUri = new URI(Uri);
             String username = dbUri.getUserInfo().split(":")[0];
             String password = dbUri.getUserInfo().split(":")[1];
-            String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + dbUri.getPort() + dbUri.getPath();
+            String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + dbUri.getPort() + dbUri.getPath() + "?sslmode=require";
             Connection conn = DriverManager.getConnection(dbUrl, username, password);
             if (conn == null) {
                 System.err.println("Error: DriverManager.getConnection() returned a null object");
@@ -167,7 +266,57 @@ public class Database {
             System.out.println("URI Syntax Error");
             return null;
         }
+        setPrepareStatement(db);
     return db;
+    }
+
+    static void setPrepareStatement(Database db) {
+        // Attempt to create all of our prepared statements.  If any of these
+        // fail, the whole getDatabase() call should fail
+        try {
+            // Note: no "IF NOT EXISTS" or "IF EXISTS" checks on table
+            // creation/deletion, so multiple executions will cause an exception
+            db.mCreateTable = db.mConnection.prepareStatement(
+                    "CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) NOT NULL, "
+                            + "message VARCHAR(500) NOT NULL, likes INTEGER NOT NULL, " +
+                            "user_id INTEGER REFERENCES UserData(id) ON DELETE SET NULL)");
+            db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData");
+            db.mDropUsers = db.mConnection.prepareStatement("DROP TABLE UserData");
+
+            // Standard CRUD operations
+            db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
+            db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?, ?)");
+            db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject FROM tblData");
+            db.mSelectOne = db.mConnection.prepareStatement("SELECT * from tblData WHERE id=?");
+            db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
+
+            // list tables
+            db.mShowTable = db.mConnection.prepareStatement("SELECT * FROM pg_catalog.pg_tables " +
+                                                                 "WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema' ");
+            // operations regarding to user database
+            db.mCreateUsers = db.mConnection.prepareStatement(
+                    "CREATE TABLE UserData (id SERIAL PRIMARY KEY, email VARCHAR(50) "
+                            + "NOT NULL, nickname VARCHAR(50) NOT NULL)");
+            db.mInsertUser = db.mConnection.prepareStatement("INSERT INTO UserData VALUES (default, ?, ?)");
+            db.mUpdateNickname = db.mConnection.prepareStatement("UPDATE UserData SET nickname = ? WHERE id = ?");
+            db.mSelectAllUser = db.mConnection.prepareStatement("SELECT id, email, nickname FROM UserData");
+
+            // operations regarding to JOIN between tblData & UserData
+            db.mUpdateUser = db.mConnection.prepareStatement("UPDATE tblData SET user_id = ? WHERE id = ?");
+            db.mDeleteUser = db.mConnection.prepareStatement("DELETE FROM UserData WHERE id = ?");
+            db.mSelectAllByUser = db.mConnection.prepareStatement("SELECT tblData.id, subject, message, nickname FROM tblData " +
+                    "INNER JOIN UserData ON tblData.user_id = UserData.id WHERE email = ?");
+            db.mDeleteOneByUser = db.mConnection.prepareStatement("DELETE FROM tblData USING UserData " +
+                    "WHERE tblData.user_id = UserData.id AND email = ?");
+
+            // operations regarding to like
+            db.mUpdateLike = db.mConnection.prepareStatement("UPDATE tblData SET likes = ? WHERE id = ?");
+
+        } catch (SQLException e) {
+            System.err.println("Error creating prepared statement");
+            e.printStackTrace();
+            db.disconnect();
+        }
     }
 
     /**
@@ -205,15 +354,38 @@ public class Database {
      */
     int insertRow(String subject, String message) {
         int count = 0;
+        int likes = 0; // like vote starts with 0
         try {
             mInsertOne.setString(1, subject);
             mInsertOne.setString(2, message);
+            mInsertOne.setInt(3, likes);
             count += mInsertOne.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return count;
     }
+
+    /**
+     * Insert a row into the database
+     *
+     * @param email userID for login
+     * @param nickname used name
+     *
+     * @return The number of rows that were inserted
+     */
+    int insertUser(String email, String nickname) {
+        int count = 0;
+        try {
+            mInsertUser.setString(1, email);
+            mInsertUser.setString(2, nickname);
+            count += mInsertUser.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return count;
+    }
+
 
     /**
      * Query the database for a list of all subjects and their IDs
@@ -225,7 +397,8 @@ public class Database {
         try {
             ResultSet rs = mSelectAll.executeQuery();
             while (rs.next()) {
-                res.add(new RowData(rs.getInt("id"), rs.getString("subject"), null));
+                res.add(new RowData(rs.getInt("id"), rs.getString("subject"),
+                        null, -1, -1));
             }
             rs.close();
             return res;
@@ -234,6 +407,53 @@ public class Database {
             return null;
         }
     }
+
+    /**
+     * Query the database for a list of all subjects and their IDs
+     *
+     * @return All rows, as an ArrayList
+     */
+    ArrayList<UserData> selectAllUsers() {
+        ArrayList<UserData> res = new ArrayList<UserData>();
+        try {
+            ResultSet rs = mSelectAllUser.executeQuery();
+            while (rs.next()) {
+                res.add(new UserData(rs.getInt("id"), rs.getString("email"),
+                        rs.getString("nickname")));
+            }
+            rs.close();
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Query the database for a list of all subjects and their IDs
+     *
+     * @return All rows, as an ArrayList
+     */
+    ArrayList<RowData> selectAllByUser(String email) {
+        ArrayList<RowData> res = new ArrayList<RowData>();
+        try {
+            mSelectAllByUser.setString(1, email);
+            ResultSet rs = mSelectAllByUser.executeQuery();
+            while (rs.next()) {
+                RowData rowData = new RowData(rs.getInt("id"), rs.getString("subject"),
+                        rs.getString("message"), -1, -1);
+                rowData.setEmail(email);
+                rowData.setNickname(rs.getString("nickname"));
+                res.add(rowData);
+            }
+            rs.close();
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
 
     /**
      * Get all data for a specific row, by ID
@@ -248,13 +468,38 @@ public class Database {
             mSelectOne.setInt(1, id);
             ResultSet rs = mSelectOne.executeQuery();
             if (rs.next()) {
-                res = new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"));
+                res = new RowData(rs.getInt("id"), rs.getString("subject"),
+                        rs.getString("message"), rs.getInt("likes"), rs.getInt("user_id"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return res;
     }
+
+    /**
+     * show tables from Database
+     *
+     * @return All rows, as an ArrayList
+     */
+    ArrayList<Table> showTable() {
+        ArrayList<Table> res = new ArrayList<Table>();
+        try {
+            ResultSet rs = mShowTable.executeQuery();
+            while (rs.next()) {
+                res.add(new Table(rs.getString("schemaname"),
+                        rs.getString("tablename"),
+                        rs.getString("tableowner")));
+            }
+            rs.close();
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Error at showTable()");
+            return null;
+        }
+    }
+
 
     /**
      * Delete a row by ID
@@ -268,6 +513,42 @@ public class Database {
         try {
             mDeleteOne.setInt(1, id);
             res = mDeleteOne.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    /**
+     * Delete a row by ID
+     *
+     * @param id The id of the row to delete
+     *
+     * @return The number of rows that were deleted.  -1 indicates an error.
+     */
+    int deleteUser(int id) {
+        int res = -1;
+        try {
+            mDeleteUser.setInt(1, id);
+            res = mDeleteUser.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    /**
+     * Delete a row by ID
+     *
+     * @param email userID for login
+     *
+     * @return The number of rows that were deleted.  -1 indicates an error.
+     */
+    int deleteRowByUser(String email) {
+        int res = -1;
+        try {
+            mDeleteOneByUser.setString(1, email);
+            res = mDeleteOneByUser.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -295,11 +576,86 @@ public class Database {
     }
 
     /**
+     * Update the message for a row in the database
+     *
+     * @param id The id of the row to update
+     * @param nickname used name
+     *
+     * @return The number of rows that were updated.  -1 indicates an error.
+     */
+    int updateNickname(int id, String nickname) {
+        int res = -1;
+        try {
+            mUpdateNickname.setString(1, nickname);
+            mUpdateNickname.setInt(2, id);
+            res = mUpdateNickname.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    /**
+     * Update the message for a row in the database
+     *
+     * @param id The id of the row to update
+     * @param likes vote
+     *
+     * @return The number of rows that were updated.  -1 indicates an error.
+     */
+    int updateLike(int id, int likes) {
+        int res = -1;
+        try {
+            mUpdateLike.setInt(1, likes);
+            mUpdateLike.setInt(2, id);
+            res = mUpdateLike.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    /**
+     * Update the message for a row in the database
+     *
+     * @param id The id of the row to update
+     * @param user_id
+     *
+     * @return The number of rows that were updated.  -1 indicates an error.
+     */
+    int updateUser(int id, int user_id) {
+        int res = -1;
+        try {
+            mUpdateUser.setInt(1, user_id);
+            mUpdateUser.setInt(2, id);
+            res = mUpdateUser.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+
+    /**
      * Create tblData.  If it already exists, this will print an error
      */
     void createTable() {
         try {
+            System.out.println("Create table...");
             mCreateTable.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Create UserData.  If it already exists, this will print an error
+     */
+    void createUser() {
+        try {
+            System.out.println("Create Users table...");
+            mCreateUsers.execute();
+            mHasUserData = true;
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -311,7 +667,22 @@ public class Database {
      */
     void dropTable() {
         try {
+            System.out.println("Delete table...");
             mDropTable.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Remove UserData from the database.  If it does not exist, this will print
+     * an error.
+     */
+    void dropUser() {
+        try {
+            System.out.println("Delete Users table...");
+            mDropUsers.execute();
+            mHasUserData = false;
         } catch (SQLException e) {
             e.printStackTrace();
         }
