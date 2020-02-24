@@ -4,7 +4,7 @@ class Datum {
     /**
      * An integer index for this piece of data
      */
-    int mIndex;
+    String mSubject;
 
     /**
      * The string contents that comprise this piece of data
@@ -14,11 +14,11 @@ class Datum {
     /**
      * Construct a Datum by setting its index and text
      *
-     * @param idx The index of this piece of data
+     * @param sub The index of this piece of data
      * @param txt The string contents for this piece of data
      */
-    Datum(int idx, String txt) {
-        mIndex = idx;
+    Datum(String sub, String txt) {
+        mSubject = sub;
         mText = txt;
     }
 }

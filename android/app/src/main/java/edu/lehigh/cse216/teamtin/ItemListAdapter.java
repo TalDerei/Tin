@@ -59,7 +59,7 @@ class ItemListAdapter extends RecyclerView.Adapter<ItemListAdapter.ViewHolder> {
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         final Datum d = mData.get(position);
-        holder.mIndex.setText(Integer.toString(d.mIndex));
+        holder.mIndex.setText(d.mSubject);
         holder.mText.setText(d.mText);
         final View.OnClickListener listener = new View.OnClickListener(){
             @Override

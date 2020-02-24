@@ -24,6 +24,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
     /**
@@ -31,7 +33,6 @@ public class MainActivity extends AppCompatActivity {
      */
     ArrayList<Datum> mData = new ArrayList<>();
     String url = "https://limitless-ocean-62391.herokuapp.com/messages";
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +43,11 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        getRequestBackend();
+    }
+
+
+    public void getRequestBackend() {
         // Instantiate the RequestQueue.
         RequestQueue queue = Volley.newRequestQueue(this);
         // Request a string response from the provided URL.
@@ -60,6 +66,46 @@ public class MainActivity extends AppCompatActivity {
 
         // Add the request to the RequestQueue.
         queue.add(stringRequest);
+    }
+
+    public void postRequestBackend() {
+        // Instantiate the RequestQueue.
+        RequestQueue queue = Volley.newRequestQueue(this);
+        StringRequest postRequest = new StringRequest(Request.Method.POST, url,
+                new Response.Listener<String>()
+                {
+                    @Override
+                    public void onResponse(String response) {
+                        // response
+                        Log.d("Response", response);
+
+                        getRequestBackend();
+                    }
+                },
+                new Response.ErrorListener()
+                {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        // error
+                        Log.d("Error.Response", error.toString());
+                    }
+                }
+        ) {
+            /*
+            @Override
+            protected Map<String, String> getParams()
+            {
+                Map<String, String> params = new HashMap<String, String>();
+                params.put("name", "Alif");
+                params.put("domain", "http://itsalif.info");
+
+                return params;
+            }
+
+             */
+        };
+        queue.add(postRequest);
+
     }
 
     @Override
@@ -91,9 +137,9 @@ public class MainActivity extends AppCompatActivity {
             JSONObject jsonObject = new JSONObject(response);
             JSONArray json = jsonObject.getJSONArray("mData");
             for (int i = 0; i < json.length(); ++i) {
-                int num = json.getJSONObject(i).getInt("mId");
-                String str = json.getJSONObject(i).getString("mSubject");
-                mData.add(new Datum(num, str));
+                String sub = json.getJSONObject(i).getString("mSubject");
+                String str = json.getJSONObject(i).getString("mMessage");
+                mData.add(new Datum(sub, str));
             }
         } catch (final JSONException e) {
             Log.d("vld222", "Error parsing JSON file: " + e.getMessage());
@@ -111,7 +157,7 @@ public class MainActivity extends AppCompatActivity {
                 //this intent will bring us to a page where you can up and down vote
                 Intent i = new Intent(getApplicationContext(), voteActivity.class);
                 i.putExtra("messageText", d.mText);
-                i.putExtra("messageUser", Integer.toString(d.mIndex));
+                i.putExtra("messageUser", d.mSubject);
                 startActivityForResult(i, 789); // 789 is the number that will come back to us
 
 
@@ -140,6 +186,7 @@ public class MainActivity extends AppCompatActivity {
                 //startActivityForResult(i, 789); // 789 is the number that will come back to us
                 // Request a string response from the provided URL.
 
+                postRequestBackend();
 
                 Toast.makeText(MainActivity.this, "Message Posted!", Toast.LENGTH_LONG).show();
             } else {
