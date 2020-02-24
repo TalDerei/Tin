@@ -6,6 +6,8 @@ import spark.Spark;
 
 // Import Google's JSON library
 import com.google.gson.*;
+import java.util.*;
+
 
 /**
  * For now, our app creates an HTTP server that can only get and add data.
@@ -17,10 +19,11 @@ public class App {
         Spark.port(getIntFromEnv("PORT", 4567));
 
         // Database URL
-        String db_url = System.getenv().get("postgres://azexrkxulzlqss:b12fcddc21a71c8cc0b04de34d8ab4bc99a726bdb0b2e455b63865e0cdbb3442@ec2-3-234-109-123.compute-1.amazonaws.com:5432/d9aki869as2d5b");
-        
-        String cors_enabled = System.getenv().get("CORS_ENABLED");
-        if (cors_enabled.equals("True")) {
+        Map<String, String> env = System.getenv();
+        String db_url = env.get("DATABASE_URL");   
+        System.out.println("database is: " + db_url);     
+        String cors_enabled = env.get("CORS_ENABLED");
+        if (cors_enabled.equals("True")) { 
             final String acceptCrossOriginRequestsFrom = "*";
             final String acceptedCrossOriginRoutes = "GET,PUT,POST,DELETE,OPTIONS";
             final String supportedRequestHeaders = "Content-Type,Authorization,X-Requested-With,Content-Length,Accept,Origin";
@@ -38,6 +41,7 @@ public class App {
 
         Database db =  Database.getDatabase(db_url); //remote Postgres database object
 
+        System.out.println(db_url);
         // dataStore holds all of the data that has been provided via HTTP 
         // requests
         //
@@ -55,7 +59,10 @@ public class App {
             response.status(200);
             response.type("application/json");
             if (db == null){
-                
+                System.out.println("error with DB!!!!!!!!!!!!!!!!!!");
+            }
+            else {
+                System.out.println("db is NOT null");
             }
             return gson.toJson(new StructuredResponse("ok", null, db.selectAll()));
         });
@@ -133,6 +140,35 @@ public class App {
                 return gson.toJson(new StructuredResponse("error", "unable to delete row " + idx, null));
             } else {
                 return gson.toJson(new StructuredResponse("ok", null, null));
+            }
+        });
+
+        Spark.get("/likes/:id", (request, response) -> {
+            // ensure status 200 OK, with a MIME type of JSON
+            response.status(200);
+            response.type("application/json");
+            if (db == null){
+                System.out.println("error with DB!!!!!!!!!!!!!!!!!!");
+            }
+            else {
+                System.out.println("db is NOT null");
+            }
+            return gson.toJson(new StructuredResponse("ok", null, db.selectAll()));
+        });
+
+        Spark.put("/likes/:id", (request, response) -> {
+            // If we can't get an ID or can't parse the JSON, Spark will send
+            // a status 500
+            int idx = Integer.parseInt(request.params("id"));
+            SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
+            // ensure status 200 OK, with a MIME type of JSON
+            response.status(200);
+            response.type("application/json");
+            int result = db.updateOne(idx, req.mMessage);
+            if (result == -1) {
+                return gson.toJson(new StructuredResponse("error", "unable to update row " + idx, null));
+            } else {
+                return gson.toJson(new StructuredResponse("ok", null, result));
             }
         });
 
