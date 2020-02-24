@@ -6,13 +6,13 @@ const DisplayPosts = (props: any): JSX.Element => {
   let arraytoReturn: JSX.Element[] = [];
   let [upVotes, setUpVotes] = useState<number>(0);
   let [downVotes, setDownVotes] = useState<number>(0);
-  function onUpVote(event: any) {
+  function onUpVote(event: any): void {
     event.preventDefault();
     const newNumber = ++upVotes;
     setUpVotes(newNumber);
   }
 
-  function onDownVote(event: any) {
+  function onDownVote(event: any): void {
     event.preventDefault();
     const newNumber = ++downVotes;
     setDownVotes(newNumber);

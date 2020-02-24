@@ -3,10 +3,10 @@ import ReactDOM from 'react-dom';
 import { GoogleLogout } from 'react-google-login';
 import DisplayPosts from './displayPosts';
 
-
 const MessagePage = (props: any): JSX.Element | null => {
   const [enteredMessage, setEnteredMessage] = useState<any>({ value: `Hi, What's up?` });
-  const [responseMessages, setResponseMessages] = useState<Object>({});
+  const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);
+  const [responseMessages, setResponseMessages] = useState<Object[]>([]);
 
   useEffect(() => {
     async function fetchPosts() {
@@ -15,15 +15,6 @@ const MessagePage = (props: any): JSX.Element | null => {
         mode: 'cors',
         cache: 'no-cache',
         credentials: 'same-origin', // include, *same-origin, omit
-        // headers: {
-        //   'Content-Type': 'application/json'
-        // },
-        // redirect: 'follow', // manual, *follow, error
-        // referrerPolicy: 'no-referrer', // no-referrer, *client
-        // body: JSON.stringify({
-        //   mTitle: 'What up',
-        //   mMessage: 'Nothing much'
-        // }) // body data type must match "Content-Type" header
       })
         .then((response) => {
           return response.json();
@@ -36,16 +27,51 @@ const MessagePage = (props: any): JSX.Element | null => {
         });
     }
     fetchPosts();
-  }, []);
+  }, [hasSubmitted]);
 
   function handleMessageInputChange(event: any) {
     setEnteredMessage({ value: event.target.value });
   }
 
+  async function makePost() {
+    await fetch(`https://cors-anywhere.herokuapp.com/https://limitless-ocean-62391.herokuapp.com/messages`, {
+      method: 'POST',
+      mode: 'cors',
+      cache: 'no-cache',
+      credentials: 'same-origin', // include, *same-origin, omit
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      redirect: 'follow', // manual, *follow, error
+      referrerPolicy: 'no-referrer', // no-referrer, *client
+      body: JSON.stringify({
+        mTitle: (props.userName as string).trim(),
+        mMessage: (enteredMessage.value as string).trim()
+      }) // body data type must match "Content-Type" header
+    })
+      .then((response) => {
+        return response.json();
+      })
+      .then((myResponse) => {
+        console.log(myResponse);
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  }
+
   function handleSubmit(event: any) {
+    makePost();
     event.preventDefault();
     const inputDisplays = document.getElementById("input-items");
     inputDisplays!.style.display = "none";
+    setHasSubmitted(true);
+    if ((window as any).Cypress) {
+      responseMessages.push({ mId: -1, mSubject: 'Patient0', mMessage: 'This is a test message I wrote for app tests!!' });
+    }
+    else {
+      responseMessages.push({ mId: -1, mSubject: (props.userName as string).trim(), mMessage: (enteredMessage.value as string).trim() });
+    }
     ReactDOM.render(<DisplayPosts
       messagePost={responseMessages}
     />
