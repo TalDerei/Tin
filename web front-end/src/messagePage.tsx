@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { GoogleLogout } from 'react-google-login';
 import DisplayPosts from './displayPosts';
@@ -6,6 +6,38 @@ import DisplayPosts from './displayPosts';
 
 const MessagePage = (props: any): JSX.Element | null => {
   const [enteredMessage, setEnteredMessage] = useState<any>({ value: `Hi, What's up?` });
+  const [responseMessages, setResponseMessages] = useState<Object>({});
+
+  useEffect(() => {
+    async function fetchPosts() {
+      await fetch(`https://cors-anywhere.herokuapp.com/https://limitless-ocean-62391.herokuapp.com/messages`, {
+        method: 'GET',
+        mode: 'cors',
+        cache: 'no-cache',
+        credentials: 'same-origin', // include, *same-origin, omit
+        // headers: {
+        //   'Content-Type': 'application/json'
+        // },
+        // redirect: 'follow', // manual, *follow, error
+        // referrerPolicy: 'no-referrer', // no-referrer, *client
+        // body: JSON.stringify({
+        //   mTitle: 'What up',
+        //   mMessage: 'Nothing much'
+        // }) // body data type must match "Content-Type" header
+      })
+        .then((response) => {
+          return response.json();
+        })
+        .then((myResponse) => {
+          setResponseMessages(myResponse.mData);
+          // console.log(myResponse.mData);
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+    }
+    fetchPosts();
+  }, []);
 
   function handleMessageInputChange(event: any) {
     setEnteredMessage({ value: event.target.value });
@@ -13,15 +45,13 @@ const MessagePage = (props: any): JSX.Element | null => {
 
   function handleSubmit(event: any) {
     event.preventDefault();
-    (props.messagesArray as Array<Object>).push({ name: props.userName, message: enteredMessage.value, upVote: 0, downVote: 0 });
-    // console.log(props.messagesArray);
+    console.log(responseMessages);
     const inputDisplays = document.getElementById("input-items");
     inputDisplays!.style.display = "none";
-
     ReactDOM.render(<DisplayPosts
-      messagesArray={props.messagesArray}
+      messagePost={responseMessages}
     />
-      , document.getElementById('posts'));
+      , document.getElementById('post'));
   }
   // load messages page while testing too
   if (props.signedIn || (window as any).Cypress)
@@ -36,7 +66,7 @@ const MessagePage = (props: any): JSX.Element | null => {
           <input type="submit" value="Post" />
         </form>
       </div>
-      <div id="posts"></div>
+      <div id="post"></div>
       <GoogleLogout
         className="googleLogoutButton"
         clientId="372884561524-22jfggk3pefbnanh83o92mqqlmkbvvd9.apps.googleusercontent.com"

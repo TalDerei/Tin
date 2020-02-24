@@ -49,6 +49,10 @@ button {
   height: 43px;
 }
 
-#profile {
+.profile {
   margin-right: 100px;
+}
+
+.individual-message {
+  margin-bottom: 50px;
 }
