@@ -12,11 +12,14 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.Volley;
+
 /** This activity is where the user will add a message to post.
  * They can post a message or cancel and go back to the list of all the messages.
  */
 
-public class SecondActivity extends AppCompatActivity {
+public class PostActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +42,7 @@ public class SecondActivity extends AppCompatActivity {
                     Intent i = new Intent();
                     i.putExtra("result", et.getText().toString());
                     setResult(Activity.RESULT_OK, i);
+
                     finish();
                 }
             }

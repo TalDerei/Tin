@@ -61,45 +61,6 @@ public class PostActivityTest {
         // The recommended way to handle such scenarios is to use Espresso idling resources:
         // https://google.github.io/android-testing-support-library/docs/espresso/idling-resource/index.html
         try {
-            Thread.sleep(250);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        ViewInteraction appCompatTextView = onView(
-                allOf(withId(R.id.title), withText("Post a New Message"),
-                        childAtPosition(
-                                childAtPosition(
-                                        withId(R.id.content),
-                                        0),
-                                0),
-                        isDisplayed()));
-        appCompatTextView.perform(click());
-
-        ViewInteraction appCompatEditText = onView(
-                allOf(withId(R.id.editText),
-                        childAtPosition(
-                                childAtPosition(
-                                        withClassName(is("androidx.constraintlayout.widget.ConstraintLayout")),
-                                        0),
-                                1),
-                        isDisplayed()));
-        appCompatEditText.perform(replaceText("I am "), closeSoftKeyboard());
-
-        ViewInteraction appCompatButton = onView(
-                allOf(withId(R.id.buttonOk), withText("OK"),
-                        childAtPosition(
-                                childAtPosition(
-                                        withClassName(is("androidx.constraintlayout.widget.ConstraintLayout")),
-                                        0),
-                                3),
-                        isDisplayed()));
-        appCompatButton.perform(click());
-
-        // Added a sleep statement to match the app's execution delay.
-        // The recommended way to handle such scenarios is to use Espresso idling resources:
-        // https://google.github.io/android-testing-support-library/docs/espresso/idling-resource/index.html
-        try {
             Thread.sleep(300);
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -124,25 +85,15 @@ public class PostActivityTest {
             e.printStackTrace();
         }
 
-        ViewInteraction appCompatTextView2 = onView(
-                allOf(withId(R.id.title), withText("Post a New Message"),
+        ViewInteraction appCompatTextView = onView(
+                allOf(withId(R.id.title), withText("Message Board (Home)"),
                         childAtPosition(
                                 childAtPosition(
                                         withId(R.id.content),
                                         0),
                                 0),
                         isDisplayed()));
-        appCompatTextView2.perform(click());
-
-        ViewInteraction appCompatButton2 = onView(
-                allOf(withId(R.id.buttonCancel), withText("Cancel"),
-                        childAtPosition(
-                                childAtPosition(
-                                        withClassName(is("androidx.constraintlayout.widget.ConstraintLayout")),
-                                        0),
-                                2),
-                        isDisplayed()));
-        appCompatButton2.perform(click());
+        appCompatTextView.perform(click());
 
         // Added a sleep statement to match the app's execution delay.
         // The recommended way to handle such scenarios is to use Espresso idling resources:
@@ -172,6 +123,64 @@ public class PostActivityTest {
             e.printStackTrace();
         }
 
+        ViewInteraction appCompatTextView2 = onView(
+                allOf(withId(R.id.title), withText("Post a New Message"),
+                        childAtPosition(
+                                childAtPosition(
+                                        withId(R.id.content),
+                                        0),
+                                0),
+                        isDisplayed()));
+        appCompatTextView2.perform(click());
+
+        ViewInteraction appCompatEditText = onView(
+                allOf(withId(R.id.editText),
+                        childAtPosition(
+                                childAtPosition(
+                                        withClassName(is("androidx.constraintlayout.widget.ConstraintLayout")),
+                                        0),
+                                1),
+                        isDisplayed()));
+        appCompatEditText.perform(replaceText("the"), closeSoftKeyboard());
+
+        ViewInteraction appCompatButton = onView(
+                allOf(withId(R.id.buttonOk), withText("OK"),
+                        childAtPosition(
+                                childAtPosition(
+                                        withClassName(is("androidx.constraintlayout.widget.ConstraintLayout")),
+                                        0),
+                                3),
+                        isDisplayed()));
+        appCompatButton.perform(click());
+
+        // Added a sleep statement to match the app's execution delay.
+        // The recommended way to handle such scenarios is to use Espresso idling resources:
+        // https://google.github.io/android-testing-support-library/docs/espresso/idling-resource/index.html
+        try {
+            Thread.sleep(300);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        ViewInteraction overflowMenuButton4 = onView(
+                allOf(withContentDescription("More options"),
+                        childAtPosition(
+                                childAtPosition(
+                                        withId(R.id.toolbar),
+                                        1),
+                                0),
+                        isDisplayed()));
+        overflowMenuButton4.perform(click());
+
+        // Added a sleep statement to match the app's execution delay.
+        // The recommended way to handle such scenarios is to use Espresso idling resources:
+        // https://google.github.io/android-testing-support-library/docs/espresso/idling-resource/index.html
+        try {
+            Thread.sleep(250);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         ViewInteraction appCompatTextView3 = onView(
                 allOf(withId(R.id.title), withText("Post a New Message"),
                         childAtPosition(
@@ -182,7 +191,7 @@ public class PostActivityTest {
                         isDisplayed()));
         appCompatTextView3.perform(click());
 
-        ViewInteraction appCompatButton3 = onView(
+        ViewInteraction appCompatButton2 = onView(
                 allOf(withId(R.id.buttonCancel), withText("Cancel"),
                         childAtPosition(
                                 childAtPosition(
@@ -190,7 +199,7 @@ public class PostActivityTest {
                                         0),
                                 2),
                         isDisplayed()));
-        appCompatButton3.perform(click());
+        appCompatButton2.perform(click());
     }
 
     private static Matcher<View> childAtPosition(

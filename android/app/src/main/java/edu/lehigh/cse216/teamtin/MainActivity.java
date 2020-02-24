@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,6 +21,7 @@ import com.android.volley.toolbox.Volley;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 
@@ -30,6 +30,8 @@ public class MainActivity extends AppCompatActivity {
      * mData holds the data we get from Volley
      */
     ArrayList<Datum> mData = new ArrayList<>();
+    String url = "https://limitless-ocean-62391.herokuapp.com/messages";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,12 +44,6 @@ public class MainActivity extends AppCompatActivity {
 
         // Instantiate the RequestQueue.
         RequestQueue queue = Volley.newRequestQueue(this);
-        String url = "http://www.cse.lehigh.edu/~spear/5k.json";
-        // connecting to the backend
-        /*String url = "postgres://azexrkxulzlqss:b12fcddc21a71c8cc0b04de34d8ab4bc99a" +
-                "726bdb0b2e455b63865e0cdbb3442@ec2-3-234-109-123.compute-1.amazonaws" +
-                ".com:5432/d9aki869as2d5b";*/
-
         // Request a string response from the provided URL.
         StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
                 new Response.Listener<String>() {
@@ -81,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         if (id == R.id.action_post) {
-            Intent i = new Intent(getApplicationContext(), SecondActivity.class);
+            Intent i = new Intent(getApplicationContext(), PostActivity.class);
             i.putExtra("label_contents", "Type a message to post:");
             startActivityForResult(i, 789); // 789 is the number that will come back to us
             return true;
@@ -92,10 +88,11 @@ public class MainActivity extends AppCompatActivity {
 
     private void populateListFromVolley(String response){
         try {
-            JSONArray json= new JSONArray(response);
+            JSONObject jsonObject = new JSONObject(response);
+            JSONArray json = jsonObject.getJSONArray("mData");
             for (int i = 0; i < json.length(); ++i) {
-                int num = json.getJSONObject(i).getInt("num");
-                String str = json.getJSONObject(i).getString("str");
+                int num = json.getJSONObject(i).getInt("mId");
+                String str = json.getJSONObject(i).getString("mSubject");
                 mData.add(new Datum(num, str));
             }
         } catch (final JSONException e) {
@@ -141,6 +138,8 @@ public class MainActivity extends AppCompatActivity {
                 //Intent i = new Intent(getApplicationContext(), MainActivity.class);
                 //i.putExtra("label_contents", "Type a message to post:");
                 //startActivityForResult(i, 789); // 789 is the number that will come back to us
+                // Request a string response from the provided URL.
+
 
                 Toast.makeText(MainActivity.this, "Message Posted!", Toast.LENGTH_LONG).show();
             } else {
