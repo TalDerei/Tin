@@ -82,6 +82,11 @@ public class Database {
     private PreparedStatement mSelectAllUser;
 
     /**
+     * A prepared statement for deleting a row from UserData
+     */
+    private PreparedStatement mDeleteUser;
+
+    /**
      * A prepared statement for getting all data by given user_id in the database
      */
     private PreparedStatement mSelectAllByUser;
@@ -273,7 +278,8 @@ public class Database {
             // creation/deletion, so multiple executions will cause an exception
             db.mCreateTable = db.mConnection.prepareStatement(
                     "CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) NOT NULL, "
-                            + "message VARCHAR(500) NOT NULL, likes INTEGER NOT NULL, user_id INTEGER REFERENCES UserData(id) )");
+                            + "message VARCHAR(500) NOT NULL, likes INTEGER NOT NULL, " +
+                            "user_id INTEGER REFERENCES UserData(id) ON DELETE SET NULL)");
             db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData");
             db.mDropUsers = db.mConnection.prepareStatement("DROP TABLE UserData");
 
@@ -297,6 +303,7 @@ public class Database {
 
             // operations regarding to JOIN between tblData & UserData
             db.mUpdateUser = db.mConnection.prepareStatement("UPDATE tblData SET user_id = ? WHERE id = ?");
+            db.mDeleteUser = db.mConnection.prepareStatement("DELETE FROM UserData WHERE id = ?");
             db.mSelectAllByUser = db.mConnection.prepareStatement("SELECT tblData.id, subject, message, nickname FROM tblData " +
                     "INNER JOIN UserData ON tblData.user_id = UserData.id WHERE email = ?");
             db.mDeleteOneByUser = db.mConnection.prepareStatement("DELETE FROM tblData USING UserData " +
@@ -484,7 +491,6 @@ public class Database {
                         rs.getString("tablename"),
                         rs.getString("tableowner")));
             }
-            System.out.println("Success to read Tables...");
             rs.close();
             return res;
         } catch (SQLException e) {
@@ -512,6 +518,25 @@ public class Database {
         }
         return res;
     }
+
+    /**
+     * Delete a row by ID
+     *
+     * @param id The id of the row to delete
+     *
+     * @return The number of rows that were deleted.  -1 indicates an error.
+     */
+    int deleteUser(int id) {
+        int res = -1;
+        try {
+            mDeleteUser.setInt(1, id);
+            res = mDeleteUser.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
     /**
      * Delete a row by ID
      *

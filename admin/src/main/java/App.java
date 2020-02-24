@@ -21,17 +21,18 @@ public class App {
         System.out.println("  [D] Drop tblData");
         System.out.println("  [A] Query for all tables");
         System.out.println("  [a] Query for all Users");
-        System.out.println("  [1] Query for a specific row");
-        System.out.println("  [*] Query for all rows");
-        System.out.println("  [s] Query for a specific email");
-        System.out.println("  [-] Delete a row");
-        System.out.println("  [d] Delete a User by email");
-        System.out.println("  [+] Insert a new row on tblData");
+        System.out.println("  [1] Query for row from tblData by id");
+        System.out.println("  [*] Query for all rows from tblData");
+        System.out.println("  [s] Query for a specific email from tblData");
+        System.out.println("  [-] Delete a row in tblData");
+        System.out.println("  [m] Delete a user in UserData");
+        System.out.println("  [d] Delete a row in tblData by email");
+        System.out.println("  [+] Insert a new row in tblData");
         System.out.println("  [i] Insert a new User on UserData");
-        System.out.println("  [~] Update a row");
-        System.out.println("  [u] Update a User");
-        System.out.println("  [l] Update a like vote");
-        System.out.println("  [n] Update a nickname on UserData");
+        System.out.println("  [~] Update a row in tblData");
+        System.out.println("  [u] Update a user in UserData");
+        System.out.println("  [l] Update a like vote in tblData");
+        System.out.println("  [n] Update a nickname in UserData");
         System.out.println("  [q] Quit Program");
         System.out.println("  [?] Help (this message)");
     }
@@ -45,7 +46,7 @@ public class App {
      */
     static char prompt(BufferedReader in) {
         // The valid actions:
-        String actions = "TDAa1*s-d+i~ulnq?";
+        String actions = "TDAa1*s-md+i~ulnq?";
 
         // We repeat until a valid single-character option is selected
         while (true) {
@@ -116,7 +117,7 @@ public class App {
     public static void main(String[] argv) {
         // get the Postgres configuration from the property files
         Properties prop = new Properties();
-        String config = "config.properties";
+        String config = "backend.properties";
         try {
             InputStream input = App.class.getClassLoader().getResourceAsStream(config);
             prop.load(input);
@@ -256,6 +257,12 @@ public class App {
                     continue;
                 int newLikes = getInt(in, "Enter the likes");
                 int res = db.updateLike(id, newLikes);
+                if (res == -1)
+                    continue;
+                System.out.println("  " + res + " rows updated");
+            } else if (action == 'm') {
+                int user_id = getInt(in, "Enter the User ID :> ");
+                int res = db.deleteUser(user_id);
                 if (res == -1)
                     continue;
                 System.out.println("  " + res + " rows updated");

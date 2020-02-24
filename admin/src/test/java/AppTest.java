@@ -102,14 +102,23 @@ public class AppTest extends TestCase {
         assertTrue(rowData.mUserId == 1);
 
         /**
+         * test for updating a nickname
+         */
+        String newNickname = "NewName";
+        db.updateNickname(id, newNickname);
+        userData = db.selectAllUsers();
+        assertTrue(userData.get(0).mNickname.equals("NewName"));
+
+        /**
          * test for searching a message by using user profile (email)
          */
         ArrayList<Database.RowData> result = db.selectAllByUser(email);
         assertTrue(result.size() == 1);
         assertTrue(result.get(0).mEmail.equals("sap716@lehigh.edu"));
-        assertTrue(result.get(0).mNickname.equals("MyName"));
+        assertTrue(result.get(0).mNickname.equals("NewName"));
         assertTrue(result.get(0).mSubject.equals("CSE216"));
         assertTrue(result.get(0).mMessage.equals("Software Engineering!"));
+
 
         /**
          * test for deleting a message by using user profile (email)
@@ -117,6 +126,15 @@ public class AppTest extends TestCase {
         db.deleteRowByUser(email);
         result = db.selectAll();
         assertTrue(result.size() == 0);
+
+        /**
+         * test for deleting an user from UserData
+         */
+        int user_id = 1;
+        db.deleteUser(user_id);
+        userData = db.selectAllUsers();
+        assertTrue(userData.size() == 0);
+
 
         /**
          * test for Dropping RowData table in Database
@@ -132,5 +150,6 @@ public class AppTest extends TestCase {
         table = db.showTable();
         assertTrue(table.size() == 0);
 
+        System.out.println("done!");
     }
 }
