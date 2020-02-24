@@ -3,7 +3,6 @@ import Display from './Display.jpg';
 
 const DisplayPosts = (props: any): JSX.Element => {
   const arraysOfMessages: Object[] = props.messagePost;
-  console.log(arraysOfMessages);
   let arraytoReturn: JSX.Element[] = [];
   let [upVotes, setUpVotes] = useState<number>(0);
   let [downVotes, setDownVotes] = useState<number>(0);

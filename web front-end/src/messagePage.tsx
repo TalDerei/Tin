@@ -30,7 +30,6 @@ const MessagePage = (props: any): JSX.Element | null => {
         })
         .then((myResponse) => {
           setResponseMessages(myResponse.mData);
-          // console.log(myResponse.mData);
         })
         .catch((error) => {
           console.error(error);
@@ -45,7 +44,6 @@ const MessagePage = (props: any): JSX.Element | null => {
 
   function handleSubmit(event: any) {
     event.preventDefault();
-    console.log(responseMessages);
     const inputDisplays = document.getElementById("input-items");
     inputDisplays!.style.display = "none";
     ReactDOM.render(<DisplayPosts
