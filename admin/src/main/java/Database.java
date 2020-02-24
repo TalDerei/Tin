@@ -279,7 +279,7 @@ public class Database {
 
             // Standard CRUD operations
             db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
-            db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?)");
+            db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?, ?)");
             db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject FROM tblData");
             db.mSelectOne = db.mConnection.prepareStatement("SELECT * from tblData WHERE id=?");
             db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
@@ -295,7 +295,7 @@ public class Database {
             db.mUpdateNickname = db.mConnection.prepareStatement("UPDATE UserData SET nickname = ? WHERE id = ?");
             db.mSelectAllUser = db.mConnection.prepareStatement("SELECT id, email, nickname FROM UserData");
 
-            // operations tblData using by UserData
+            // operations regarding to JOIN between tblData & UserData
             db.mUpdateUser = db.mConnection.prepareStatement("UPDATE tblData SET user_id = ? WHERE id = ?");
             db.mSelectAllByUser = db.mConnection.prepareStatement("SELECT tblData.id, subject, message, nickname FROM tblData " +
                     "INNER JOIN UserData ON tblData.user_id = UserData.id WHERE email = ?");
@@ -347,9 +347,11 @@ public class Database {
      */
     int insertRow(String subject, String message) {
         int count = 0;
+        int likes = 0; // like vote starts with 0
         try {
             mInsertOne.setString(1, subject);
             mInsertOne.setString(2, message);
+            mInsertOne.setInt(3, likes);
             count += mInsertOne.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -433,6 +435,7 @@ public class Database {
             while (rs.next()) {
                 RowData rowData = new RowData(rs.getInt("id"), rs.getString("subject"),
                         rs.getString("message"), -1, -1);
+                rowData.setEmail(email);
                 rowData.setNickname(rs.getString("nickname"));
                 res.add(rowData);
             }
@@ -613,7 +616,6 @@ public class Database {
      */
     void createTable() {
         try {
-            if (!mHasUserData) createUser();
             System.out.println("Create table...");
             mCreateTable.execute();
         } catch (SQLException e) {
@@ -642,7 +644,6 @@ public class Database {
         try {
             System.out.println("Delete table...");
             mDropTable.execute();
-            if (mHasUserData) dropUser();
         } catch (SQLException e) {
             e.printStackTrace();
         }

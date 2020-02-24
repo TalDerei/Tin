@@ -116,8 +116,7 @@ public class App {
     public static void main(String[] argv) {
         // get the Postgres configuration from the property files
         Properties prop = new Properties();
-        //String config = "config.properties";
-        String config = "backend.properties";
+        String config = "config.properties";
         try {
             InputStream input = App.class.getClassLoader().getResourceAsStream(config);
             prop.load(input);
@@ -137,19 +136,17 @@ public class App {
         // Start our basic command-line interpreter:
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
         while (true) {
-            // Get the user's request, and do it
-            //
-            // NB: for better testability, each action should be a separate
-            //     function call
             char action = prompt(in);
             if (action == '?') {
                 menu();
             } else if (action == 'q') {
                 break;
             } else if (action == 'T') {
+                db.createUser();
                 db.createTable();
             } else if (action == 'D') {
                 db.dropTable();
+                db.dropUser();
             } else if (action == 'A') {
                 ArrayList<Database.Table> table = db.showTable();
                 if (table == null)
@@ -190,6 +187,7 @@ public class App {
             } else if (action == '+') {
                 String subject = getString(in, "Enter the subject");
                 String message = getString(in, "Enter the message");
+                int likes = 0;
                 if (subject.equals("") || message.equals(""))
                     continue;
                 int res = db.insertRow(subject, message);
