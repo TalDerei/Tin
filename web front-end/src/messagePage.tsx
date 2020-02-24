@@ -4,7 +4,7 @@ import { GoogleLogout } from 'react-google-login';
 import DisplayPosts from './displayPosts';
 
 const MessagePage = (props: any): JSX.Element | null => {
-  const [enteredMessage, setEnteredMessage] = useState<any>({ value: `Hi, What's up?` });
+  const [enteredMessage, setEnteredMessage] = useState<any>({ value: '' });
   const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);
   const [responseMessages, setResponseMessages] = useState<Object[]>([]);
 
@@ -33,7 +33,7 @@ const MessagePage = (props: any): JSX.Element | null => {
     setEnteredMessage({ value: event.target.value });
   }
 
-  async function makePost() {
+  async function makePost(messageToPost: string) {
     await fetch(`https://cors-anywhere.herokuapp.com/https://limitless-ocean-62391.herokuapp.com/messages`, {
       method: 'POST',
       mode: 'cors',
@@ -46,7 +46,7 @@ const MessagePage = (props: any): JSX.Element | null => {
       referrerPolicy: 'no-referrer', // no-referrer, *client
       body: JSON.stringify({
         mTitle: (props.userName as string).trim(),
-        mMessage: (enteredMessage.value as string).trim()
+        mMessage: messageToPost
       }) // body data type must match "Content-Type" header
     })
       .then((response) => {
@@ -61,7 +61,6 @@ const MessagePage = (props: any): JSX.Element | null => {
   }
 
   function handleSubmit(event: any) {
-    makePost();
     event.preventDefault();
     const inputDisplays = document.getElementById("input-items");
     inputDisplays!.style.display = "none";
@@ -70,7 +69,13 @@ const MessagePage = (props: any): JSX.Element | null => {
       responseMessages.push({ mId: -1, mSubject: 'Patient0', mMessage: 'This is a test message I wrote for app tests!!' });
     }
     else {
-      responseMessages.push({ mId: -1, mSubject: (props.userName as string).trim(), mMessage: (enteredMessage.value as string).trim() });
+      let toReturn: string = enteredMessage.value;
+      if (enteredMessage.value == '') {
+        toReturn = 'I was too lazy to type 😊';
+        setEnteredMessage({ value: 'I was too lazy to type 😊' });
+      }
+      makePost(toReturn);
+      responseMessages.push({ mId: -1, mSubject: (props.userName as string).trim(), mMessage: toReturn });
     }
     ReactDOM.render(<DisplayPosts
       messagePost={responseMessages}
@@ -84,8 +89,8 @@ const MessagePage = (props: any): JSX.Element | null => {
         {props.userName} <br />
         <form onSubmit={handleSubmit}>
           <label>
-            What would you like to post today?<br></br>
-            <input type="text" name="name" value={enteredMessage.value} onChange={handleMessageInputChange} />
+            <br></br>
+            <input type="text" name="name" value={enteredMessage.value} onChange={handleMessageInputChange} placeholder="What would you like to post today?" id="input-text" />
           </label>
           <input type="submit" value="Post" />
         </form>
