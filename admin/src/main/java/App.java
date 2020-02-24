@@ -1,6 +1,3 @@
-
-import javafx.scene.chart.PieChart;
-
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -22,12 +19,18 @@ public class App {
         System.out.println("Main Menu");
         System.out.println("  [T] Create tblData");
         System.out.println("  [D] Drop tblData");
-        System.out.println("  [S] Show all tables");
+        System.out.println("  [A] Query for all tables");
+        System.out.println("  [a] Query for all Users");
         System.out.println("  [1] Query for a specific row");
         System.out.println("  [*] Query for all rows");
         System.out.println("  [-] Delete a row");
-        System.out.println("  [+] Insert a new row");
+        System.out.println("  [d] Delete a User by email");
+        System.out.println("  [+] Insert a new row on tblData");
+        System.out.println("  [I] Insert a new row on tblData with User");
+        System.out.println("  [i] Insert a new User on UserData");
         System.out.println("  [~] Update a row");
+        System.out.println("  [u] Update a User");
+        System.out.println("  [l] Update a like vote");
         System.out.println("  [q] Quit Program");
         System.out.println("  [?] Help (this message)");
     }
@@ -41,7 +44,7 @@ public class App {
      */
     static char prompt(BufferedReader in) {
         // The valid actions:
-        String actions = "TDS1*-+~q?";
+        String actions = "TDAa1*-d+Ii~ulq?";
 
         // We repeat until a valid single-character option is selected
         while (true) {
@@ -112,8 +115,8 @@ public class App {
     public static void main(String[] argv) {
         // get the Postgres configuration from the property files
         Properties prop = new Properties();
-        String config = "config.properties";
-        //String config = "backend.properties";
+        //String config = "config.properties";
+        String config = "backend.properties";
         try {
             InputStream input = App.class.getClassLoader().getResourceAsStream(config);
             prop.load(input);
@@ -146,7 +149,7 @@ public class App {
                 db.createTable();
             } else if (action == 'D') {
                 db.dropTable();
-            } else if (action == 'S') {
+            } else if (action == 'A') {
                 ArrayList<Database.Table> table = db.showTable();
                 if (table == null)
                     continue;
@@ -162,7 +165,9 @@ public class App {
                 Database.RowData res = db.selectOne(id);
                 if (res != null) {
                     System.out.println("  [" + res.mId + "] " + res.mSubject);
-                    System.out.println("  --> " + res.mMessage);
+                    System.out.println("--> [message] " + res.mMessage);
+                    System.out.println("--> [#likes] " + res.mLikes);
+                    System.out.println("--> [userID] " + res.mUserId);
                 }
             } else if (action == '*') {
                 ArrayList<Database.RowData> res = db.selectAll();
@@ -194,6 +199,56 @@ public class App {
                     continue;
                 String newMessage = getString(in, "Enter the new message");
                 int res = db.updateOne(id, newMessage);
+                if (res == -1)
+                    continue;
+                System.out.println("  " + res + " rows updated");
+            } else if (action == 'i') {
+                String email = getString(in, "Enter the email");
+                String nickname = getString(in, "Enter the nickname");
+                if (email.equals("") || nickname.equals("")) continue;
+                int res = db.insertUser(email, nickname);
+                System.out.println(res + " rows added");
+            } else if (action == 'u') {
+                int id = getInt(in, "Enter the row ID :> ");
+                if (id == -1)
+                    continue;
+                int newUserID = getInt(in, "Enter the user_id");
+                int res = db.updateUser(id, newUserID);
+                if (res == -1)
+                    continue;
+                System.out.println("  " + res + " rows updated");
+            } else if (action == 'n') {
+                int id = getInt(in, "Enter the row ID :> ");
+                if (id == -1)
+                    continue;
+                String newNickname = getString(in, "Enter the new nickname");
+                int res = db.updateNickname(id, newNickname);
+                if (res == -1)
+                    continue;
+                System.out.println("  " + res + " rows updated");
+            } else if (action == 'a') {
+                ArrayList<Database.UserData> res = db.selectAllUsers();
+                if (res == null)
+                    continue;
+                System.out.println("  Current Users ");
+                System.out.println("  -------------------------");
+                for (Database.UserData rd : res) {
+                    System.out.println("  [" + rd.mId + "] " + " [email] " + rd.mEmail + " [nickname] " + rd.mNickname);
+                }
+            } else if (action == 'd') {
+                String email = getString(in, "Enter the email");
+                if (email.equals(""))
+                    continue;
+                int res = db.deleteRowByUser(email);
+                if (res == -1)
+                    continue;
+                System.out.println("  " + res + " rows deleted");
+            } else if (action == 'l') {
+                int id = getInt(in, "Enter the row ID :> ");
+                if (id == -1)
+                    continue;
+                int newLikes = getInt(in, "Enter the likes");
+                int res = db.updateLike(id, newLikes);
                 if (res == -1)
                     continue;
                 System.out.println("  " + res + " rows updated");
