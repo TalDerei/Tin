@@ -56,3 +56,8 @@ button {
 .individual-message {
   margin-bottom: 50px;
 }
+
+button.googleLogoutButton {
+  position: absolute;
+  bottom: 0;
+}
