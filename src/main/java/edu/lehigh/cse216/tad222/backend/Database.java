@@ -52,6 +52,9 @@ public class Database {
      */
     private PreparedStatement mDropTable;
 
+    private PreparedStatement mUpdateLikes;
+
+
     /**
      * RowData is like a struct in C: we use it to hold data, and we allow 
      * direct access to its fields.  In the context of this Database, RowData 
@@ -124,8 +127,10 @@ public class Database {
 
         // Give the Database object a connection, fail if we cannot get one
         try {
+            System.out.println("entered getDatabase!!!!!!!!!!!!!!");
             Class.forName("org.postgresql.Driver");
             URI dbUri = new URI(db_url);
+            System.out.println("dbURI is!!!!!!!!!!: " + dbUri.toString());
             String username = dbUri.getUserInfo().split(":")[0];
             String password = dbUri.getUserInfo().split(":")[1];
             String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + dbUri.getPort() + dbUri.getPath();
@@ -140,7 +145,7 @@ public class Database {
             e.printStackTrace();
             return null;
         } catch (ClassNotFoundException cnfe) {
-            System.out.println("Unable to find postgresql driver");
+            System.out.println("Unable to find postgresql driver"); 
             return null;
         } catch (URISyntaxException s) {
             System.out.println("URI Syntax Error");
@@ -166,10 +171,11 @@ public class Database {
 
             // Standard CRUD operations
             db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
-            db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?)");
+            db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?, ?)");
             db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject FROM tblData");
             db.mSelectOne = db.mConnection.prepareStatement("SELECT * from tblData WHERE id=?");
             db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
+            db.mUpdateLikes = db.mConnection.prepareStatement("UPDATE tblData SET likes = ? WHERE id = ?");
         } catch (SQLException e) {
             System.err.println("Error creating prepared statement");
             e.printStackTrace();
@@ -217,6 +223,7 @@ public class Database {
         try {
             mInsertOne.setString(1, subject);
             mInsertOne.setString(2, message);
+            mInsertOne.setInt(3, 0);
             count += mInsertOne.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -299,6 +306,18 @@ public class Database {
         try {
             mUpdateOne.setString(1, message);
             mUpdateOne.setInt(2, id);
+            res = mUpdateOne.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+    
+    int updateLikes(int id, int likes) {
+        int res = -1;
+        try {
+            mUpdateLikes.setInt(1, likes);
+            mUpdateLikes.setInt(2, id);
             res = mUpdateOne.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
