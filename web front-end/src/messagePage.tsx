@@ -53,7 +53,7 @@ const MessagePage = (props: any): JSX.Element | null => {
         return response.json();
       })
       .then((myResponse) => {
-        console.log(myResponse);
+        // console.log(myResponse);
       })
       .catch((error) => {
         console.error(error);
