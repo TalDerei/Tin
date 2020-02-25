@@ -34,7 +34,7 @@ const DisplayPosts = (props: any): JSX.Element => {
 
   return (
     <div>
-      {arraytoReturn}
+      {arraytoReturn.reverse()}
     </div>
   );
 }
