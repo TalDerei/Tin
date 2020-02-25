@@ -1,21 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Display from './Display.jpg';
 
 const DisplayPosts = (props: any): JSX.Element => {
   const arraysOfMessages: Object[] = props.messagePost;
   let arraytoReturn: JSX.Element[] = [];
-  let [upVotes, setUpVotes] = useState<number>(0);
-  let [downVotes, setDownVotes] = useState<number>(0);
-  function onUpVote(event: any): void {
+  function onVote(event: any): void {
     event.preventDefault();
-    const newNumber = ++upVotes;
-    setUpVotes(newNumber);
-  }
-
-  function onDownVote(event: any): void {
-    event.preventDefault();
-    const newNumber = ++downVotes;
-    setDownVotes(newNumber);
+    let newNumber: number = ++(event.target.value as number);
+    (event.target.value as number) = newNumber;
+    document.getElementById(event.target.name)!.innerHTML = newNumber.toString();
   }
 
   arraysOfMessages.forEach((input: any) => {
@@ -27,7 +20,30 @@ const DisplayPosts = (props: any): JSX.Element => {
         </div>
         {input.mMessage}
         <br />
-        <button onClick={onUpVote}>Upvote</button>  {upVotes} <button onClick={onDownVote}>Downvote</button>  {downVotes}
+        <button
+          onClick={onVote}
+          value={0}
+          name={`upvote${input.mId}`}
+        >
+          Upvote
+        </button>
+        <text
+          id={`upvote${input.mId}`}
+        >
+          0
+        </text>
+        <button
+          onClick={onVote}
+          value={0}
+          name={`downvote${input.mId}`}
+        >
+          Downvote
+        </button>
+        <text
+          id={`downvote${input.mId}`}
+        >
+          0
+        </text>
       </div>
     )
   });
