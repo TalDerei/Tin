@@ -91,18 +91,15 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         ) {
-            /*
             @Override
             protected Map<String, String> getParams()
             {
                 Map<String, String> params = new HashMap<String, String>();
-                params.put("name", "Alif");
-                params.put("domain", "http://itsalif.info");
+                params.put("mTitle", "Android Test");
+                params.put("mMessage", "some message");
 
                 return params;
             }
-
-             */
         };
         queue.add(postRequest);
 
