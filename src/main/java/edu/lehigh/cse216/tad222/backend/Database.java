@@ -79,13 +79,16 @@ public class Database {
          */
         String mMessage;
 
+        int mlikes; 
+
         /**
          * Construct a RowData object by providing values for its fields
          */
-        public RowData(int id, String subject, String message) {
+        public RowData(int id, String subject, String message, int likes) {
             mId = id;
             mSubject = subject;
             mMessage = message;
+            mlikes = likes; 
         }
     }
 
@@ -172,7 +175,7 @@ public class Database {
             // Standard CRUD operations
             db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
             db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?, ?)");
-            db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject, message FROM tblData");
+            db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject, message, likes FROM tblData");
             db.mSelectOne = db.mConnection.prepareStatement("SELECT * from tblData WHERE id=?");
             db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
             db.mUpdateLikes = db.mConnection.prepareStatement("UPDATE tblData SET likes = ? WHERE id = ?");
@@ -231,6 +234,18 @@ public class Database {
         return count;
     }
 
+    int updateLikes(int id, int likes) {
+        int res = -1;
+        try {
+            mUpdateLikes.setInt(1, id);
+            mUpdateLikes.setInt(2, likes);
+            res = mUpdateLikes.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
     /**
      * Query the database for a list of all subjects and their IDs
      * 
@@ -242,7 +257,7 @@ public class Database {
         try {
             ResultSet rs = mSelectAll.executeQuery();
             while (rs.next()) {
-                res.add(new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message")));
+                res.add(new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"), rs.getInt("likes")));
             }
             rs.close();
             return res;
@@ -267,7 +282,7 @@ public class Database {
             mSelectOne.setInt(1, id);
             ResultSet rs = mSelectOne.executeQuery();
             if (rs.next()) {
-                res = new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"));
+                res = new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"), rs.getInt("likes"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -306,18 +321,6 @@ public class Database {
         try {
             mUpdateOne.setString(1, message);
             mUpdateOne.setInt(2, id);
-            res = mUpdateOne.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return res;
-    }
-    
-    int updateLikes(int id, int likes) {
-        int res = -1;
-        try {
-            mUpdateLikes.setInt(1, likes);
-            mUpdateLikes.setInt(2, id);
             res = mUpdateOne.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
