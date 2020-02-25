@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import Display from './Display.jpg';
 
 const DisplayPosts = (props: any): JSX.Element => {
-  let [upVotes,setUpVotes] = useState<number>(0);
-  let [downVotes,setDownVotes] = useState<number>(0);
+  let [upVotes, setUpVotes] = useState<number>(0);
+  let [downVotes, setDownVotes] = useState<number>(0);
   function onUpVote(event: any) {
     event.preventDefault();
     const newNumber = ++upVotes;
@@ -23,7 +23,7 @@ const DisplayPosts = (props: any): JSX.Element => {
       </div>
       {(props.messagesArray)[0].message}
       <br />
-      <button onClick={onUpVote}><kbd>Upvote</kbd></button>  {upVotes} <button onClick={onDownVote}><kbd>Downvote</kbd></button>  {downVotes}
+      <button onClick={onUpVote}>Upvote</button>  {upVotes} <button onClick={onDownVote}>Downvote</button>  {downVotes}
     </div>);
 }
 
