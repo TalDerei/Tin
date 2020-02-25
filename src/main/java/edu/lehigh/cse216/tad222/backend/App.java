@@ -4,7 +4,7 @@ package edu.lehigh.cse216.tad222.backend;
 // create an HTTP GET route
 import spark.Spark;
 
-// Import Google's JSON library
+//Import Google's JSON library
 import com.google.gson.*;
 import java.util.*;
 
@@ -143,19 +143,6 @@ public class App {
             }
         });
 
-        Spark.get("/likes/:id", (request, response) -> {
-            // ensure status 200 OK, with a MIME type of JSON
-            response.status(200);
-            response.type("application/json");
-            if (db == null){
-                System.out.println("error with DB!!!!!!!!!!!!!!!!!!");
-            }
-            else {
-                System.out.println("db is NOT null");
-            }
-            return gson.toJson(new StructuredResponse("ok", null, db.selectAll()));
-        });
-
         Spark.put("/likes/:id", (request, response) -> {
             // If we can't get an ID or can't parse the JSON, Spark will send
             // a status 500
@@ -164,13 +151,22 @@ public class App {
             // ensure status 200 OK, with a MIME type of JSON
             response.status(200);
             response.type("application/json");
-            int result = db.updateOne(idx, req.mMessage);
+            int likes = 0;
+            try {
+                likes = Integer.parseInt(req.mMessage);
+            } catch(Throwable e) {
+                System.out.println("not working!!!!!!!!!!!");
+                return gson.toJson(new StructuredResponse("error", "unable to parse body: " + req.mMessage, null));
+            }
+            int result = db.updateLikes(idx, likes);
             if (result == -1) {
                 return gson.toJson(new StructuredResponse("error", "unable to update row " + idx, null));
             } else {
                 return gson.toJson(new StructuredResponse("ok", null, result));
             }
         });
+
+
 
                 /**
          * Get an integer environment varible if it exists, and otherwise return the
