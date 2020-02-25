@@ -62,15 +62,13 @@ const MessagePage = (props: any): JSX.Element | null => {
 
   function handleSubmit(event: any) {
     event.preventDefault();
-    const inputDisplays = document.getElementById("input-items");
-    inputDisplays!.style.display = "none";
     setHasSubmitted(true);
     if ((window as any).Cypress) {
       responseMessages.push({ mId: -1, mSubject: 'Patient0', mMessage: 'This is a test message I wrote for app tests!!' });
     }
     else {
       let toReturn: string = enteredMessage.value;
-      if (enteredMessage.value == '') {
+      if (enteredMessage.value === '') {
         toReturn = 'I was too lazy to type 😊';
         setEnteredMessage({ value: 'I was too lazy to type 😊' });
       }
@@ -81,6 +79,7 @@ const MessagePage = (props: any): JSX.Element | null => {
       messagePost={responseMessages}
     />
       , document.getElementById('post'));
+    setEnteredMessage({ value: '' });
   }
   // load messages page while testing too
   if (props.signedIn || (window as any).Cypress)
