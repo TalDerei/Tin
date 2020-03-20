@@ -7,33 +7,11 @@ import spark.Spark;
 //Import Google's JSON library
 import com.google.gson.*;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.client.util.store.FileDataStoreFactory;
-import com.google.api.client.http.BasicAuthentication;
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.extensions.appengine.http.UrlFetchTransport;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-import com.google.api.client.auth.oauth2.AuthorizationCodeFlow;
-import com.google.api.client.auth.oauth2.AuthorizationCodeResponseUrl;
-import com.google.api.client.auth.oauth2.BearerToken;
-import com.google.api.client.auth.oauth2.ClientParametersAuthentication;
-import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.auth.oauth2.StoredCredential;
-import com.google.api.client.extensions.servlet.auth.oauth2.AbstractAuthorizationCodeCallbackServlet;
-import com.google.api.client.extensions.servlet.auth.oauth2.AbstractAuthorizationCodeServlet;
-
-import java.io.File;
-
-import java.io.IOException;
 
 import java.util.*;
 
@@ -41,6 +19,7 @@ import java.util.*;
  * For now, our app creates an HTTP server that can only get and add data.
  */
 public class App {
+ 
     public static void main(String[] args) {
 
         // Get the port on which to listen for requests
@@ -207,6 +186,8 @@ public class App {
         });
 
         Spark.put("/users/login", (request, response) -> {
+            response.status(200);
+            response.type("application/json");
             String name = request.params("name");
             String uid = "";
             String secret = "";
@@ -218,6 +199,8 @@ public class App {
         });
 
         Spark.delete("/users/logoff", (request, response) -> {
+            response.status(200);
+            response.type("application/json");
             String name = request.params("name");
             String uid = "";
             if(db.setUserInactive(null)) {
@@ -241,6 +224,8 @@ public class App {
         });
 
         Spark.get("/users/callback", (request, response) -> {
+            response.status(200);
+            response.type("application/json");
             return "";
         });
     }
@@ -349,102 +334,4 @@ public class App {
 
         return false;
     }
-    
-    public class Servlet extends AbstractAuthorizationCodeServlet {
-
-        /**
-		 *
-		 */
-		private static final long serialVersionUID = 2372819854088979956L;
-
-		@Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-           // redirect to google for authorization
-            StringBuilder oauthUrl = new StringBuilder().append("https://accounts.google.com/o/oauth2/auth")
-            .append("?client_id=").append(request.getPart("clientid")) // the client id from the api console registration
-            .append("&response_type=code")
-            .append("&scope=openid%20email") // scope is the api permissions we are requesting
-            .append("&redirect_uri=http://limitless-ocean-62391.herokuappp.com/messages") // the servlet that google redirects to after authorization
-            .append("&state=this_can_be_anything_to_help_correlate_the_response%3Dlike_session_id")
-            .append("&access_type=offline") // here we are asking to access to user's data while they are not signed in
-            .append("&approval_prompt=force"); // this requires them to verify which account to use, if they are already signed in
-                
-            response.sendRedirect(oauthUrl.toString());
-        }
-      
-        @Override
-        protected String getRedirectUri(HttpServletRequest req) throws ServletException, IOException {
-          GenericUrl url = new GenericUrl(req.getRequestURL().toString());
-          url.setRawPath("http://limitless-ocean-62391.herokuappp.com/messages");
-          return url.build();
-        }
-      
-        @Override
-        protected AuthorizationCodeFlow initializeFlow() throws IOException {
-          return new AuthorizationCodeFlow.Builder(BearerToken.authorizationHeaderAccessMethod(),
-              new NetHttpTransport(),
-              new JacksonFactory(),
-              new GenericUrl("http://limitless-ocean-62391.herokuappp.com/messages"),
-              new BasicAuthentication("s6BhdRkqt3", "7Fjfp0ZBr1KtDRbnfVdmIw"),
-              "s6BhdRkqt3",
-              "http://limitless-ocean-62391.herokuappp.com/login").setCredentialDataStore(
-                  StoredCredential.getDefaultDataStore(
-                      new FileDataStoreFactory(new File("datastoredir"))))
-              .build();
-        }
-      
-        @Override
-        protected String getUserId(HttpServletRequest req) throws ServletException, IOException {
-          return "";
-        }
-      }
-      
-      public class ServletCallback extends AbstractAuthorizationCodeCallbackServlet {
-      
-        /**
-		 *
-		 */
-		private static final long serialVersionUID = -2663253438853631359L;
-
-		@Override
-        protected void onSuccess(HttpServletRequest req, HttpServletResponse resp, Credential credential) throws ServletException, IOException {
-          resp.sendRedirect("/");
-        }
-      
-        @Override
-        protected void onError(HttpServletRequest req, HttpServletResponse resp, AuthorizationCodeResponseUrl errorResponse) throws ServletException, IOException {
-          System.out.println(errorResponse.getError());
-          System.out.println(errorResponse.getErrorDescription());
-        }
-      
-        @Override
-        protected String getRedirectUri(HttpServletRequest req) throws ServletException, IOException {
-          GenericUrl url = new GenericUrl(req.getRequestURL().toString());
-          url.setRawPath("http://limitless-ocean-62391.herokuappp.com/messages");
-          return url.build();
-        }
-      
-        @Override
-        protected AuthorizationCodeFlow initializeFlow() throws IOException {
-          return new AuthorizationCodeFlow.Builder(BearerToken.authorizationHeaderAccessMethod(),
-              new NetHttpTransport(),
-              new JacksonFactory(),
-              new GenericUrl("http://limitless-ocean-62391.herokuappp.com/login"),
-              //clientid, clientSecret
-              new ClientParametersAuthentication("s6BhdRkqt3", "7Fjfp0ZBr1KtDRbnfVdmIw"),
-              //clientid
-              "s6BhdRkqt3",
-              //authServer
-              "http://limitless-ocean-62391.herokuappp.com/login").setCredentialDataStore(
-                  StoredCredential.getDefaultDataStore(
-                      new FileDataStoreFactory(new File("datastoredir"))))
-              .build();
-        }
-      
-        @Override
-        protected String getUserId(HttpServletRequest req) throws ServletException, IOException {
-          // return user ID
-          return "";
-        }
-      }
 }
