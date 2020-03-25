@@ -51,11 +51,11 @@ public class AuthCodeCallbackServlet extends AbstractAuthorizationCodeCallbackSe
         String clientId = Util.getClientId();
         String clientSecret = Util.getClientSecret();
         return new AuthorizationCodeFlow.Builder(BearerToken.authorizationHeaderAccessMethod(), new NetHttpTransport(),
-                new JacksonFactory(), new GenericUrl(Util.SITE + "/login"),
+                new JacksonFactory(), new GenericUrl(Util.SITE + "users/login"),
                 new ClientParametersAuthentication(clientId, clientSecret),
                 clientId,
                 // authServer
-                Util.SITE + "/login").setCredentialDataStore(
+                Util.SITE + "users/login").setCredentialDataStore(
                         StoredCredential.getDefaultDataStore(new FileDataStoreFactory(new File("datastoredir"))))
                         .build();
     }
@@ -63,6 +63,6 @@ public class AuthCodeCallbackServlet extends AbstractAuthorizationCodeCallbackSe
     @Override
     protected String getUserId(HttpServletRequest req) throws ServletException, IOException {
         // return user ID
-        return this.getUserId(req);
+        return req.getParameter("name");
     }
   }

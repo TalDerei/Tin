@@ -7,6 +7,10 @@ import spark.Spark;
 //Import Google's JSON library
 import com.google.gson.*;
 
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
+
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.extensions.appengine.http.UrlFetchTransport;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
@@ -19,11 +23,15 @@ import java.util.*;
  * For now, our app creates an HTTP server that can only get and add data.
  */
 public class App {
- 
+
+    private static Server server;
+
     public static void main(String[] args) {
 
         // Get the port on which to listen for requests
         Spark.port(getIntFromEnv("PORT", 4567));
+        
+        server = new Server(getIntFromEnv("PORT", 4567));
 
         // Database URL
         Map<String, String> env = System.getenv();
@@ -36,6 +44,21 @@ public class App {
             final String supportedRequestHeaders = "Content-Type,Authorization,X-Requested-With,Content-Length,Accept,Origin";
             enableCORS(acceptCrossOriginRequestsFrom, acceptedCrossOriginRoutes, supportedRequestHeaders);
         }
+
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/");
+        server.setHandler(context);
+        
+        context.addServlet(new ServletHolder(new AuthCodeServlet()),"/users/login");        
+        context.addServlet(new ServletHolder(new AuthCodeCallbackServlet()),"/users/login/callback");        
+        
+        try {
+            server.start();
+            server.join();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
 
         // gson provides us with a way to turn JSON into objects, and objects
         // into JSON.
@@ -189,8 +212,8 @@ public class App {
             response.status(200);
             response.type("application/json");
             String name = request.params("name");
-            String uid = "";
-            String secret = "";
+            String uid = request.params("uid");
+            String secret = request.params("secret");
             if(db.setUserActive(name, uid, secret)) {
                 return gson.toJson(new StructuredResponse("ok", "User " + name + " was logged in", uid));
             } else {

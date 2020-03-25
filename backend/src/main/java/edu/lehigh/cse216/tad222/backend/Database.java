@@ -54,14 +54,23 @@ public class Database {
      * A prepared statement for dropping the table in our database
      */
     private PreparedStatement mDropTable;
+    
 
     private PreparedStatement mUpdateLikes;
 
+    private PreparedStatement mCreateRegUserTable;
+
+    private PreparedStatement mDropRegUserTable;
+
     private PreparedStatement mRegisterUser;
+
+    private PreparedStatement mIsRegistered;
 
     private PreparedStatement mLogin;
 
     private PreparedStatement mLogoff;
+
+    private static final String regUsers = "userTable";
 
     Set<User> activeUsers;
     Set<User> registeredUsers;
@@ -187,6 +196,11 @@ public class Database {
                     + "NOT NULL, message VARCHAR(500) NOT NULL)");
             db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData");
 
+            db.mCreateRegUserTable = db.mConnection.prepareStatement(
+                    "CREATE TABLE " + regUsers + " (name VARCHAR(50) "
+                    + "NOT NULL, uid VARCHAR(500) NOT NULL, secret VARCHAR(500) NOT NULL)");
+            db.mDropRegUserTable = db.mConnection.prepareStatement("DROP TABLE " + regUsers);
+
             // Standard CRUD operations
             db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
             db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?, ?)");
@@ -194,7 +208,13 @@ public class Database {
             db.mSelectOne = db.mConnection.prepareStatement("SELECT * from tblData WHERE id=?");
             db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
             db.mUpdateLikes = db.mConnection.prepareStatement("UPDATE tblData SET likes = ? WHERE id = ?");
-            db.mRegisterUser = db.mConnection.prepareStatement("INSERT");
+            db.mRegisterUser = db.mConnection.prepareStatement("INSERT INTO " + regUsers + " Values (default, ?, ?, ?)");
+            db.mIsRegistered = db.mConnection.prepareStatement("SELECT uid FROM " + regUsers + 
+                            " WHERE checkUser = ?" +
+                            " WHERE EXISTS" +
+                                "(SELECT 2" +
+                                "FROM " + regUsers + " u" + 
+                                "Where u.uid = checkUser" + ")");
             db.mLogin = db.mConnection.prepareStatement("INSERT");
             db.mLogoff = db.mConnection.prepareStatement("DELETE");
         } catch (SQLException e) {
@@ -357,11 +377,19 @@ public class Database {
         }
     }
 
+    void createRegUserTable() {
+        try {
+            mCreateTable.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * Remove tblData from the database.  If it does not exist, this will print
      * an error.
      */
-    void dropTable() {
+    void dropRegUserTable() {
         try {
             mDropTable.execute();
         } catch (SQLException e) {
@@ -379,7 +407,14 @@ public class Database {
     }
 
     boolean isRegistered(User u) {
-        return registeredUsers.contains(u);
+        int res = 0;
+        try {
+            mIsRegistered.setString(1, u.getUserID());
+            res = mIsRegistered.executeQuery().getFetchSize();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res > 0;
     }
 
     boolean setUserActive(String name, String uid, String secret) {
