@@ -34,11 +34,24 @@ public class App {
         server = new Server(getIntFromEnv("PORT", 4567));
 
         // Database URL
-        Map<String, String> env = System.getenv();
+        Map<String, String> env = System.getenv();;
         String db_url = env.get("DATABASE_URL");   
-        System.out.println("database is: " + db_url);     
+        System.out.println("database is: " + db_url);    
+        
+        /*Properties prop = new Properties();
+        String config = "backend.properties";
+        try {
+            InputStream input = App.class.getClassLoader().getResourceAsStream(config);
+            prop.load(input);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        String db_url = prop.getProperty("DATABASE_URL");*/
+
+        //String db_url = "postgres://azexrkxulzlqss:b12fcddc21a71c8cc0b04de34d8ab4bc99a726bdb0b2e455b63865e0cdbb3442@ec2-3-234-109-123.compute-1.amazonaws.com:5432/d9aki869as2d5b";
         String cors_enabled = env.get("CORS_ENABLED");
-        if (cors_enabled.equals("True")) { 
+        //String cors_enabled = "True";
+        if (cors_enabled.equals("TRUE")) { 
             final String acceptCrossOriginRequestsFrom = "*";
             final String acceptedCrossOriginRoutes = "GET,PUT,POST,DELETE,OPTIONS";
             final String supportedRequestHeaders = "Content-Type,Authorization,X-Requested-With,Content-Length,Accept,Origin";
@@ -78,6 +91,12 @@ public class App {
         //     every time we start the server, we'll have an empty dataStore,
         //     with IDs starting over from 0. 
         //final DataStore dataStore = new DataStore(); //local database object
+
+        //Spark.staticFileLocation("/web");
+       /* Spark.get(" / ", (request, response) -> {
+            res.redirect("/index.html");
+            return "";
+        });*/
 
         // GET route that returns all message titles and Ids.  All we do is get s
         // the data, embed it in a StructuredResponse, turn it into JSON, and 
@@ -181,13 +200,17 @@ public class App {
             response.status(200);
             response.type("application/json");
             int likes = 0;
-            try {
+            System.out.println("idx is: " + idx);
+
+            /*try {
                 likes = Integer.parseInt(req.mMessage);
+                //System.out.println("mMessages is: " + mMessage);
+                System.out.println("likes is: " + likes);
             } catch(Throwable e) {
                 System.out.println("not working!!!!!!!!!!!");
                 return gson.toJson(new StructuredResponse("error", "unable to parse body: " + req.mMessage, null));
-            }
-            int result = db.updateLikes(idx, likes);
+            }*/
+            int result = db.updateLikes(idx);
             if (result == -1) {
                 return gson.toJson(new StructuredResponse("error", "unable to update row " + idx, null));
             } else {

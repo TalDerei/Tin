@@ -157,7 +157,7 @@ public class Database {
             System.out.println("dbURI is!!!!!!!!!!: " + dbUri.toString());
             String username = dbUri.getUserInfo().split(":")[0];
             String password = dbUri.getUserInfo().split(":")[1];
-            String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + dbUri.getPort() + dbUri.getPath();
+            String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + dbUri.getPort() + dbUri.getPath() + "?sslmode=require";
             Connection conn = DriverManager.getConnection(dbUrl, username, password);
             if (conn == null) {
                 System.err.println("Error: DriverManager.getConnection() returned a null object");
@@ -177,7 +177,6 @@ public class Database {
         }
 
         
-
         // Attempt to create all of our prepared statements.  If any of these 
         // fail, the whole getDatabase() call should fail
         try {
@@ -204,7 +203,7 @@ public class Database {
             db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject, message, likes FROM tblData");
             db.mSelectOne = db.mConnection.prepareStatement("SELECT * from tblData WHERE id=?");
             db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
-            db.mUpdateLikes = db.mConnection.prepareStatement("UPDATE tblData SET likes = ? WHERE id = ?");
+            db.mUpdateLikes = db.mConnection.prepareStatement("UPDATE tblData SET likes = likes+1 WHERE id = ?");
             db.mRegisterUser = db.mConnection.prepareStatement("INSERT INTO " + regUsers + " Values (default, ?, ?, ?)");
             db.mIsRegistered = db.mConnection.prepareStatement("SELECT uid FROM " + regUsers + 
                             " WHERE checkUser = ?" +
@@ -214,6 +213,7 @@ public class Database {
                                 "Where u.uid = checkUser" + ")");
             db.mLogin = db.mConnection.prepareStatement("INSERT");
             db.mLogoff = db.mConnection.prepareStatement("DELETE");
+            
         } catch (SQLException e) {
             System.err.println("Error creating prepared statement");
             e.printStackTrace();
@@ -269,11 +269,11 @@ public class Database {
         return count;
     }
 
-    int updateLikes(int id, int likes) {
+    int updateLikes(int id) {
         int res = -1;
         try {
             mUpdateLikes.setInt(1, id);
-            mUpdateLikes.setInt(2, likes);
+            //mUpdateLikes.setInt(2, likes);
             res = mUpdateLikes.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
