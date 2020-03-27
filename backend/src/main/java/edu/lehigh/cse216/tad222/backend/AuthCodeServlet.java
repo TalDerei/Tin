@@ -35,12 +35,11 @@ public class AuthCodeServlet extends AbstractAuthorizationCodeServlet {
                                                                                // requesting
                 .append("&redirect_uri=" + Util.SITE + "/users/login/callback") // the servlet that google redirects to after
                                                                // authorization
-                .append("&state=this_can_be_anything_to_help_correlate_the_response%3Dlike_session_id")
+                //.append("&state=this_can_be_anything_to_help_correlate_the_response%3Dlike_session_id")
                 .append("&access_type=offline") // here we are asking to access to user's data while they are not signed
                                                 // in
                 .append("&approval_prompt=force"); // this requires them to verify which account to use, if they are
                                                    // already signed in
-
         response.sendRedirect(oauthUrl.toString());
     }
 

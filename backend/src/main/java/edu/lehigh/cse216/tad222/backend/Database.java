@@ -73,8 +73,6 @@ public class Database {
     private static final String regUsers = "userTable";
 
     Set<User> activeUsers;
-    Set<User> registeredUsers;
-
 
     /**
      * RowData is like a struct in C: we use it to hold data, and we allow 
@@ -120,7 +118,6 @@ public class Database {
      */
     private Database() {
         activeUsers = new HashSet<User>();
-        registeredUsers = new HashSet<User>();
     }
 
     /**
@@ -403,7 +400,7 @@ public class Database {
      */
     boolean registerUser(String name, String uid, String secret){
         User u = new User(name, uid, secret);
-        return registeredUsers.add(u);
+        return false;
     }
 
     boolean isRegistered(User u) {

@@ -29,6 +29,7 @@ public class AuthCodeCallbackServlet extends AbstractAuthorizationCodeCallbackSe
     @Override
     protected void onSuccess(HttpServletRequest req, HttpServletResponse resp, Credential credential)
             throws ServletException, IOException {
+        credential.getAccessToken();
         resp.sendRedirect(Util.SITE + "/messages");
     }
 
@@ -51,7 +52,7 @@ public class AuthCodeCallbackServlet extends AbstractAuthorizationCodeCallbackSe
         String clientId = Util.getClientId();
         String clientSecret = Util.getClientSecret();
         return new AuthorizationCodeFlow.Builder(BearerToken.authorizationHeaderAccessMethod(), new NetHttpTransport(),
-                new JacksonFactory(), new GenericUrl(Util.SITE + "users/login"),
+                new JacksonFactory(), new GenericUrl(Util.SITE + "/users/login"),
                 new ClientParametersAuthentication(clientId, clientSecret),
                 clientId,
                 // authServer

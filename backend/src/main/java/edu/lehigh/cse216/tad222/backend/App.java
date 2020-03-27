@@ -58,7 +58,6 @@ public class App {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
 
         // gson provides us with a way to turn JSON into objects, and objects
         // into JSON.
@@ -211,11 +210,17 @@ public class App {
         Spark.put("/users/login", (request, response) -> {
             response.status(200);
             response.type("application/json");
+            return gson.toString();
+        });
+
+        Spark.get("/users/login/callback", (request, response) -> {
+            response.status(200);
+            response.type("application/json");
             String name = request.params("name");
-            String uid = request.params("uid");
-            String secret = request.params("secret");
-            if(db.setUserActive(name, uid, secret)) {
-                return gson.toJson(new StructuredResponse("ok", "User " + name + " was logged in", uid));
+            String cid = request.params("client_id");
+            String secret = request.params("client_secret");
+            if(db.setUserActive(name, cid, secret)) {
+                return gson.toJson(new StructuredResponse("ok", "User " + name + " was logged in", cid));
             } else {
                 return gson.toJson(new StructuredResponse("error", "User " + name + " had invalid credentials", null));
             }
@@ -244,12 +249,6 @@ public class App {
                 System.out.println("db is NOT null");
             }
             return gson.toJson(new StructuredResponse("ok", null, db.activeUsers));
-        });
-
-        Spark.get("/users/callback", (request, response) -> {
-            response.status(200);
-            response.type("application/json");
-            return "";
         });
     }
     /**
