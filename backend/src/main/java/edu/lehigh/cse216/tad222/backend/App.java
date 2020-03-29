@@ -3,10 +3,7 @@ package edu.lehigh.cse216.tad222.backend;
 // Import the Spark package, so that we can make use of the "get" function to 
 // create an HTTP GET route
 import spark.Spark;
-import spark.embeddedserver.jetty.EmbeddedJettyServer;
-import spark.embeddedserver.jetty.JettyServerFactory;
 
-import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.google.common.collect.ImmutableMap;
 //Import Google's JSON library
 import com.google.gson.*;
@@ -23,9 +20,6 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 
 import java.io.IOException;
 import java.util.*;
@@ -43,7 +37,7 @@ public class App {
         Spark.port(getIntFromEnv("PORT", 4567));
 
         //create a modified version of Spark's embedded Jetty server
-        JettyServerFactory jf = new JettyServerFactory(){
+        /*JettyServerFactory jf = new JettyServerFactory(){
             @Override
             public Server create(int maxThreads, int minThreads, int threadTimeoutMillis) {
                 Server s = new Server(getIntFromEnv("PORT", 4567));
@@ -55,7 +49,7 @@ public class App {
         context.addServlet(new ServletHolder(new AuthCodeServlet()), "/users/login");        
         context.addServlet(new ServletHolder(new AuthCodeCallbackServlet()), "/users/login/callback");
         
-        EmbeddedJettyServer server = new EmbeddedJettyServer(jf, context);
+        EmbeddedJettyServer server = new EmbeddedJettyServer(jf, context);*/
 
         // Database URL
         Map<String, String> env = System.getenv();
@@ -211,11 +205,9 @@ public class App {
             // If we can't get an ID or can't parse the JSON, Spark will send
             // a status 500
             int idx = Integer.parseInt(request.params("id"));
-            SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
             // ensure status 200 OK, with a MIME type of JSON
             response.status(200);
             response.type("application/json");
-            int likes = 0;
             System.out.println("idx is: " + idx);
 
             /*try {
@@ -254,7 +246,7 @@ public class App {
                 .append("?client_id=").append(request.queryParams("client_id")) // the client id from the api console
                                                                            // registration
                 .append("&idToken=" + request.queryParams("idToken"))
-                .append("&response_type=code").append("&scope=profile") // scope is the api permissions we are
+                .append("&response_type=code").append("&scope=https://www.googleapis.com/auth/userinfo.profile") // scope is the api permissions we are
                                                                                // requesting
                 .append("&redirect_uri=" + Util.SITE + "/users/login/callback") // the servlet that google redirects to after
                                                                // authorization
@@ -277,7 +269,7 @@ public class App {
         Spark.post("/users/login/callback", (request, response) -> {
             response.status(200);
             response.type("application/json");
-            if(request.params("error") != null) {
+            if(request.queryParams("error") != null) {
                 return gson.toJson(new StructuredResponse("error", "User had invalid credentials", null));
             }
 
@@ -295,14 +287,18 @@ public class App {
                 
             // google tokens expire after an hour, but since we requested offline access we can get a new token without user involvement via the refresh token
             String accessToken = jsonObject.get("access_token").getAsString();
-            JsonObject json = gson.fromJson((new StringBuilder("https://www.googleapis.com/oauth2/v1/userinfo?access_token=").append(accessToken).toString()), JsonObject.class);
+            JsonObject json = gson.fromJson((new StringBuilder("https://www.googleapis.com/auth/userinfo.profile?access_token=").append(accessToken).toString()), JsonObject.class);
             String name = json.get("name").getAsString();
             String email = json.get("email").getAsString();
             String cid = request.params("client_id");
             String uid = json.get("id").getAsString();
+
+            if(email.contains("lehigh.edu")){
+                return new StructuredResponse("error", "User " + name + " is not part of lehigh.edu", null);
+            }
             
             if(db.setUserActive(new User(name, email, cid, uid))) {
-                return gson.toJson(new StructuredResponse("ok", "User " + name + " was logged in", cid));
+                return gson.toJson(new StructuredResponse("ok", "User " + name + " was logged in", accessToken));
             } else {
                 return gson.toJson(new StructuredResponse("error", "User " + name + " was already logged in", null));
             }

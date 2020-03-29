@@ -1,6 +1,5 @@
 package edu.lehigh.cse216.tad222.backend;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 
@@ -27,10 +26,10 @@ public class AuthCodeServlet extends AbstractAuthorizationCodeServlet {
             throws IOException, ServletException {
         // redirect to google for authorization
         StringBuilder oauthUrl = new StringBuilder().append("https://accounts.google.com/o/oauth2/auth")
-                .append("?client_id=").append(request.getPart("client_id")) // the client id from the api console
+                .append("?client_id=").append(request.getParameter("client_id")) // the client id from the api console
                                                                            // registration
                 .append("&idToken=" + request.getParameter("idToken"))
-                .append("&response_type=code").append("&scope=profile") // scope is the api permissions we are
+                .append("&response_type=code").append("&scope=https://www.googleapis.com/auth/userinfo.profile") // scope is the api permissions we are
                                                                                // requesting
                 .append("&redirect_uri=" + Util.SITE + "/users/login/callback") // the servlet that google redirects to after
                                                                // authorization

@@ -74,7 +74,7 @@ public class Database {
     private static final String regUsers = "userTable";
 
     Set<User> activeUsers;
-    //HashMap<String> jwt = new HashMap<>();
+    HashMap<String, User> jwt;
 
     /**
      * RowData is like a struct in C: we use it to hold data, and we allow 
@@ -120,6 +120,7 @@ public class Database {
      */
     private Database() {
         activeUsers = new HashSet<User>();
+        jwt = new HashMap<String, User>();
     }
 
     /**
@@ -435,6 +436,10 @@ public class Database {
             res.add(u.getName());
         }
         return res;
+    }
+
+    boolean isAuthorized(String sessionid, User u){
+        return jwt.containsKey(sessionid) && jwt.get(sessionid).equals(u);
     }
 }
 
