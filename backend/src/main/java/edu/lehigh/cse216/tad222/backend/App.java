@@ -20,7 +20,6 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
@@ -154,6 +153,7 @@ public class App {
         // JSON from the body of the request, turn it into a SimpleRequest 
         // object, extract the title and message, insert them, and return the 
         // ID of the newly created row.
+        // request should have a session_id, validate it against a stored session_id in the user_table
         Spark.post("/messages", (request, response) -> {
             // NB: if gson.Json fails, Spark will reply with status 500 Internal 
             // Server Error
@@ -236,9 +236,10 @@ public class App {
 
         Spark.post("/users/register", (request, response) -> {
             String name = request.params("name");
+            String email = "";
             String uid = "";
             String secret = "";
-            boolean success = db.registerUser(name, uid, secret);
+            boolean success = db.registerUser(name, email, uid, secret);
             if(success) {
                 return gson.toJson(new StructuredResponse("ok", "User " + name + " was registered", uid));
             } else {
@@ -250,10 +251,10 @@ public class App {
             response.status(200);
             response.type("application/json");
             StringBuilder oauthUrl = new StringBuilder().append("https://accounts.google.com/o/oauth2/auth")
-                .append("?client_id=").append(request.params("client_id")) // the client id from the api console
+                .append("?client_id=").append(request.queryParams("client_id")) // the client id from the api console
                                                                            // registration
-                .append("&idToken=" + request.params("idToken"))
-                .append("&response_type=code").append("&scope=openid%profile") // scope is the api permissions we are
+                .append("&idToken=" + request.queryParams("idToken"))
+                .append("&response_type=code").append("&scope=profile") // scope is the api permissions we are
                                                                                // requesting
                 .append("&redirect_uri=" + Util.SITE + "/users/login/callback") // the servlet that google redirects to after
                                                                // authorization
@@ -267,6 +268,7 @@ public class App {
         });
 
         Spark.get("/users/login", (request, response) -> {
+            response.status(200);
             response.type("application/json");
             return "hello world";
         });
@@ -295,10 +297,11 @@ public class App {
             String accessToken = jsonObject.get("access_token").getAsString();
             JsonObject json = gson.fromJson((new StringBuilder("https://www.googleapis.com/oauth2/v1/userinfo?access_token=").append(accessToken).toString()), JsonObject.class);
             String name = json.get("name").getAsString();
+            String email = json.get("email").getAsString();
             String cid = request.params("client_id");
             String uid = json.get("id").getAsString();
             
-            if(db.setUserActive(name, cid, uid)) {
+            if(db.setUserActive(new User(name, email, cid, uid))) {
                 return gson.toJson(new StructuredResponse("ok", "User " + name + " was logged in", cid));
             } else {
                 return gson.toJson(new StructuredResponse("error", "User " + name + " was already logged in", null));
@@ -329,6 +332,20 @@ public class App {
             }
             return gson.toJson(new StructuredResponse("ok", null, db.selectAllActiveUsers()));
         });
+
+        Spark.get("/users/:user_id", (request, response) -> {
+            // ensure status 200 OK, with a MIME type of JSON
+            response.status(200);
+            response.type("application/json");
+            if (db == null){
+                System.out.println("error with DB!!!!!!!!!!!!!!!!!!");
+            } else {
+                System.out.println("db is NOT null");
+            }
+            return gson.toJson(new StructuredResponse("ok", null, db.selectAllActiveUsers()));
+        });
+
+        
     }
     /**
      * Get an integer environment varible if it exists, and otherwise return the

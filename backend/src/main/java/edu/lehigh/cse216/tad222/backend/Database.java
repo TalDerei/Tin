@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Set;
 
 import java.util.HashSet;
@@ -73,6 +74,7 @@ public class Database {
     private static final String regUsers = "userTable";
 
     Set<User> activeUsers;
+    //HashMap<String> jwt = new HashMap<>();
 
     /**
      * RowData is like a struct in C: we use it to hold data, and we allow 
@@ -398,8 +400,9 @@ public class Database {
      * Add a new user to Registered Users
      * 
      */
-    boolean registerUser(String name, String uid, String secret){
-        User u = new User(name, uid, secret);
+    boolean registerUser(String name, String email, String uid, String secret){
+        //session_id random string for user is created and passed to front end
+        User u = new User(name, email, uid, secret);
         return false;
     }
 
@@ -414,11 +417,6 @@ public class Database {
         return res > 0;
     }
 
-    boolean setUserActive(String name, String uid, String secret) {
-        User u = new User(name, uid, secret);
-        return activeUsers.add(u);
-    }
-
     boolean setUserInactive(User u) {
         return activeUsers.remove(u);
     }
@@ -426,6 +424,7 @@ public class Database {
     boolean setUserActive(User u) {
         return activeUsers.add(u);
     }
+
     /**
      * Return a list of all active users
      * @return

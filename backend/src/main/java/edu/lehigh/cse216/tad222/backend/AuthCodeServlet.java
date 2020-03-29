@@ -30,7 +30,7 @@ public class AuthCodeServlet extends AbstractAuthorizationCodeServlet {
                 .append("?client_id=").append(request.getPart("client_id")) // the client id from the api console
                                                                            // registration
                 .append("&idToken=" + request.getParameter("idToken"))
-                .append("&response_type=code").append("&scope=openid%20email") // scope is the api permissions we are
+                .append("&response_type=code").append("&scope=profile") // scope is the api permissions we are
                                                                                // requesting
                 .append("&redirect_uri=" + Util.SITE + "/users/login/callback") // the servlet that google redirects to after
                                                                // authorization
