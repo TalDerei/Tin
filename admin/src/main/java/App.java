@@ -11,7 +11,6 @@ import java.util.Properties;
  * operations on a database: connect, insert, update, query, delete, disconnect
  */
 public class App {
-
     /**
      * Print the menu for our program
      */
@@ -268,8 +267,7 @@ public class App {
                 System.out.println("  " + res + " rows updated");
             }
         }
-        // Always remember to disconnect from the database when the program
-        // exits
+        // Always remember to disconnect from the database when the program exits
         db.disconnect();
     }
 }

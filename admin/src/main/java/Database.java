@@ -11,101 +11,87 @@ import java.util.ArrayList;
 
 public class Database {
     /**
+     * PreparedStatement: prepared statement is a query that you set up in adavance, and represents a framework to build a certain action.
+     * Query: query is a specific instantiation of a prepared statement, where queries are sql text (actions) that tells the database what to do.
+     */
+
+    /**
     * The connection to the database.  When there is no connection, it should
     * be null.  Otherwise, there is a valid open connection
     */
     private Connection mConnection;
-
     /**
     * A prepared statement for getting all data in the database
     */
     private PreparedStatement mSelectAll;
-
     /**
     * A prepared statement for getting one row from the database
     */
     private PreparedStatement mSelectOne;
-
     /**
     * A prepared statement for deleting a row from the database
     */
     private PreparedStatement mDeleteOne;
-
     /**
     * A prepared statement for inserting into the database
     */
     private PreparedStatement mInsertOne;
-
     /**
     * A prepared statement for updating a single row in the database
     */
     private PreparedStatement mUpdateOne;
-
     /**
-    * A prepared statement for creating the table in our database
+    * A prepared statement for creating the table (tbldata) in our database
     */
     private PreparedStatement mCreateTable;
-
     /**
-    * A prepared statement for dropping the table in our database
+    * A prepared statement for dropping the table (tbldata) in our database
     */
     private PreparedStatement mDropTable;
-
     /**
-     * A prepared statement for listing the table in our database
+     * A prepared statement for listing the table (tbldata) in our database
      */
     private PreparedStatement mShowTable;
-
     /**
-     * A prepared statement for creating the Users table in our database
+     * A prepared statement for creating the user table (userdata) in our database
      */
     private PreparedStatement mCreateUsers;
-
     /**
-     * A prepared statement for dropping the Users table in our database
+     * A prepared statement for dropping the users table (userdata) in our database
      */
     private PreparedStatement mDropUsers;
-
     /**
-     * A prepared statement for insert a new user into UserData
+     * A prepared statement for insert a new user into userdata
      */
     private PreparedStatement mInsertUser;
-
     /**
-     * A prepared statement for update user profile in UserData
+     * A prepared statement for deleting a row from userdata
+     */
+    private PreparedStatement mDeleteUser;
+    /**
+     * A prepared statement for update user nickname in userdata
      */
     private PreparedStatement mUpdateNickname;
-
     /**
      * A prepared statement for getting all data in the database
      */
     private PreparedStatement mSelectAllUser;
-
-    /**
-     * A prepared statement for deleting a row from UserData
-     */
-    private PreparedStatement mDeleteUser;
-
     /**
      * A prepared statement for getting all data by given user_id in the database
      */
     private PreparedStatement mSelectAllByUser;
-
     /**
      * A prepared statement for deleting a row with user_id
      */
     private PreparedStatement mDeleteOneByUser;
-
     /**
      * A prepared statement for updating a 'like' vote
      */
     private PreparedStatement mUpdateLike;
-
     /**
      * A prepared statement for updating a serial user_id
      */
     private PreparedStatement mUpdateUser;
-
     /**
      * boolean for our database membership test
      */
@@ -113,52 +99,53 @@ public class Database {
 
 
     public static class RowData {
-    /**
-    * The ID of this row of the database
-    */
-    int mId;
-    /**
-    * The subject stored in this row
-    */
-    String mSubject;
-    /**
-    * The message stored in this row
-    */
-    String mMessage;
-
-    /**
-    * The vote
-    */
-    int mLikes;
-
-
-    /**
-    * user_id in UserData
-    */
-    int mUserId;
+        /**
+        * The ID of this row of the database
+        */
+        int mId;
+        /**
+        * The subject stored in this row
+        */
+        String mSubject;
+        /**
+        * The message stored in this row
+        */
+        String mMessage;
+        /**
+        * The vote
+        */
+        int mLikes;
+        /**
+        * user_id in UserData
+        */
+        int mUserId;
 
 
-    // able to set these value from UserData
-    String mEmail;
-    String mNickname;
+        /**
+         * able to set these value from UserData
+        */
+        String mEmail;
+        String mNickname;
 
-    public void setEmail(String email) {
-        mEmail = email;
-    }
-    public void setNickname(String nickname) {
-        mNickname = nickname;
-    }
-    /**
-    * Construct a RowData object by providing values for its fields
-    */
-    public RowData(int id, String subject, String message, int likes, int user_id) {
-        mId = id;
-        mSubject = subject;
-        mMessage = message;
-        mLikes = likes;
-        mUserId = user_id;
+        public void setEmail(String email) {
+            mEmail = email;
+        }
+        public void setNickname(String nickname) {
+            mNickname = nickname;
+        }
+
+        /**
+        * Construct a RowData object by providing values for its fields
+        */
+        public RowData(int id, String subject, String message, int likes, int user_id) {
+            mId = id;
+            mSubject = subject;
+            mMessage = message;
+            mLikes = likes;
+            mUserId = user_id;
         }
     }
+
     public static class UserData {
         /**
          * The ID of this row of UserData
@@ -237,7 +224,6 @@ public class Database {
         return db;
     }
 
-
     static Database getDatabaseFromUri(String Uri) {
         // Create an un-configured Database object
         Database db = new Database();
@@ -267,22 +253,19 @@ public class Database {
             return null;
         }
         setPrepareStatement(db);
-    return db;
+        return db;
     }
 
     static void setPrepareStatement(Database db) {
-        // Attempt to create all of our prepared statements.  If any of these
-        // fail, the whole getDatabase() call should fail
+        /**
+         * Attempt to create all of our prepared statements. If any of thes fail, the whole getDatabase() call should fail
+        */
         try {
-            // Note: no "IF NOT EXISTS" or "IF EXISTS" checks on table
-            // creation/deletion, so multiple executions will cause an exception
+            // 1. operations associated with tbldata table
             db.mCreateTable = db.mConnection.prepareStatement(
-                    "CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) NOT NULL, "
-                            + "message VARCHAR(500) NOT NULL, likes INTEGER NOT NULL, " +
-                            "user_id INTEGER REFERENCES UserData(id) ON DELETE SET NULL)");
+                "CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) NOT NULL, " + "message VARCHAR(500) NOT NULL, likes INTEGER NOT NULL, " +
+                "user_id INTEGER REFERENCES UserData(id) ON DELETE SET NULL)");
             db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData");
-            db.mDropUsers = db.mConnection.prepareStatement("DROP TABLE UserData");
-
             // Standard CRUD operations
             db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
             db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?, ?)");
@@ -290,28 +273,38 @@ public class Database {
             db.mSelectOne = db.mConnection.prepareStatement("SELECT * from tblData WHERE id=?");
             db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
 
-            // list tables
-            db.mShowTable = db.mConnection.prepareStatement("SELECT * FROM pg_catalog.pg_tables " +
-                                                                 "WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema' ");
-            // operations regarding to user database
+            // 2. operations associated with user table
             db.mCreateUsers = db.mConnection.prepareStatement(
-                    "CREATE TABLE UserData (id SERIAL PRIMARY KEY, email VARCHAR(50) "
-                            + "NOT NULL, nickname VARCHAR(50) NOT NULL)");
+                "CREATE TABLE UserData (id SERIAL PRIMARY KEY, email VARCHAR(50) " + "NOT NULL, nickname VARCHAR(50) NOT NULL)");
+            db.mDropUsers = db.mConnection.prepareStatement("DROP TABLE UserData");
             db.mInsertUser = db.mConnection.prepareStatement("INSERT INTO UserData VALUES (default, ?, ?)");
             db.mUpdateNickname = db.mConnection.prepareStatement("UPDATE UserData SET nickname = ? WHERE id = ?");
             db.mSelectAllUser = db.mConnection.prepareStatement("SELECT id, email, nickname FROM UserData");
 
-            // operations regarding to JOIN between tblData & UserData
-            db.mUpdateUser = db.mConnection.prepareStatement("UPDATE tblData SET user_id = ? WHERE id = ?");
-            db.mDeleteUser = db.mConnection.prepareStatement("DELETE FROM UserData WHERE id = ?");
-            db.mSelectAllByUser = db.mConnection.prepareStatement("SELECT tblData.id, subject, message, nickname FROM tblData " +
-                    "INNER JOIN UserData ON tblData.user_id = UserData.id WHERE email = ?");
-            db.mDeleteOneByUser = db.mConnection.prepareStatement("DELETE FROM tblData USING UserData " +
-                    "WHERE tblData.user_id = UserData.id AND email = ?");
+             // 3. operations associated with JOIN between tbldata & userdata
+             db.mUpdateUser = db.mConnection.prepareStatement("UPDATE tblData SET user_id = ? WHERE id = ?");
+             db.mDeleteUser = db.mConnection.prepareStatement("DELETE FROM UserData WHERE id = ?");
+             db.mSelectAllByUser = db.mConnection.prepareStatement("SELECT tblData.id, subject, message, nickname FROM tblData " + 
+                 "INNER JOIN UserData ON tblData.user_id = UserData.id WHERE email = ?");
+             db.mDeleteOneByUser = db.mConnection.prepareStatement("DELETE FROM tblData USING UserData " + "WHERE tblData.user_id = UserData.id AND email = ?");
 
-            // operations regarding to like
+            // 4. list all tables
+            db.mShowTable = db.mConnection.prepareStatement("SELECT * FROM pg_catalog.pg_tables " + "WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema' ");
+            
+            // 5. operations associated with like
             db.mUpdateLike = db.mConnection.prepareStatement("UPDATE tblData SET likes = ? WHERE id = ?");
 
+
+
+            /*CREATE TABLE likes (
+	            user_id INTEGER NOT NULL, 
+	            message_id INTEGER NOT NULL,
+	            PRIMARY KEY (user_id, message_id), 
+	            FOREIGN KEY (user_id) REFERENCES userdata(id) ON DELETE CASCADE,
+	            FOREIGN KEY (message_id) REFERENCES tbldata(id) ON DELETE CASCADE
+            );*/
+
+            
         } catch (SQLException e) {
             System.err.println("Error creating prepared statement");
             e.printStackTrace();
@@ -386,7 +379,6 @@ public class Database {
         return count;
     }
 
-
     /**
      * Query the database for a list of all subjects and their IDs
      *
@@ -454,7 +446,6 @@ public class Database {
         }
     }
 
-
     /**
      * Get all data for a specific row, by ID
      *
@@ -499,7 +490,6 @@ public class Database {
             return null;
         }
     }
-
 
     /**
      * Delete a row by ID
@@ -634,7 +624,6 @@ public class Database {
         }
         return res;
     }
-
 
     /**
      * Create tblData.  If it already exists, this will print an error
