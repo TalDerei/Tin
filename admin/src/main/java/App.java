@@ -16,8 +16,12 @@ public class App {
      */
     static void menu() {
         System.out.println("Main Menu");
-        System.out.println("  [T] Create tblData");
-        System.out.println("  [D] Drop tblData");
+        System.out.println("  [T] Create tbldata table");
+        System.out.println("  [Z] Create userdata table");
+        System.out.println("  [X] Create likes table");
+        System.out.println("  [D] Drop tbldata table");
+        System.out.println("  [Y] Drop userdata table");
+        System.out.println("  [J] Drop likes table");
         System.out.println("  [A] Query for all tables");
         System.out.println("  [a] Query for all Users");
         System.out.println("  [1] Query for row from tblData by id");
@@ -45,7 +49,7 @@ public class App {
      */
     static char prompt(BufferedReader in) {
         // The valid actions:
-        String actions = "TDAa1*s-md+i~ulnq?";
+        String actions = "TDAZXYJa1*s-md+i~ulnq?";
 
         // We repeat until a valid single-character option is selected
         while (true) {
@@ -142,11 +146,17 @@ public class App {
             } else if (action == 'q') {
                 break;
             } else if (action == 'T') {
-                db.createUser();
                 db.createTable();
+            } else if (action == 'Z') {
+                db.createUser();
+            } else if (action == 'X') {
+                db.createLikes();
             } else if (action == 'D') {
                 db.dropTable();
+            } else if (action == 'Y') {
                 db.dropUser();
+            } else if (action == 'J') {
+                db.dropLikes();
             } else if (action == 'A') {
                 ArrayList<Database.Table> table = db.showTable();
                 if (table == null)

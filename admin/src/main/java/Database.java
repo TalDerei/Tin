@@ -86,12 +86,20 @@ public class Database {
     private PreparedStatement mDeleteOneByUser;
     /**
      * A prepared statement for updating a 'like' vote
-     */
+     */;
     private PreparedStatement mUpdateLike;
     /**
      * A prepared statement for updating a serial user_id
      */
     private PreparedStatement mUpdateUser;
+    /**
+     * A prepared statement for creating likes table
+     */
+    private PreparedStatement mCreateLikes;
+    /**
+     * A prepared statement for dropping likes table
+     */
+    private PreparedStatement mDropLikes;
     /**
      * boolean for our database membership test
      */
@@ -258,53 +266,49 @@ public class Database {
 
     static void setPrepareStatement(Database db) {
         /**
-         * Attempt to create all of our prepared statements. If any of thes fail, the whole getDatabase() call should fail
+         * Attempt to create all of our prepared statements (CRUD OPERATIONS). If any of thes fail, the whole getDatabase() call should fail
         */
         try {
-            // 1. operations associated with tbldata table
+            // 1. prepared statements associated with tbldata table
             db.mCreateTable = db.mConnection.prepareStatement(
                 "CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) NOT NULL, " + "message VARCHAR(500) NOT NULL, likes INTEGER NOT NULL, " +
                 "user_id INTEGER REFERENCES UserData(id) ON DELETE SET NULL)");
             db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData");
-            // Standard CRUD operations
             db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
             db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?, ?)");
             db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject FROM tblData");
             db.mSelectOne = db.mConnection.prepareStatement("SELECT * from tblData WHERE id=?");
             db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
 
-            // 2. operations associated with user table
-            db.mCreateUsers = db.mConnection.prepareStatement(
-                "CREATE TABLE UserData (id SERIAL PRIMARY KEY, email VARCHAR(50) " + "NOT NULL, nickname VARCHAR(50) NOT NULL)");
+            // 2. prepared statements associated with user table
+            db.mCreateUsers = db.mConnection.prepareStatement("CREATE TABLE UserData (id SERIAL PRIMARY KEY, email VARCHAR(50) NOT NULL, nickname VARCHAR(50) NOT NULL)");
             db.mDropUsers = db.mConnection.prepareStatement("DROP TABLE UserData");
+            db.mDeleteUser = db.mConnection.prepareStatement("DELETE FROM UserData WHERE id = ?");
+            db.mUpdateUser = db.mConnection.prepareStatement("UPDATE tblData SET user_id = ? WHERE id = ?");
             db.mInsertUser = db.mConnection.prepareStatement("INSERT INTO UserData VALUES (default, ?, ?)");
             db.mUpdateNickname = db.mConnection.prepareStatement("UPDATE UserData SET nickname = ? WHERE id = ?");
             db.mSelectAllUser = db.mConnection.prepareStatement("SELECT id, email, nickname FROM UserData");
 
-             // 3. operations associated with JOIN between tbldata & userdata
-             db.mUpdateUser = db.mConnection.prepareStatement("UPDATE tblData SET user_id = ? WHERE id = ?");
-             db.mDeleteUser = db.mConnection.prepareStatement("DELETE FROM UserData WHERE id = ?");
+            // 3. prepared statements associated with likes table
+            db.mCreateLikes = db.mConnection.prepareStatement("CREATE TABLE likes (user_id INTEGER NOT NULL, message_id INTEGER NOT NULL, " +
+                "PRIMARY KEY (user_id, message_id), FOREIGN KEY (user_id) REFERENCES UserData(id) ON DELETE CASCADE, " +
+                "FOREIGN KEY (message_id) REFERENCES tblData(id) ON DELETE CASCADE)");
+            db.mDropLikes = db.mConnection.prepareStatement("DROP TABLE likes");
+            
+             // 4. prepared statements associated with JOIN between tbldata & userdata
              db.mSelectAllByUser = db.mConnection.prepareStatement("SELECT tblData.id, subject, message, nickname FROM tblData " + 
                  "INNER JOIN UserData ON tblData.user_id = UserData.id WHERE email = ?");
              db.mDeleteOneByUser = db.mConnection.prepareStatement("DELETE FROM tblData USING UserData " + "WHERE tblData.user_id = UserData.id AND email = ?");
 
-            // 4. list all tables
+            // 5. prepared statement to list all tables
             db.mShowTable = db.mConnection.prepareStatement("SELECT * FROM pg_catalog.pg_tables " + "WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema' ");
             
-            // 5. operations associated with like
+            // 6. prepared statement associated with likes field 
             db.mUpdateLike = db.mConnection.prepareStatement("UPDATE tblData SET likes = ? WHERE id = ?");
-
-
-
-            /*CREATE TABLE likes (
-	            user_id INTEGER NOT NULL, 
-	            message_id INTEGER NOT NULL,
-	            PRIMARY KEY (user_id, message_id), 
-	            FOREIGN KEY (user_id) REFERENCES userdata(id) ON DELETE CASCADE,
-	            FOREIGN KEY (message_id) REFERENCES tbldata(id) ON DELETE CASCADE
-            );*/
-
-            
+ 
+        /**
+         * catch SQL exception, print stack trace, and close database connection if error is thrown
+         */
         } catch (SQLException e) {
             System.err.println("Error creating prepared statement");
             e.printStackTrace();
@@ -626,11 +630,11 @@ public class Database {
     }
 
     /**
-     * Create tblData.  If it already exists, this will print an error
+     * Create tblData.  If it already exists, this will print an error.
      */
     void createTable() {
         try {
-            System.out.println("Create table...");
+            System.out.println("Create Table...");
             mCreateTable.execute();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -638,11 +642,11 @@ public class Database {
     }
 
     /**
-     * Create UserData.  If it already exists, this will print an error
+     * Create UserData.  If it already exists, this will print an error.
      */
     void createUser() {
         try {
-            System.out.println("Create Users table...");
+            System.out.println("Create Users Table...");
             mCreateUsers.execute();
             mHasUserData = true;
         } catch (SQLException e) {
@@ -651,12 +655,11 @@ public class Database {
     }
 
     /**
-     * Remove tblData from the database.  If it does not exist, this will print
-     * an error.
+     * Remove tblData from the database.  If it does not exist, this will print an error.
      */
     void dropTable() {
         try {
-            System.out.println("Delete table...");
+            System.out.println("Delete Table...");
             mDropTable.execute();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -664,14 +667,39 @@ public class Database {
     }
 
     /**
-     * Remove UserData from the database.  If it does not exist, this will print
-     * an error.
+     * Remove UserData from the database.  If it does not exist, this will print an error.
      */
     void dropUser() {
         try {
-            System.out.println("Delete Users table...");
+            System.out.println("Delete Users Table...");
             mDropUsers.execute();
             mHasUserData = false;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Create likes table.  If it already exists, this will print an error.
+     */
+    void createLikes() {
+        try {
+            System.out.println("Create Likes Table...");
+            mCreateLikes.execute();
+            mHasUserData = true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Remove likes table from the database. If it does not exist, this will print an error.
+     */
+    void dropLikes() {
+        try {
+            System.out.println("Delete Likes Table...");
+            mDropLikes.execute();
+            mHasUserData = true;
         } catch (SQLException e) {
             e.printStackTrace();
         }
