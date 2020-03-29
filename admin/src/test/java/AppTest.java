@@ -33,7 +33,7 @@ public class AppTest extends TestCase {
          * test for Database connection
          */
         Properties prop = new Properties();
-        String config = "config.properties"; // a remote database on heroku for unit testing
+        String config = "backend.properties"; // a remote database on heroku for unit testing
         try {
             InputStream input = App.class.getClassLoader().getResourceAsStream(config);
             prop.load(input);
@@ -52,7 +52,7 @@ public class AppTest extends TestCase {
         assertTrue(table.size() == 1);
         assertTrue(table.get(0).mSchema.equals("public"));
         assertTrue(table.get(0).mName.equals("userdata"));
-        assertTrue(table.get(0).mOwner.equals("jriwkmrrgglzdu"));
+        assertTrue(table.get(0).mOwner.equals("azexrkxulzlqss"));
 
         /**
          * test for Creating RowData table in Database
@@ -62,7 +62,7 @@ public class AppTest extends TestCase {
         assertTrue(table.size() == 2);
         assertTrue(table.get(1).mSchema.equals("public"));
         assertTrue(table.get(1).mName.equals("tbldata"));
-        assertTrue(table.get(1).mOwner.equals("jriwkmrrgglzdu"));
+        assertTrue(table.get(1).mOwner.equals("azexrkxulzlqss"));
 
         /**
          * test for inserting a message
