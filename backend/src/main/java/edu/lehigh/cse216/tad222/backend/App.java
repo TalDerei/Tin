@@ -3,20 +3,32 @@ package edu.lehigh.cse216.tad222.backend;
 // Import the Spark package, so that we can make use of the "get" function to 
 // create an HTTP GET route
 import spark.Spark;
+import spark.embeddedserver.jetty.EmbeddedJettyServer;
+import spark.embeddedserver.jetty.JettyServerFactory;
 
+import com.fasterxml.jackson.databind.util.JSONPObject;
+import com.google.common.collect.ImmutableMap;
 //Import Google's JSON library
 import com.google.gson.*;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.client.extensions.appengine.http.UrlFetchTransport;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -24,17 +36,30 @@ import java.util.*;
  */
 public class App {
 
-    private static Server server;
+    private static Database db;
 
     public static void main(String[] args) {
 
         // Get the port on which to listen for requests
         Spark.port(getIntFromEnv("PORT", 4567));
+
+        //create a modified version of Spark's embedded Jetty server
+        JettyServerFactory jf = new JettyServerFactory(){
+            @Override
+            public Server create(int maxThreads, int minThreads, int threadTimeoutMillis) {
+                Server s = new Server(getIntFromEnv("PORT", 4567));
+                return s;
+            }
+        };
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath(Util.SITE);
+        context.addServlet(new ServletHolder(new AuthCodeServlet()), "/users/login");        
+        context.addServlet(new ServletHolder(new AuthCodeCallbackServlet()), "/users/login/callback");
         
-        server = new Server(getIntFromEnv("PORT", 4567));
+        EmbeddedJettyServer server = new EmbeddedJettyServer(jf, context);
 
         // Database URL
-        Map<String, String> env = System.getenv();;
+        Map<String, String> env = System.getenv();
         String db_url = env.get("DATABASE_URL");   
         System.out.println("database is: " + db_url);    
         
@@ -49,28 +74,14 @@ public class App {
         String db_url = prop.getProperty("DATABASE_URL");*/
 
         //String db_url = "postgres://azexrkxulzlqss:b12fcddc21a71c8cc0b04de34d8ab4bc99a726bdb0b2e455b63865e0cdbb3442@ec2-3-234-109-123.compute-1.amazonaws.com:5432/d9aki869as2d5b";
-        String cors_enabled = env.get("CORS_ENABLED");
-        //String cors_enabled = "True";
+        //String cors_enabled = env.get("CORS_ENABLED");
+        String cors_enabled = "TRUE";
         if (cors_enabled.equals("TRUE")) { 
             final String acceptCrossOriginRequestsFrom = "*";
             final String acceptedCrossOriginRoutes = "GET,PUT,POST,DELETE,OPTIONS";
             final String supportedRequestHeaders = "Content-Type,Authorization,X-Requested-With,Content-Length,Accept,Origin";
             enableCORS(acceptCrossOriginRequestsFrom, acceptedCrossOriginRoutes, supportedRequestHeaders);
-        }
-
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/");
-        server.setHandler(context);
-        
-        context.addServlet(new ServletHolder(new AuthCodeServlet()),"/users/login");        
-        context.addServlet(new ServletHolder(new AuthCodeCallbackServlet()),"/users/login/callback");        
-        
-        try {
-            server.start();
-            server.join();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        }       
 
         // gson provides us with a way to turn JSON into objects, and objects
         // into JSON.
@@ -81,7 +92,7 @@ public class App {
         // https://stackoverflow.com/questions/10380835/is-it-ok-to-use-gson-instance-as-a-static-field-in-a-model-bean-reuse
         final Gson gson = new Gson();
 
-        Database db =  Database.getDatabase(db_url); //remote Postgres database object
+        db = Database.getDatabase(db_url); //remote Postgres database object
 
         System.out.println(db_url);
         // dataStore holds all of the data that has been provided via HTTP 
@@ -97,6 +108,11 @@ public class App {
             res.redirect("/index.html");
             return "";
         });*/
+
+        Spark.get("/", (request, response) -> {
+            response.redirect("/messages");
+            return "Redirect to /messages";
+        });
 
         // GET route that returns all message titles and Ids.  All we do is get s
         // the data, embed it in a StructuredResponse, turn it into JSON, and 
@@ -230,22 +246,62 @@ public class App {
             }
         });
 
-        Spark.put("/users/login", (request, response) -> {
+        Spark.post("/users/login", (request, response) -> {
             response.status(200);
             response.type("application/json");
-            return gson.toString();
+            StringBuilder oauthUrl = new StringBuilder().append("https://accounts.google.com/o/oauth2/auth")
+                .append("?client_id=").append(request.params("client_id")) // the client id from the api console
+                                                                           // registration
+                .append("&idToken=" + request.params("idToken"))
+                .append("&response_type=code").append("&scope=openid%profile") // scope is the api permissions we are
+                                                                               // requesting
+                .append("&redirect_uri=" + Util.SITE + "/users/login/callback") // the servlet that google redirects to after
+                                                               // authorization
+                //.append("&state=this_can_be_anything_to_help_correlate_the_response%3Dlike_session_id")
+                .append("&access_type=offline") // here we are asking to access to user's data while they are not signed
+                                                // in
+                .append("&approval_prompt=force"); // this requires them to verify which account to use, if they are
+                                                   // already signed in
+            response.redirect(oauthUrl.toString());
+            return "temp";
         });
 
-        Spark.get("/users/login/callback", (request, response) -> {
+        Spark.get("/users/login", (request, response) -> {
+            response.type("application/json");
+            return "hello world";
+        });
+
+        //callback for login route
+        Spark.post("/users/login/callback", (request, response) -> {
             response.status(200);
             response.type("application/json");
-            String name = request.params("name");
+            if(request.params("error") != null) {
+                return gson.toJson(new StructuredResponse("error", "User had invalid credentials", null));
+            }
+
+            String code = request.params("code");
+            // get the access token by post to Google
+            String body = post("https://accounts.google.com/o/oauth2/token", ImmutableMap.<String,String>builder()
+            .put("code", code)
+            .put("client_id", Util.getClientId())
+            .put("client_secret", Util.getClientSecret())
+            .put("redirect_uri", Util.SITE + "/users/login/callback")
+            .put("grant_type", "authorization_code").build());
+    
+            // get the access token from json and request info from Google
+            JsonObject jsonObject = gson.fromJson(body, JsonObject.class);
+                
+            // google tokens expire after an hour, but since we requested offline access we can get a new token without user involvement via the refresh token
+            String accessToken = jsonObject.get("access_token").getAsString();
+            JsonObject json = gson.fromJson((new StringBuilder("https://www.googleapis.com/oauth2/v1/userinfo?access_token=").append(accessToken).toString()), JsonObject.class);
+            String name = json.get("name").getAsString();
             String cid = request.params("client_id");
-            String secret = request.params("client_secret");
-            if(db.setUserActive(name, cid, secret)) {
+            String uid = json.get("id").getAsString();
+            
+            if(db.setUserActive(name, cid, uid)) {
                 return gson.toJson(new StructuredResponse("ok", "User " + name + " was logged in", cid));
             } else {
-                return gson.toJson(new StructuredResponse("error", "User " + name + " had invalid credentials", null));
+                return gson.toJson(new StructuredResponse("error", "User " + name + " was already logged in", null));
             }
         });
 
@@ -271,7 +327,7 @@ public class App {
             } else {
                 System.out.println("db is NOT null");
             }
-            return gson.toJson(new StructuredResponse("ok", null, db.activeUsers));
+            return gson.toJson(new StructuredResponse("ok", null, db.selectAllActiveUsers()));
         });
     }
     /**
@@ -334,49 +390,41 @@ public class App {
         });
     }
 
-    static boolean verifyToken() {
-        String webClientid = "98587864938-kjbvh78jj6ln49k0j2s8poc8ehng9cqm.apps.googleusercontent.com";
-        String databaseClientid = "98587864938-4nvcilp8lmt601orgs9eg9rgtk5gsen3.apps.googleusercontent.com";
-        String androidClientid = "";
-        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
-            new UrlFetchTransport() , new JacksonFactory())
-        // Specify the CLIENT_ID of the app that accesses the backend:
-        //.setAudience(Collections.singletonList(CLIENT_ID))
-        // Or, if multiple clients access the backend:
-        .setAudience(Arrays.asList(webClientid, databaseClientid, androidClientid))
-        .build();
+    static Database getDatabase() {
+        return db;
+    }
 
-        // (Receive idTokenString by HTTPS POST)
-        String idTokenString = "";
-        GoogleIdToken idToken = null;
-        try {
-            idToken = verifier.verify(idTokenString);
-        } catch (Exception e) {
-            e.printStackTrace();
+    public static String post(String url, Map<String,String> formParameters) throws ClientProtocolException, IOException { 
+        HttpPost request = new HttpPost(url);
+          
+        List <NameValuePair> nvps = new ArrayList <NameValuePair>();
+         
+        for (String key : formParameters.keySet()) {
+         nvps.add(new BasicNameValuePair(key, formParameters.get(key))); 
         }
-        if (idToken != null) {
-            Payload payload = idToken.getPayload();
-    
-            // Print user identifier
-            String userId = payload.getSubject();
-            System.out.println("User ID: " + userId);
-    
-            // Get profile information from payload
-            //String email = payload.getEmail();
-            boolean emailVerified = Boolean.valueOf(payload.getEmailVerified());
-            String name = (String) payload.get("name");
-            //String pictureUrl = (String) payload.get("picture");
-            String locale = (String) payload.get("locale");
-            //String familyName = (String) payload.get("family_name");
-            //String givenName = (String) payload.get("given_name");
-    
-            // Use or store profile information
-            // ...
+       
+        request.setEntity(new UrlEncodedFormEntity(nvps));
+         
+        return execute(request);
+    }
 
-        } else {
-            System.out.println("Invalid ID token.");
+     // makes a GET request to url and returns body as a string
+    public static String get(String url) throws ClientProtocolException, IOException {
+        return execute(new HttpGet(url));
+    }
+
+       // makes request and checks response code for 200
+    private static String execute(HttpRequestBase request) throws ClientProtocolException, IOException {
+        HttpClient httpClient = HttpClients.createDefault();
+        HttpResponse response = httpClient.execute(request);
+            
+        HttpEntity entity = response.getEntity();
+        String body = EntityUtils.toString(entity);
+    
+        if (response.getStatusLine().getStatusCode() != 200) {
+            throw new RuntimeException("Expected 200 but got " + response.getStatusLine().getStatusCode() + ", with body " + body);
         }
-
-        return false;
+        
+        return body;
     }
 }

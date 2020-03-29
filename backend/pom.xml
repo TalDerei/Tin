@@ -66,8 +66,18 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-server</artifactId>
+      <version>9.4.27.v20200227</version>
+     </dependency>
+     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlet</artifactId>
-      <version>8.1.8.v20121106</version>
+      <version>9.4.27.v20200227</version>
+     </dependency>
+     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+      <version>9.4.27.v20200227</version>
      </dependency>
   </dependencies>
   <build>

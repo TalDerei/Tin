@@ -14,6 +14,8 @@ import com.google.api.client.auth.oauth2.ClientParametersAuthentication;
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.auth.oauth2.StoredCredential;
 import com.google.api.client.extensions.servlet.auth.oauth2.AbstractAuthorizationCodeCallbackServlet;
+import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
+import com.google.api.client.googleapis.auth.oauth2.OAuth2Utils;
 import com.google.api.client.http.GenericUrl;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -24,12 +26,15 @@ public class AuthCodeCallbackServlet extends AbstractAuthorizationCodeCallbackSe
     /**
      *
      */
-    private static final long serialVersionUID = -2663253438853631359L;
+    private static final long serialVersionUID = -2663253438853631359L; 
 
     @Override
     protected void onSuccess(HttpServletRequest req, HttpServletResponse resp, Credential credential)
             throws ServletException, IOException {
-        credential.getAccessToken();
+        
+        // req.getSession().setAttribute("access_token", accessToken);
+        
+        //.App.getDatabase().setUserActive(response.get, uid, secret);
         resp.sendRedirect(Util.SITE + "/messages");
     }
 

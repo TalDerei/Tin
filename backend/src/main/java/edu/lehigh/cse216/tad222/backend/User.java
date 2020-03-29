@@ -3,17 +3,21 @@ package edu.lehigh.cse216.tad222.backend;
 public class User {
 
     private String name;
+    private String clientID;
     private String userID;
-    private String secret;
 
-    public User(String name, String uid, String secret) {
+    public User(String name, String cid, String userID) {
         this.name = name;
-        userID = uid;
-        this.secret = secret;
+        clientID = cid;
+        this.userID = userID;
     }
 
     public String getName() {
         return name;
+    }
+
+    public String getClientID() {
+        return clientID;
     }
 
     public String getUserID() {

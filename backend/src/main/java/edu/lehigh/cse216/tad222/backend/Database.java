@@ -426,5 +426,16 @@ public class Database {
     boolean setUserActive(User u) {
         return activeUsers.add(u);
     }
+    /**
+     * Return a list of all active users
+     * @return
+     */
+    ArrayList<String> selectAllActiveUsers() {
+        ArrayList<String> res = new ArrayList<String>();
+        for(User u: activeUsers){
+            res.add(u.getName());
+        }
+        return res;
+    }
 }
 
