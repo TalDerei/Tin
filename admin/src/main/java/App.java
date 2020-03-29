@@ -22,6 +22,8 @@ public class App {
         System.out.println("  [D] Drop tbldata table");
         System.out.println("  [Y] Drop userdata table");
         System.out.println("  [J] Drop likes table");
+        System.out.println("  [P] delete likes row");
+        System.out.println("  [Q] insert likes row");
         System.out.println("  [A] Query for all tables");
         System.out.println("  [a] Query for all Users");
         System.out.println("  [1] Query for row from tblData by id");
@@ -49,7 +51,7 @@ public class App {
      */
     static char prompt(BufferedReader in) {
         // The valid actions:
-        String actions = "TDAZXYJa1*s-md+i~ulnq?";
+        String actions = "TDAZXYJPQa1*s-md+i~ulnq?";
 
         // We repeat until a valid single-character option is selected
         while (true) {
@@ -177,6 +179,12 @@ public class App {
                     System.out.println("--> [#likes] " + res.mLikes);
                     System.out.println("--> [userID] " + res.mUserId);
                 }
+            } else if (action == 'Q') {
+                int userID = getInt(in, "enter the userID");
+                int messageID = getInt(in, "enter the messsageID");
+                int likes = 0;
+                int res = db.insertOneLike(userID, messageID);
+                System.out.println(res + " rows added");
             } else if (action == '*') {
                 ArrayList<Database.RowData> res = db.selectAll();
                 if (res == null)
@@ -194,6 +202,16 @@ public class App {
                 if (res == -1)
                     continue;
                 System.out.println("  " + res + " rows deleted");
+            } else if (action == 'P') {
+                int id = getInt(in, "Enter the row ID");
+                if (id == -1) {
+                    continue;
+                }
+                int res = db.deleteLike(id);
+                if (res == -1) {
+                    continue;
+                }
+                System.out.println(" " + res + " rows deleted");
             } else if (action == '+') {
                 String subject = getString(in, "Enter the subject");
                 String message = getString(in, "Enter the message");
@@ -201,6 +219,12 @@ public class App {
                 if (subject.equals("") || message.equals(""))
                     continue;
                 int res = db.insertRow(subject, message);
+                System.out.println(res + " rows added");
+            } else if (action == 'Q') {
+                int userID = getInt(in, "enter the userID");
+                int messageID = getInt(in, "enter the messsageID");
+                int likes = 0;
+                int res = db.insertOneLike(userID, messageID);
                 System.out.println(res + " rows added");
             } else if (action == '~') {
                 int id = getInt(in, "Enter the row ID :> ");

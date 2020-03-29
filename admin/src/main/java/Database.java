@@ -101,7 +101,16 @@ public class Database {
      */
     private PreparedStatement mDropLikes;
     /**
-     * boolean for our database membership test
+     * A prepared statement for deleting likes row
+     */
+    private PreparedStatement mDeleteLike;
+    /**
+     * A prepared statement for inserting like row
+     */
+    private PreparedStatement mInsertOneLike;
+    /**
+     * boolean for our database membership test: 
+     * if mHasUserData == true, then drop UserData table first before dropping tblData
      */
     private boolean mHasUserData = false;
 
@@ -128,9 +137,8 @@ public class Database {
         */
         int mUserId;
 
-
         /**
-         * able to set these value from UserData
+        * able to set these value from UserData
         */
         String mEmail;
         String mNickname;
@@ -175,6 +183,30 @@ public class Database {
             mId = id;
             mEmail = email;
             mNickname = nickname;
+        }
+    }
+
+    public static class Likes {
+        /**
+         * userID in likes table
+        */
+        int mUserID;
+        /**
+         * messageID in likes table
+         */
+        int mMessageID;
+        /**
+         * likes field in likes tbale
+         */
+        int mLikes;
+
+        /**
+         * Construct a likes object by providing values for its fields
+         */
+        public void likes(int userID, int messageID, int likes) {
+            mUserID = userID;
+            mMessageID = messageID;
+            mLikes = likes;
         }
     }
 
@@ -275,9 +307,9 @@ public class Database {
                 "user_id INTEGER REFERENCES UserData(id) ON DELETE SET NULL)");
             db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData");
             db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
-            db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?, ?)");
             db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject FROM tblData");
-            db.mSelectOne = db.mConnection.prepareStatement("SELECT * from tblData WHERE id=?");
+            db.mSelectOne = db.mConnection.prepareStatement("SELECT * FROM tblData WHERE id = ?");
+            db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?, ?)");
             db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
 
             // 2. prepared statements associated with user table
@@ -290,21 +322,32 @@ public class Database {
             db.mSelectAllUser = db.mConnection.prepareStatement("SELECT id, email, nickname FROM UserData");
 
             // 3. prepared statements associated with likes table
-            db.mCreateLikes = db.mConnection.prepareStatement("CREATE TABLE likes (user_id INTEGER NOT NULL, message_id INTEGER NOT NULL, " +
+            db.mCreateLikes = db.mConnection.prepareStatement("CREATE TABLE likes (user_id INTEGER NOT NULL, message_id INTEGER NOT NULL, likes INTEGER NOT NULL, " +
                 "PRIMARY KEY (user_id, message_id), FOREIGN KEY (user_id) REFERENCES UserData(id) ON DELETE CASCADE, " +
                 "FOREIGN KEY (message_id) REFERENCES tblData(id) ON DELETE CASCADE)");
             db.mDropLikes = db.mConnection.prepareStatement("DROP TABLE likes");
+            db.mDeleteLike = db.mConnection.prepareStatement("DELETE FROM likes WHERE id = ?");
+            db.mInsertOneLike = db.mConnection.prepareStatement("INSERT INTO likes VALUES (?, ?, ?)");
+            // db.mUpdateOneLike = db.mConnection.prepareStatement("UPDATE likes SET likes = ? WHERE id = ?");
             
-             // 4. prepared statements associated with JOIN between tbldata & userdata
-             db.mSelectAllByUser = db.mConnection.prepareStatement("SELECT tblData.id, subject, message, nickname FROM tblData " + 
-                 "INNER JOIN UserData ON tblData.user_id = UserData.id WHERE email = ?");
-             db.mDeleteOneByUser = db.mConnection.prepareStatement("DELETE FROM tblData USING UserData " + "WHERE tblData.user_id = UserData.id AND email = ?");
+            // 4. prepared statements associated with JOIN between tbldata & userdata
+            db.mSelectAllByUser = db.mConnection.prepareStatement("SELECT tblData.id, subject, message, nickname FROM tblData " + 
+                "INNER JOIN UserData ON tblData.user_id = UserData.id WHERE email = ?");
+            db.mDeleteOneByUser = db.mConnection.prepareStatement("DELETE FROM tblData USING UserData " + "WHERE tblData.user_id = UserData.id AND email = ?");
+            // list of all of the posts, including the email address of the user who made each post
+            // db.mPosts = db.mConnection.prepareStatement("SELECT tbldata.id, tbldata.subject, tbldata.message, userdata.email FROM tbldata " +
+            //    "LEFT JOIN userdata ON tbldata.user_id = userdata.id;"); 
 
             // 5. prepared statement to list all tables
             db.mShowTable = db.mConnection.prepareStatement("SELECT * FROM pg_catalog.pg_tables " + "WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema' ");
             
             // 6. prepared statement associated with likes field 
             db.mUpdateLike = db.mConnection.prepareStatement("UPDATE tblData SET likes = ? WHERE id = ?");
+
+            
+            
+            //db.Sum = db.mConnection.prepareStatement("SELECT SUM(likes.user_id) FROM likes WHERE likes.message_id = ?");
+            //("SELECT * FROM likes WHERE user_id = ?");
  
         /**
          * catch SQL exception, print stack trace, and close database connection if error is thrown
@@ -358,6 +401,20 @@ public class Database {
             mInsertOne.setInt(3, likes);
             count += mInsertOne.executeUpdate();
         } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return count;
+    }
+
+    int insertOneLike(int userID, int messageID) {
+        int count = 0;
+        int likes = 0; // like vote start with 0;
+        try {
+            mInsertOneLike.setInt(1, userID);
+            mInsertOneLike.setInt(2, messageID);
+            mInsertOneLike.setInt(3, likes);
+            count += mInsertOneLike.executeUpdate();
+        } catch  (SQLException e) {
             e.printStackTrace();
         }
         return count;
@@ -525,6 +582,17 @@ public class Database {
         try {
             mDeleteUser.setInt(1, id);
             res = mDeleteUser.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    int deleteLike(int id) {
+        int res = -1;
+        try {
+            mDeleteLike.setInt(1,id);
+            res = mDeleteLike.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
