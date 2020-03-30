@@ -125,9 +125,12 @@ public class App {
             // ensure status 200 OK, with a MIME type of JSON
             response.status(200);
             response.type("application/json");
-            String jws = request.queryParams("jws");
-            int id = Integer.parseInt(request.queryParams("id"));
-            String v = verify(id, jws);
+            String jwt = request.queryParams("jwt");
+            String uid = request.queryParams("uid");
+            boolean v = verify(uid, jwt);
+            if(!v) {
+                return gson.toJson(new StructuredResponse("error", "Couldn't verify user", jwt));
+            }
 
             if (db == null) {
                 System.out.println("error with DB!!!!!!!!!!!!!!!!!!");
@@ -490,9 +493,9 @@ public class App {
         return body;
     }
 
-    static boolean verify(int id, String jwt) {
+    static boolean verify(String uid, String jwt) {
         JsonWebSignature jws = new JsonWebSignature(); 
-        PublicKey pk = db.getPublicKey(id);
+        PublicKey pk = db.getPublicKey(uid);
         boolean verified = false;
         jws.setAlgorithmConstraints(
                 new AlgorithmConstraints(ConstraintType.WHITELIST, AlgorithmIdentifiers.RSA_USING_SHA256));

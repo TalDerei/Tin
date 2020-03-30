@@ -86,7 +86,7 @@ public class Database {
     private static final String regUsers = "userTable";
 
     Set<User> activeUsers;
-    ArrayList<PublicKey> jwtPubKeys;
+    HashMap<String, PublicKey> jwtPubKeys;
     HashMap<String, String> jwtKeys;
     HttpsJwks httpsJkws;
 
@@ -133,7 +133,7 @@ public class Database {
      */
     private Database() {
         activeUsers = new HashSet<User>();
-        jwtPubKeys = new ArrayList<PublicKey>();
+        jwtPubKeys = new HashMap<String, PublicKey>();
         jwtKeys = new HashMap<String, String>();
         httpsJkws = new HttpsJwks(Util.SITE + "/jwks");
     }
@@ -474,19 +474,20 @@ public class Database {
         jws.setKeyIdHeaderValue(rsaJsonWebKey.getKeyId());
         // Set the signature algorithm
         jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
+        
+        String uid = u.getUserID();
+        jwtPubKeys.put(uid, rsaJsonWebKey.getPublicKey());
+        
 
-        jwtPubKeys.add(rsaJsonWebKey.getPublicKey());
-        int id = jwtPubKeys.size() - 1;
-
-        return id + " " + jws.getCompactSerialization();
+        return uid + " " + jws.getCompactSerialization();
     }
 
     HttpsJwks getHttpJwks() {
         return httpsJkws;
     }
 
-    PublicKey getPublicKey(int i){
-        return jwtPubKeys.get(i);
+    PublicKey getPublicKey(String uid){
+        return jwtPubKeys.get(uid);
     }
 
     boolean addJWT(String jwt){
