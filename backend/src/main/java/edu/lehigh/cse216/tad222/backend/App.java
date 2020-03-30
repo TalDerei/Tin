@@ -242,10 +242,12 @@ public class App {
         Spark.post("/users/login", (request, response) -> {
             response.status(200);
             response.type("application/json");
+            String cid = request.queryParams("client_id");
+            String idToken = request.queryParams("idToken");
             StringBuilder oauthUrl = new StringBuilder().append("https://accounts.google.com/o/oauth2/auth")
-                .append("?client_id=").append(request.queryParams("client_id")) // the client id from the api console
+                .append("?client_id=").append(cid) // the client id from the api console
                                                                            // registration
-                .append("&idToken=" + request.queryParams("idToken"))
+                .append("&idToken=" + idToken)
                 .append("&response_type=code").append("&scope=https://www.googleapis.com/auth/userinfo.profile") // scope is the api permissions we are
                                                                                // requesting
                 .append("&redirect_uri=" + Util.SITE + "/users/login/callback") // the servlet that google redirects to after
@@ -256,13 +258,13 @@ public class App {
                 .append("&approval_prompt=force"); // this requires them to verify which account to use, if they are
                                                    // already signed in
             response.redirect(oauthUrl.toString());
-            return "temp";
+            return gson.toJson(response.body());
         });
 
         Spark.get("/users/login", (request, response) -> {
             response.status(200);
             response.type("application/json");
-            return "hello world";
+            return request.queryParams("client_id");
         });
 
         //callback for login route
@@ -293,11 +295,14 @@ public class App {
             String cid = request.params("client_id");
             String uid = json.get("id").getAsString();
 
-            if(email.contains("lehigh.edu")){
+            if(!email.contains("lehigh.edu")){
                 return new StructuredResponse("error", "User " + name + " is not part of lehigh.edu", null);
             }
+
+            User u = new User(name, email, cid, uid);
+            String jwt = db.produceJWTKey(u);
             
-            if(db.setUserActive(new User(name, email, cid, uid))) {
+            if(db.setUserActive(u)) {
                 return gson.toJson(new StructuredResponse("ok", "User " + name + " was logged in", accessToken));
             } else {
                 return gson.toJson(new StructuredResponse("error", "User " + name + " was already logged in", null));

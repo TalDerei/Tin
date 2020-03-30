@@ -9,7 +9,7 @@ import com.google.api.client.util.Preconditions;
 
 class Util {
 
-    static final String SITE = "http://limitless-ocean-62391.herokuappp.com";
+    static final String SITE = "https://limitless-ocean-62391.herokuappp.com";
     private static final String cid = "http://131496045117-k91913gk3j5li0i9k4ov52vg187j56hu.apps.googleusercontent.com/";
     private static final String cls = "";
     private static GoogleClientSecrets gcSecrets = null;

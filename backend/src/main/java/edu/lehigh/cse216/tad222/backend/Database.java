@@ -10,14 +10,24 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
+import org.jose4j.jwa.AlgorithmConstraints.ConstraintType;
+import org.jose4j.jwk.RsaJsonWebKey;
+import org.jose4j.jwk.RsaJwkGenerator;
+import org.jose4j.jws.AlgorithmIdentifiers;
+import org.jose4j.jws.JsonWebSignature;
+import org.jose4j.jwt.JwtClaims;
+import org.jose4j.jwt.consumer.JwtConsumer;
+import org.jose4j.jwt.consumer.JwtConsumerBuilder;
+import org.jose4j.lang.JoseException;
+
 import java.util.HashSet;
 import java.net.URI;
 import java.net.URISyntaxException;
 
 public class Database {
     /**
-     * The connection to the database.  When there is no connection, it should
-     * be null.  Otherwise, there is a valid open connection
+     * The connection to the database. When there is no connection, it should be
+     * null. Otherwise, there is a valid open connection
      */
     private Connection mConnection;
 
@@ -55,7 +65,6 @@ public class Database {
      * A prepared statement for dropping the table in our database
      */
     private PreparedStatement mDropTable;
-    
 
     private PreparedStatement mUpdateLikes;
 
@@ -74,17 +83,18 @@ public class Database {
     private static final String regUsers = "userTable";
 
     Set<User> activeUsers;
-    HashMap<String, User> jwt;
+    ArrayList<String> jwtPubKeys;
+    HashMap<String, String> jwtKeys;
 
     /**
-     * RowData is like a struct in C: we use it to hold data, and we allow 
-     * direct access to its fields.  In the context of this Database, RowData 
-     * represents the data we'd see in a row.
+     * RowData is like a struct in C: we use it to hold data, and we allow direct
+     * access to its fields. In the context of this Database, RowData represents the
+     * data we'd see in a row.
      * 
-     * We make RowData a static class of Database because we don't really want
-     * to encourage users to think of RowData as being anything other than an
-     * abstract representation of a row of the database.  RowData and the 
-     * Database are tightly coupled: if one changes, the other should too.
+     * We make RowData a static class of Database because we don't really want to
+     * encourage users to think of RowData as being anything other than an abstract
+     * representation of a row of the database. RowData and the Database are tightly
+     * coupled: if one changes, the other should too.
      */
     public static class RowData {
         /**
@@ -100,8 +110,7 @@ public class Database {
          */
         String mMessage;
 
-
-        int mlikes; 
+        int mlikes;
 
         /**
          * Construct a RowData object by providing values for its fields
@@ -110,17 +119,18 @@ public class Database {
             mId = id;
             mSubject = subject;
             mMessage = message;
-            mlikes = likes; 
+            mlikes = likes;
         }
     }
 
     /**
-     * The Database constructor is private: we only create Database objects 
-     * through the getDatabase() method.
+     * The Database constructor is private: we only create Database objects through
+     * the getDatabase() method.
      */
     private Database() {
         activeUsers = new HashSet<User>();
-        jwt = new HashMap<String, User>();
+        jwtPubKeys = new ArrayList<String>();
+        jwtKeys = new HashMap<String, String>();
     }
 
     /**
@@ -139,18 +149,14 @@ public class Database {
         Database db = new Database();
 
         // Give the Database object a connection, fail if we cannot get one
-        /*try {
-            Connection conn = DriverManager.getConnection("jdbc:postgresql://" + ip + ":" + port + "/", user, pass);
-            if (conn == null) {
-                System.err.println("Error: DriverManager.getConnection() returned a null object");
-                return null;
-            }
-            db.mConnection = conn;
-        } catch (SQLException e) {
-            System.err.println("Error: DriverManager.getConnection() threw a SQLException");
-            e.printStackTrace();
-            return null;
-        }*/
+        /*
+         * try { Connection conn = DriverManager.getConnection("jdbc:postgresql://" + ip
+         * + ":" + port + "/", user, pass); if (conn == null) { System.err.
+         * println("Error: DriverManager.getConnection() returned a null object");
+         * return null; } db.mConnection = conn; } catch (SQLException e) { System.err.
+         * println("Error: DriverManager.getConnection() threw a SQLException");
+         * e.printStackTrace(); return null; }
+         */
 
         // Give the Database object a connection, fail if we cannot get one
         try {
@@ -160,7 +166,8 @@ public class Database {
             System.out.println("dbURI is!!!!!!!!!!: " + dbUri.toString());
             String username = dbUri.getUserInfo().split(":")[0];
             String password = dbUri.getUserInfo().split(":")[1];
-            String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + dbUri.getPort() + dbUri.getPath() + "?sslmode=require";
+            String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + dbUri.getPort() + dbUri.getPath()
+                    + "?sslmode=require";
             Connection conn = DriverManager.getConnection(dbUrl, username, password);
             if (conn == null) {
                 System.err.println("Error: DriverManager.getConnection() returned a null object");
@@ -172,31 +179,29 @@ public class Database {
             e.printStackTrace();
             return null;
         } catch (ClassNotFoundException cnfe) {
-            System.out.println("Unable to find postgresql driver"); 
+            System.out.println("Unable to find postgresql driver");
             return null;
         } catch (URISyntaxException s) {
             System.out.println("URI Syntax Error");
             return null;
         }
 
-        
-        // Attempt to create all of our prepared statements.  If any of these 
+        // Attempt to create all of our prepared statements. If any of these
         // fail, the whole getDatabase() call should fail
         try {
             // NB: we can easily get ourselves in trouble here by typing the
-            //     SQL incorrectly.  We really should have things like "tblData"
-            //     as constants, and then build the strings for the statements
-            //     from those constants.
+            // SQL incorrectly. We really should have things like "tblData"
+            // as constants, and then build the strings for the statements
+            // from those constants.
 
-            // Note: no "IF NOT EXISTS" or "IF EXISTS" checks on table 
+            // Note: no "IF NOT EXISTS" or "IF EXISTS" checks on table
             // creation/deletion, so multiple executions will cause an exception
-            db.mCreateTable = db.mConnection.prepareStatement(
-                    "CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) "
-                    + "NOT NULL, message VARCHAR(500) NOT NULL)");
+            db.mCreateTable = db.mConnection
+                    .prepareStatement("CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) "
+                            + "NOT NULL, message VARCHAR(500) NOT NULL)");
             db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData");
 
-            db.mCreateRegUserTable = db.mConnection.prepareStatement(
-                    "CREATE TABLE " + regUsers + " (name VARCHAR(50) "
+            db.mCreateRegUserTable = db.mConnection.prepareStatement("CREATE TABLE " + regUsers + " (name VARCHAR(50) "
                     + "NOT NULL, uid VARCHAR(500) NOT NULL, secret VARCHAR(500) NOT NULL)");
             db.mDropRegUserTable = db.mConnection.prepareStatement("DROP TABLE " + regUsers);
 
@@ -207,16 +212,13 @@ public class Database {
             db.mSelectOne = db.mConnection.prepareStatement("SELECT * from tblData WHERE id=?");
             db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
             db.mUpdateLikes = db.mConnection.prepareStatement("UPDATE tblData SET likes = likes+1 WHERE id = ?");
-            db.mRegisterUser = db.mConnection.prepareStatement("INSERT INTO " + regUsers + " Values (default, ?, ?, ?)");
-            db.mIsRegistered = db.mConnection.prepareStatement("SELECT uid FROM " + regUsers + 
-                            " WHERE checkUser = ?" +
-                            " WHERE EXISTS" +
-                                "(SELECT 2" +
-                                "FROM " + regUsers + " u" + 
-                                "Where u.uid = checkUser" + ")");
+            db.mRegisterUser = db.mConnection
+                    .prepareStatement("INSERT INTO " + regUsers + " Values (default, ?, ?, ?)");
+            db.mIsRegistered = db.mConnection.prepareStatement("SELECT uid FROM " + regUsers + " WHERE checkUser = ?"
+                    + " WHERE EXISTS" + "(SELECT 2" + "FROM " + regUsers + " u" + "Where u.uid = checkUser" + ")");
             db.mLogin = db.mConnection.prepareStatement("INSERT");
             db.mLogoff = db.mConnection.prepareStatement("DELETE");
-            
+
         } catch (SQLException e) {
             System.err.println("Error creating prepared statement");
             e.printStackTrace();
@@ -229,8 +231,8 @@ public class Database {
     /**
      * Close the current connection to the database, if one exists.
      * 
-     * NB: The connection will always be null after this call, even if an 
-     *     error occurred during the closing operation.
+     * NB: The connection will always be null after this call, even if an error
+     * occurred during the closing operation.
      * 
      * @return True if the connection was cleanly closed, false otherwise
      */
@@ -276,7 +278,7 @@ public class Database {
         int res = -1;
         try {
             mUpdateLikes.setInt(1, id);
-            //mUpdateLikes.setInt(2, likes);
+            // mUpdateLikes.setInt(2, likes);
             res = mUpdateLikes.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -295,7 +297,8 @@ public class Database {
         try {
             ResultSet rs = mSelectAll.executeQuery();
             while (rs.next()) {
-                res.add(new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"), rs.getInt("likes")));
+                res.add(new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"),
+                        rs.getInt("likes")));
             }
             rs.close();
             return res;
@@ -320,7 +323,8 @@ public class Database {
             mSelectOne.setInt(1, id);
             ResultSet rs = mSelectOne.executeQuery();
             if (rs.next()) {
-                res = new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"), rs.getInt("likes"));
+                res = new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"),
+                        rs.getInt("likes"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -333,7 +337,7 @@ public class Database {
      * 
      * @param id The id of the row to delete
      * 
-     * @return The number of rows that were deleted.  -1 indicates an error.
+     * @return The number of rows that were deleted. -1 indicates an error.
      */
     int deleteRow(int id) {
         int res = -1;
@@ -349,10 +353,10 @@ public class Database {
     /**
      * Update the message for a row in the database
      * 
-     * @param id The id of the row to update
+     * @param id      The id of the row to update
      * @param message The new message contents
      * 
-     * @return The number of rows that were updated.  -1 indicates an error.
+     * @return The number of rows that were updated. -1 indicates an error.
      */
     int updateOne(int id, String message) {
         int res = -1;
@@ -367,7 +371,7 @@ public class Database {
     }
 
     /**
-     * Create tblData.  If it already exists, this will print an error
+     * Create tblData. If it already exists, this will print an error
      */
     void createTable() {
         try {
@@ -386,8 +390,8 @@ public class Database {
     }
 
     /**
-     * Remove tblData from the database.  If it does not exist, this will print
-     * an error.
+     * Remove tblData from the database. If it does not exist, this will print an
+     * error.
      */
     void dropRegUserTable() {
         try {
@@ -401,8 +405,8 @@ public class Database {
      * Add a new user to Registered Users
      * 
      */
-    boolean registerUser(String name, String email, String uid, String secret){
-        //session_id random string for user is created and passed to front end
+    boolean registerUser(String name, String email, String uid, String secret) {
+        // session_id random string for user is created and passed to front end
         User u = new User(name, email, uid, secret);
         return false;
     }
@@ -428,18 +432,57 @@ public class Database {
 
     /**
      * Return a list of all active users
+     * 
      * @return
      */
     ArrayList<String> selectAllActiveUsers() {
         ArrayList<String> res = new ArrayList<String>();
-        for(User u: activeUsers){
+        for (User u : activeUsers) {
             res.add(u.getName());
         }
         return res;
     }
 
-    boolean isAuthorized(String sessionid, User u){
-        return jwt.containsKey(sessionid) && jwt.get(sessionid).equals(u);
+    String produceJWTKey(User u) throws JoseException{
+        // Generate an RSA key pair, which will be used for signing and verification of the JWT, wrapped in a JWK
+        RsaJsonWebKey rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
+        
+        // Give the JWK a Key ID (kid), which is just the polite thing to do
+        rsaJsonWebKey.setKeyId("k" + jwtKeys.size());
+        JwtClaims claims = new JwtClaims();
+        claims.setIssuer("BuzzServer");
+        claims.setAudience(u.getName());
+        claims.setGeneratedJwtId();
+        claims.setIssuedAtToNow();
+        claims.setClaim("email", u.getEmail());
+        claims.setClaim("name", u.getName());
+        claims.setClaim("client_id", u.getClientID());
+        claims.setClaim("userID", u.getUserID());
+
+        JsonWebSignature jws = new JsonWebSignature();
+
+        // The payload comes in a json format
+        jws.setPayload(claims.toJson());
+        // The JWT is signed using the private key
+        jws.setKey(rsaJsonWebKey.getPrivateKey());
+        // Set the key ID header
+        jws.setKeyIdHeaderValue(rsaJsonWebKey.getKeyId());
+        // Set the signature algorithm
+        jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
+
+        JwtConsumer jwtConsumer = new JwtConsumerBuilder()
+                .setExpectedIssuer("BuzzServer")
+                .setExpectedAudience("name")
+                .setVerificationKey(rsaJsonWebKey.getRsaPublicKey())
+                .setJwsAlgorithmConstraints( // only allow the expected signature algorithm(s) in the given context
+                    ConstraintType.WHITELIST, AlgorithmIdentifiers.RSA_USING_SHA256)
+                .build();
+        
+        return jws.getCompactSerialization();
+    }
+
+    boolean addJWT(String jwt){
+        return false;
     }
 }
 
