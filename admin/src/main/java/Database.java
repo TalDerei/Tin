@@ -85,10 +85,6 @@ public class Database {
      */
     private PreparedStatement mDeleteOneByUser;
     /**
-     * A prepared statement for updating a 'like' vote
-     */;
-    private PreparedStatement mUpdateLike;
-    /**
      * A prepared statement for updating a serial user_id
      */
     private PreparedStatement mUpdateUser;
@@ -108,6 +104,10 @@ public class Database {
      * A prepared statement for inserting like row
      */
     private PreparedStatement mInsertOneLike;
+    /**
+     * A prepareed statement for updating like vote 
+    */
+    private PreparedStatement mUpdateOneLike;
     /**
      * boolean for our database membership test: 
      * if mHasUserData == true, then drop UserData table first before dropping tblData
@@ -129,10 +129,6 @@ public class Database {
         */
         String mMessage;
         /**
-        * The vote
-        */
-        int mLikes;
-        /**
         * user_id in UserData
         */
         int mUserId;
@@ -153,11 +149,10 @@ public class Database {
         /**
         * Construct a RowData object by providing values for its fields
         */
-        public RowData(int id, String subject, String message, int likes, int user_id) {
+        public RowData(int id, String subject, String message, int user_id) {
             mId = id;
             mSubject = subject;
             mMessage = message;
-            mLikes = likes;
             mUserId = user_id;
         }
     }
@@ -302,14 +297,13 @@ public class Database {
         */
         try {
             // 1. prepared statements associated with tbldata table
-            db.mCreateTable = db.mConnection.prepareStatement(
-                "CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) NOT NULL, " + "message VARCHAR(500) NOT NULL, likes INTEGER NOT NULL, " +
+            db.mCreateTable = db.mConnection.prepareStatement("CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) NOT NULL, " + "message VARCHAR(500) NOT NULL, " +
                 "user_id INTEGER REFERENCES UserData(id) ON DELETE SET NULL)");
             db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData");
             db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
             db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject FROM tblData");
             db.mSelectOne = db.mConnection.prepareStatement("SELECT * FROM tblData WHERE id = ?");
-            db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?, ?)");
+            db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?)");
             db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
 
             // 2. prepared statements associated with user table
@@ -326,24 +320,20 @@ public class Database {
                 "PRIMARY KEY (user_id, message_id), FOREIGN KEY (user_id) REFERENCES UserData(id) ON DELETE CASCADE, " +
                 "FOREIGN KEY (message_id) REFERENCES tblData(id) ON DELETE CASCADE)");
             db.mDropLikes = db.mConnection.prepareStatement("DROP TABLE likes");
-            db.mDeleteLike = db.mConnection.prepareStatement("DELETE FROM likes WHERE id = ?");
+            db.mDeleteLike = db.mConnection.prepareStatement("DELETE FROM likes WHERE user_id = ?");
             db.mInsertOneLike = db.mConnection.prepareStatement("INSERT INTO likes VALUES (?, ?, ?)");
-            // db.mUpdateOneLike = db.mConnection.prepareStatement("UPDATE likes SET likes = ? WHERE id = ?");
+            db.mUpdateOneLike = db.mConnection.prepareStatement("UPDATE likes SET likes = ? WHERE user_id = ?");
             
             // 4. prepared statements associated with JOIN between tbldata & userdata
             db.mSelectAllByUser = db.mConnection.prepareStatement("SELECT tblData.id, subject, message, nickname FROM tblData " + 
                 "INNER JOIN UserData ON tblData.user_id = UserData.id WHERE email = ?");
             db.mDeleteOneByUser = db.mConnection.prepareStatement("DELETE FROM tblData USING UserData " + "WHERE tblData.user_id = UserData.id AND email = ?");
             // list of all of the posts, including the email address of the user who made each post
-            // db.mPosts = db.mConnection.prepareStatement("SELECT tbldata.id, tbldata.subject, tbldata.message, userdata.email FROM tbldata " +
-            //    "LEFT JOIN userdata ON tbldata.user_id = userdata.id;"); 
+            // db.mPosts = db.mConnection.prepareStatement("SELECT tbldata.id, tbldata.subject, tbldata.message, userdata.email " +
+            //  "FROM tbldata LEFT JOIN userdata ON tbldata.user_id = userdata.id;"); 
 
             // 5. prepared statement to list all tables
             db.mShowTable = db.mConnection.prepareStatement("SELECT * FROM pg_catalog.pg_tables " + "WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema' ");
-            
-            // 6. prepared statement associated with likes field 
-            db.mUpdateLike = db.mConnection.prepareStatement("UPDATE tblData SET likes = ? WHERE id = ?");
-
             
             
             //db.Sum = db.mConnection.prepareStatement("SELECT SUM(likes.user_id) FROM likes WHERE likes.message_id = ?");
@@ -394,11 +384,11 @@ public class Database {
      */
     int insertRow(String subject, String message) {
         int count = 0;
-        int likes = 0; // like vote starts with 0
+        //int likes = 0; // like vote starts with 0
         try {
             mInsertOne.setString(1, subject);
             mInsertOne.setString(2, message);
-            mInsertOne.setInt(3, likes);
+            //mInsertOne.setInt(3, likes);
             count += mInsertOne.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -451,7 +441,7 @@ public class Database {
             ResultSet rs = mSelectAll.executeQuery();
             while (rs.next()) {
                 res.add(new RowData(rs.getInt("id"), rs.getString("subject"),
-                        null, -1, -1));
+                        null, -1));
             }
             rs.close();
             return res;
@@ -494,7 +484,7 @@ public class Database {
             ResultSet rs = mSelectAllByUser.executeQuery();
             while (rs.next()) {
                 RowData rowData = new RowData(rs.getInt("id"), rs.getString("subject"),
-                        rs.getString("message"), -1, -1);
+                        rs.getString("message"), -1);
                 rowData.setEmail(email);
                 rowData.setNickname(rs.getString("nickname"));
                 res.add(rowData);
@@ -521,7 +511,7 @@ public class Database {
             ResultSet rs = mSelectOne.executeQuery();
             if (rs.next()) {
                 res = new RowData(rs.getInt("id"), rs.getString("subject"),
-                        rs.getString("message"), rs.getInt("likes"), rs.getInt("user_id"));
+                        rs.getString("message"), rs.getInt("user_id"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -641,6 +631,29 @@ public class Database {
      * Update the message for a row in the database
      *
      * @param id The id of the row to update
+     * @param likes vote
+     *
+     * @return The number of rows that were updated.  -1 indicates an error.
+     */
+    int updateLike(int user_id, int likes) {
+        int res = -1;
+        try {
+            mUpdateOneLike.setInt(1, likes);
+            mUpdateOneLike.setInt(2, user_id);
+            res = mUpdateOneLike.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+
+
+
+    /**
+     * Update the message for a row in the database
+     *
+     * @param id The id of the row to update
      * @param nickname used name
      *
      * @return The number of rows that were updated.  -1 indicates an error.
@@ -651,26 +664,6 @@ public class Database {
             mUpdateNickname.setString(1, nickname);
             mUpdateNickname.setInt(2, id);
             res = mUpdateNickname.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return res;
-    }
-
-    /**
-     * Update the message for a row in the database
-     *
-     * @param id The id of the row to update
-     * @param likes vote
-     *
-     * @return The number of rows that were updated.  -1 indicates an error.
-     */
-    int updateLike(int id, int likes) {
-        int res = -1;
-        try {
-            mUpdateLike.setInt(1, likes);
-            mUpdateLike.setInt(2, id);
-            res = mUpdateLike.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }

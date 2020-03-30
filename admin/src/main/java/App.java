@@ -176,13 +176,12 @@ public class App {
                 if (res != null) {
                     System.out.println("  [" + res.mId + "] " + res.mSubject);
                     System.out.println("--> [message] " + res.mMessage);
-                    System.out.println("--> [#likes] " + res.mLikes);
                     System.out.println("--> [userID] " + res.mUserId);
                 }
             } else if (action == 'Q') {
                 int userID = getInt(in, "enter the userID");
                 int messageID = getInt(in, "enter the messsageID");
-                int likes = 0;
+                //int likes = 0;
                 int res = db.insertOneLike(userID, messageID);
                 System.out.println(res + " rows added");
             } else if (action == '*') {
@@ -215,7 +214,7 @@ public class App {
             } else if (action == '+') {
                 String subject = getString(in, "Enter the subject");
                 String message = getString(in, "Enter the message");
-                int likes = 0;
+                //int likes = 0;
                 if (subject.equals("") || message.equals(""))
                     continue;
                 int res = db.insertRow(subject, message);
@@ -223,7 +222,7 @@ public class App {
             } else if (action == 'Q') {
                 int userID = getInt(in, "enter the userID");
                 int messageID = getInt(in, "enter the messsageID");
-                int likes = 0;
+                //int likes = 0;
                 int res = db.insertOneLike(userID, messageID);
                 System.out.println(res + " rows added");
             } else if (action == '~') {
