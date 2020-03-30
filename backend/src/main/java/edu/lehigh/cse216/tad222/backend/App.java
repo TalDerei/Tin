@@ -20,6 +20,16 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
+import org.jose4j.http.SimpleResponse;
+import org.jose4j.jwa.AlgorithmConstraints.ConstraintType;
+import org.jose4j.jws.AlgorithmIdentifiers;
+import org.jose4j.jwt.JwtClaims;
+import org.jose4j.jwt.MalformedClaimException;
+import org.jose4j.jwt.consumer.ErrorCodes;
+import org.jose4j.jwt.consumer.InvalidJwtException;
+import org.jose4j.jwt.consumer.JwtConsumer;
+import org.jose4j.jwt.consumer.JwtConsumerBuilder;
+import org.jose4j.keys.resolvers.HttpsJwksVerificationKeyResolver;
 
 import java.io.IOException;
 import java.util.*;
@@ -115,6 +125,10 @@ public class App {
             // ensure status 200 OK, with a MIME type of JSON
             response.status(200);
             response.type("application/json");
+            String jws = request.queryParams("jws");
+            int id = Integer.parseInt(request.queryParams("id"));
+            String v = verify(id, jws);
+            
             if (db == null){
                 System.out.println("error with DB!!!!!!!!!!!!!!!!!!");
             }
@@ -303,7 +317,7 @@ public class App {
             String jwt = db.produceJWTKey(u);
             
             if(db.setUserActive(u)) {
-                return gson.toJson(new StructuredResponse("ok", "User " + name + " was logged in", accessToken));
+                return gson.toJson(new StructuredResponse("ok", "User " + name + " was logged in", jwt));
             } else {
                 return gson.toJson(new StructuredResponse("error", "User " + name + " was already logged in", null));
             }
@@ -345,8 +359,6 @@ public class App {
             }
             return gson.toJson(new StructuredResponse("ok", null, db.selectAllActiveUsers()));
         });
-
-        
     }
     /**
      * Get an integer environment varible if it exists, and otherwise return the
@@ -444,5 +456,43 @@ public class App {
         }
         
         return body;
+    }
+
+    static String verify(int id, String jwt) {
+        JwtConsumer jwtConsumer = new JwtConsumerBuilder()
+            .setExpectedIssuer("BuzzServer")
+            .setExpectedAudience("name")
+            .setVerificationKey(db.getPublicKey(id))
+            .setJwsAlgorithmConstraints( // only allow the expected signature algorithm(s) in the given context
+                ConstraintType.WHITELIST, AlgorithmIdentifiers.RSA_USING_SHA256)
+            .build();
+        String result = "";
+        try {
+            //  Validate the JWT and process it to the Claims
+            JwtClaims jwtClaims = jwtConsumer.processToClaims(jwt);
+            result = "JWT successfully validated";
+        } catch (InvalidJwtException e) {
+            // InvalidJwtException will be thrown, if the JWT failed processing or validation in anyway.
+            // Hopefully with meaningful explanations(s) about what went wrong.
+            result = "Invalid JWT.";
+    
+            // Programmatic access to (some) specific reasons for JWT invalidity is also possible
+            // should you want different error handling behavior for certain conditions.
+    
+            // Whether or not the JWT has expired being one common reason for invalidity
+            try {
+                if (e.hasExpired()) {
+                    result = "JWT expired at " + e.getJwtContext().getJwtClaims().getExpirationTime();
+                }
+        
+                // Or maybe the audience was invalid
+                if (e.hasErrorCode(ErrorCodes.AUDIENCE_INVALID)) {
+                    result = "JWT had wrong audience: " + e.getJwtContext().getJwtClaims().getAudience();
+                }
+            } catch (MalformedClaimException f) {
+                f.printStackTrace();
+            }
+        }
+        return result;
     }
 }

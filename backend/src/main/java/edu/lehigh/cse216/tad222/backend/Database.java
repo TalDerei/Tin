@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Set;
 
 import org.jose4j.jwa.AlgorithmConstraints.ConstraintType;
+import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
 import org.jose4j.jws.AlgorithmIdentifiers;
@@ -18,11 +19,13 @@ import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
+import org.jose4j.keys.resolvers.HttpsJwksVerificationKeyResolver;
 import org.jose4j.lang.JoseException;
 
 import java.util.HashSet;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.PublicKey;
 
 public class Database {
     /**
@@ -83,8 +86,9 @@ public class Database {
     private static final String regUsers = "userTable";
 
     Set<User> activeUsers;
-    ArrayList<String> jwtPubKeys;
+    ArrayList<PublicKey> jwtPubKeys;
     HashMap<String, String> jwtKeys;
+    HttpsJwks httpsJkws;
 
     /**
      * RowData is like a struct in C: we use it to hold data, and we allow direct
@@ -129,8 +133,9 @@ public class Database {
      */
     private Database() {
         activeUsers = new HashSet<User>();
-        jwtPubKeys = new ArrayList<String>();
+        jwtPubKeys = new ArrayList<PublicKey>();
         jwtKeys = new HashMap<String, String>();
+        httpsJkws = new HttpsJwks(Util.SITE + "/jwks");
     }
 
     /**
@@ -455,7 +460,7 @@ public class Database {
         claims.setGeneratedJwtId();
         claims.setIssuedAtToNow();
         claims.setClaim("email", u.getEmail());
-        claims.setClaim("name", u.getName());
+        claims.setClaim("name", "name");
         claims.setClaim("client_id", u.getClientID());
         claims.setClaim("userID", u.getUserID());
 
@@ -470,15 +475,18 @@ public class Database {
         // Set the signature algorithm
         jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
 
-        JwtConsumer jwtConsumer = new JwtConsumerBuilder()
-                .setExpectedIssuer("BuzzServer")
-                .setExpectedAudience("name")
-                .setVerificationKey(rsaJsonWebKey.getRsaPublicKey())
-                .setJwsAlgorithmConstraints( // only allow the expected signature algorithm(s) in the given context
-                    ConstraintType.WHITELIST, AlgorithmIdentifiers.RSA_USING_SHA256)
-                .build();
-        
-        return jws.getCompactSerialization();
+        jwtPubKeys.add(rsaJsonWebKey.getPublicKey());
+        int id = jwtPubKeys.size() - 1;
+
+        return id + " " + jws.getCompactSerialization();
+    }
+
+    HttpsJwks getHttpJwks() {
+        return httpsJkws;
+    }
+
+    PublicKey getPublicKey(int i){
+        return jwtPubKeys.get(i);
     }
 
     boolean addJWT(String jwt){
