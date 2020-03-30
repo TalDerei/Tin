@@ -24,6 +24,7 @@ public class App {
         System.out.println("  [J] Drop likes table");
         System.out.println("  [P] delete likes row");
         System.out.println("  [Q] insert likes row");
+        System.out.println("  [W] get total likes");
         System.out.println("  [A] Query for all tables");
         System.out.println("  [a] Query for all Users");
         System.out.println("  [1] Query for row from tblData by id");
@@ -51,7 +52,7 @@ public class App {
      */
     static char prompt(BufferedReader in) {
         // The valid actions:
-        String actions = "TDAZXYJPQa1*s-md+i~ulnq?";
+        String actions = "TDAZXYJPQa1*s-md+i~ulnq?W";
 
         // We repeat until a valid single-character option is selected
         while (true) {
@@ -178,6 +179,10 @@ public class App {
                     System.out.println("--> [message] " + res.mMessage);
                     System.out.println("--> [userID] " + res.mUserId);
                 }
+            } else if (action == 'W') {
+                int id = getInt(in, "Enter the row ID");
+                int res = db.getLikeTotal(id);
+                System.out.println(res + " total likes");
             } else if (action == 'Q') {
                 int userID = getInt(in, "enter the userID");
                 int messageID = getInt(in, "enter the messsageID");
@@ -237,8 +242,9 @@ public class App {
             } else if (action == 'i') {
                 String email = getString(in, "Enter the email");
                 String nickname = getString(in, "Enter the nickname");
+                String biography = getString(in, "Enter your biography");
                 if (email.equals("") || nickname.equals("")) continue;
-                int res = db.insertUser(email, nickname);
+                int res = db.insertUser(email, nickname, biography);
                 System.out.println(res + " rows added");
             } else if (action == 'u') {
                 int id = getInt(in, "Enter the row ID :> ");
