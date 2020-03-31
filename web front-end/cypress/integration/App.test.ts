@@ -19,7 +19,6 @@ describe('The Buzz tests', () => {
     // cy.get('.googleLoginButton').click(); // click the login button (this would require more time to test properly so I exposed the messages page without having to log in)
     cy.get('#messages').should('be.visible');
     cy.contains('Patient0');
-    cy.contains('What would you like to post today?');
     cy.contains('Logout');
   });
 
@@ -41,18 +40,18 @@ describe('The Buzz tests', () => {
   });
 
   it('displays upvote and downvote buttons', () => {
-    cy.get('#posts > :nth-child(1) > :nth-child(3)').should('be.visible'); // upvote button
-    cy.get('#posts > :nth-child(1) > :nth-child(4)').should('be.visible'); // downvote button
+    cy.get('#post > :nth-child(1) > :nth-child(1) > :nth-child(3)').should('be.visible'); // upvote button
+    cy.get('#post > :nth-child(1) > :nth-child(1) > :nth-child(4)').should('be.visible'); // downvote button
   });
 
   it('Upvote is reflected in the DOM', () => {
     cy.contains('Upvote').click(); // upvote once
-    cy.get('#posts > :nth-child(1)').contains('1'); // check for upvote score
+    cy.get('#post > :nth-child(1) > :nth-child(1)').contains('1'); // check for upvote score
   });
 
   it('Downvote is reflected in the DOM', () => {
     cy.contains('Downvote').dblclick(); // downvote twice
-    cy.get('#posts > :nth-child(1)').contains('2'); // check for downvote score
+    cy.get('#post > :nth-child(1) > :nth-child(1)').contains('2'); // check for downvote score
   });
 
   it('Logout of app', () => {

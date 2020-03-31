@@ -17,8 +17,8 @@ public class ExampleUnitTest {
 
     @Test
     public void Datum_constructor_sets_fields() throws Exception {
-        Datum d = new Datum(7, "hello world");
-        assertEquals(d.mIndex, 7);
+        Datum d = new Datum("7", "hello world");
+        assertEquals(d.mSubject, "7");
         assertEquals(d.mText, "hello world");
     }
 
