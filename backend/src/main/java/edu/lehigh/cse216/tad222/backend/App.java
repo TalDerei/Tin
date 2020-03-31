@@ -345,10 +345,15 @@ public class App {
         });
 
         Spark.delete("/users/logoff", (request, response) -> {
+            String jwt = request.queryParams("jwt");
+            String uid = request.queryParams("uid");
+            boolean v = verify(uid, jwt);
+            if(!v) {
+                return gson.toJson(new StructuredResponse("error", "Couldn't verify user", jwt));
+            }
             response.status(200);
             response.type("application/json");
             String name = request.params("name");
-            String uid = "";
             if (db.setUserInactive(null)) {
                 return gson.toJson(new StructuredResponse("ok", "User " + name + " logged off", uid));
             } else {
