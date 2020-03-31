@@ -11,28 +11,34 @@ import java.util.Properties;
  * operations on a database: connect, insert, update, query, delete, disconnect
  */
 public class App {
-
     /**
      * Print the menu for our program
      */
     static void menu() {
         System.out.println("Main Menu");
-        System.out.println("  [T] Create tblData");
-        System.out.println("  [D] Drop tblData");
-        System.out.println("  [A] Query for all tables");
-        System.out.println("  [a] Query for all Users");
-        System.out.println("  [1] Query for row from tblData by id");
-        System.out.println("  [*] Query for all rows from tblData");
-        System.out.println("  [s] Query for a specific email from tblData");
-        System.out.println("  [-] Delete a row in tblData");
-        System.out.println("  [m] Delete a user in UserData");
-        System.out.println("  [d] Delete a row in tblData by email");
-        System.out.println("  [+] Insert a new row in tblData");
-        System.out.println("  [i] Insert a new User on UserData");
-        System.out.println("  [~] Update a row in tblData");
-        System.out.println("  [u] Update a user in UserData");
-        System.out.println("  [l] Update a like vote in tblData");
-        System.out.println("  [n] Update a nickname in UserData");
+        System.out.println("  [a] Create userdata table");
+        System.out.println("  [b] Create tbldata table");
+        System.out.println("  [c] Create likes table");
+        System.out.println("  [d] Drop likes table");
+        System.out.println("  [e] Drop tbldata table");
+        System.out.println("  [f] Drop userdata table");
+        System.out.println("  [g] Query for all tables");
+        System.out.println("  [h] Query for all Users");
+        System.out.println("  [i] Query for all likes");
+        System.out.println("  [j] Query for row from tblData by id");
+        System.out.println("  [k] Query for all rows from tblData");
+        System.out.println("  [l] Query for a specific email from tblData");
+        System.out.println("  [m] Insert a new row in tblData");
+        System.out.println("  [n] Insert a new user in UserData");
+        System.out.println("  [o] Insert a new likes row in likes");
+        System.out.println("  [p] Delete a row in tblData");
+        System.out.println("  [r] Delete a user in UserData");
+        System.out.println("  [s] Delete a row in tblData by email");
+        System.out.println("  [t] Delete a likes row");
+        System.out.println("  [u] Update a row in tblData");
+        System.out.println("  [v] Update a user in UserData");
+        System.out.println("  [w] Update a like vote in tblData");
+        System.out.println("  [x] Update a nickname in UserData");
         System.out.println("  [q] Quit Program");
         System.out.println("  [?] Help (this message)");
     }
@@ -46,7 +52,7 @@ public class App {
      */
     static char prompt(BufferedReader in) {
         // The valid actions:
-        String actions = "TDAa1*s-md+i~ulnq?";
+        String actions = "abcdefghijklmnopqrstuvwx?";
 
         // We repeat until a valid single-character option is selected
         while (true) {
@@ -142,13 +148,19 @@ public class App {
                 menu();
             } else if (action == 'q') {
                 break;
-            } else if (action == 'T') {
-                db.createUser();
+            } else if (action == 'b') {
                 db.createTable();
-            } else if (action == 'D') {
+            } else if (action == 'a') {
+                db.createUser();
+            } else if (action == 'c') {
+                db.createLikes();
+            } else if (action == 'e') {
                 db.dropTable();
+            } else if (action == 'f') {
                 db.dropUser();
-            } else if (action == 'A') {
+            } else if (action == 'd') {
+                db.dropLikes();
+            } else if (action == 'g') {
                 ArrayList<Database.Table> table = db.showTable();
                 if (table == null)
                     continue;
@@ -157,7 +169,7 @@ public class App {
                 for (Database.Table rd : table ) {
                     System.out.println(rd.mSchema + '|' + rd.mName + '|' + rd.mOwner);
                 }
-            } else if (action == '1') {
+            } else if (action == 'j') {
                 int id = getInt(in, "Enter the row ID");
                 if (id == -1)
                     continue;
@@ -165,10 +177,13 @@ public class App {
                 if (res != null) {
                     System.out.println("  [" + res.mId + "] " + res.mSubject);
                     System.out.println("--> [message] " + res.mMessage);
-                    System.out.println("--> [#likes] " + res.mLikes);
                     System.out.println("--> [userID] " + res.mUserId);
                 }
-            } else if (action == '*') {
+            } else if (action == 'i') {
+                int id = getInt(in, "Enter the row ID");
+                int res = db.getLikeTotal(id);
+                System.out.println(res + " total likes");
+            } else if (action == 'k') {
                 ArrayList<Database.RowData> res = db.selectAll();
                 if (res == null)
                     continue;
@@ -177,7 +192,7 @@ public class App {
                 for (Database.RowData rd : res) {
                     System.out.println("  [" + rd.mId + "] " + rd.mSubject);
                 }
-            } else if (action == '-') {
+            } else if (action == 'p') {
                 int id = getInt(in, "Enter the row ID");
                 if (id == -1)
                     continue;
@@ -185,15 +200,31 @@ public class App {
                 if (res == -1)
                     continue;
                 System.out.println("  " + res + " rows deleted");
-            } else if (action == '+') {
+            } else if (action == 't') {
+                int id = getInt(in, "Enter the row ID");
+                if (id == -1) {
+                    continue;
+                }
+                int res = db.deleteLike(id);
+                if (res == -1) {
+                    continue;
+                }
+                System.out.println(" " + res + " rows deleted");
+            } else if (action == 'm') {
                 String subject = getString(in, "Enter the subject");
                 String message = getString(in, "Enter the message");
-                int likes = 0;
+                //int likes = 0;
                 if (subject.equals("") || message.equals(""))
                     continue;
                 int res = db.insertRow(subject, message);
                 System.out.println(res + " rows added");
-            } else if (action == '~') {
+            } else if (action == 'o') {
+                int userID = getInt(in, "enter the userID");
+                int messageID = getInt(in, "enter the messsageID");
+                //int likes = 0;
+                int res = db.insertOneLike(userID, messageID);
+                System.out.println(res + " rows added");
+            } else if (action == 'u') {
                 int id = getInt(in, "Enter the row ID :> ");
                 if (id == -1)
                     continue;
@@ -202,13 +233,14 @@ public class App {
                 if (res == -1)
                     continue;
                 System.out.println("  " + res + " rows updated");
-            } else if (action == 'i') {
+            } else if (action == 'n') {
                 String email = getString(in, "Enter the email");
                 String nickname = getString(in, "Enter the nickname");
+                String biography = getString(in, "Enter your biography");
                 if (email.equals("") || nickname.equals("")) continue;
-                int res = db.insertUser(email, nickname);
+                int res = db.insertUser(email, nickname, biography);
                 System.out.println(res + " rows added");
-            } else if (action == 'u') {
+            } else if (action == 'v') {
                 int id = getInt(in, "Enter the row ID :> ");
                 if (id == -1)
                     continue;
@@ -217,7 +249,7 @@ public class App {
                 if (res == -1)
                     continue;
                 System.out.println("  " + res + " rows updated");
-            } else if (action == 'n') {
+            } else if (action == 'x') {
                 int id = getInt(in, "Enter the row ID :> ");
                 if (id == -1)
                     continue;
@@ -226,16 +258,16 @@ public class App {
                 if (res == -1)
                     continue;
                 System.out.println("  " + res + " rows updated");
-            } else if (action == 'a') {
+            } else if (action == 'h') {
                 ArrayList<Database.UserData> res = db.selectAllUsers();
                 if (res == null)
                     continue;
                 System.out.println("  Current Users ");
                 System.out.println("  -------------------------");
                 for (Database.UserData rd : res) {
-                    System.out.println("  [" + rd.mId + "] " + " [email] " + rd.mEmail + " [nickname] " + rd.mNickname);
+                    System.out.println("  [" + rd.mId + "] " + " [email] " + rd.mEmail + " [nickname] " + rd.mNickname + " [biography] " + rd.mBiography);
                 }
-            } else if (action == 's') {
+            } else if (action == 'l') {
                 String email = getString(in, "Enter the email");
                 ArrayList<Database.RowData> res = db.selectAllByUser(email);
                 System.out.println("  Current Database Contents by User");
@@ -243,7 +275,7 @@ public class App {
                 for (Database.RowData rd : res) {
                     System.out.println("[subject] " + rd.mSubject + " [message] " + rd.mMessage + " [nickname] " + rd.mNickname);
                 }
-            } else if (action == 'd') {
+            } else if (action == 's') {
                 String email = getString(in, "Enter the email");
                 if (email.equals(""))
                     continue;
@@ -251,7 +283,7 @@ public class App {
                 if (res == -1)
                     continue;
                 System.out.println("  " + res + " rows deleted");
-            } else if (action == 'l') {
+            } else if (action == 'w') {
                 int id = getInt(in, "Enter the row ID :> ");
                 if (id == -1)
                     continue;
@@ -260,16 +292,15 @@ public class App {
                 if (res == -1)
                     continue;
                 System.out.println("  " + res + " rows updated");
-            } else if (action == 'm') {
+            } else if (action == 'r') {
                 int user_id = getInt(in, "Enter the User ID :> ");
                 int res = db.deleteUser(user_id);
                 if (res == -1)
                     continue;
-                System.out.println("  " + res + " rows updated");
+                System.out.println("  " + res + " row deleted");
             }
         }
-        // Always remember to disconnect from the database when the program
-        // exits
+        // Always remember to disconnect from the database when the program exits
         db.disconnect();
     }
 }
