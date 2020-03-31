@@ -50,7 +50,7 @@ const ProfilePage = (props: any): JSX.Element | null => {
      */
     async function fetchBio() {
       const url = 'https://cors-anywhere.herokuapp.com/https://limitless-ocean-62391.herokuapp.com/users/['+props.idToken+']/bio';
-      await fetch(url , { //!!!need user bio comment
+      await fetch(url , { 
         method: 'GET',
         mode: 'cors',
         cache: 'no-cache',
@@ -84,7 +84,7 @@ const ProfilePage = (props: any): JSX.Element | null => {
    */
   async function updateBio(newBioToPost: string) {
     const url = 'https://cors-anywhere.herokuapp.com/https://limitless-ocean-62391.herokuapp.com/users/['+props.idToken+']/bio';
-      await fetch(url , { //!!!!!!!!!!!
+      await fetch(url , {
       method: 'POST',
       mode: 'cors',
       cache: 'no-cache',
@@ -130,7 +130,7 @@ const ProfilePage = (props: any): JSX.Element | null => {
     ReactDOM.render(<DisplayBio//render the posts here
       bioToPost={responseBio}
     />
-      , document.getElementById('post'));//in this id
+      , document.getElementById('bio'));//in this id
     setUserBio({ value: '' });//empty the input text box
   }
   // load profile page while testing too
@@ -153,6 +153,7 @@ const ProfilePage = (props: any): JSX.Element | null => {
             </form>
           </div>
           This Users bio is... <br/>
+          <div id="bio"></div>
           <br/>
           <input type="submit" value="Edit Bio" onClick={editBio} id="editBio-input"></input>
           <input type="submit" value="Post a Message" onClick={redirectMessages}></input>
