@@ -136,11 +136,14 @@ public class App {
             // ensure status 200 OK, with a MIME type of JSON
             response.status(200);
             response.type("application/json");
+            int likes = db.selectOneLike(idx);
             Database.RowData data = db.selectOne(idx);
+            String nickname = db.selectOneUser(data.mUser_id).getNickName();
+            CombinedDataRow cdr = new CombinedDataRow(data, likes, nickname);
             if (data == null) {
                 return gson.toJson(new StructuredResponse("error", idx + " not found", null));
             } else {
-                return gson.toJson(new StructuredResponse("ok", null, data));
+                return gson.toJson(new StructuredResponse("ok", null, cdr));
             }
         });
 
@@ -240,14 +243,29 @@ public class App {
             response.type("application/json");
             System.out.println("idx is: " + idx);
 
-            /*
-             * try { likes = Integer.parseInt(req.mMessage);
-             * //System.out.println("mMessages is: " + mMessage);
-             * System.out.println("likes is: " + likes); } catch(Throwable e) {
-             * System.out.println("not working!!!!!!!!!!!"); return gson.toJson(new
-             * StructuredResponse("error", "unable to parse body: " + req.mMessage, null));
-             * }
-             */
+            int result = db.updateLikes(idx);
+            if (result == -1) {
+                return gson.toJson(new StructuredResponse("error", "unable to update row " + idx, null));
+            } else {
+                return gson.toJson(new StructuredResponse("ok", null, result));
+            }
+        });
+
+        Spark.get("/likes/:id", (request, response) -> {
+            String jwt = request.queryParams("jwt");
+            String uid = request.queryParams("uid");
+            boolean v = verify(uid, jwt);
+            if(!v) {
+                return gson.toJson(new StructuredResponse("error", "Couldn't verify user", jwt));
+            }
+            // If we can't get an ID or can't parse the JSON, Spark will send
+            // a status 500
+            int idx = Integer.parseInt(request.params("id"));
+            // ensure status 200 OK, with a MIME type of JSON
+            response.status(200);
+            response.type("application/json");
+            System.out.println("idx is: " + idx);
+
             int result = db.updateLikes(idx);
             if (result == -1) {
                 return gson.toJson(new StructuredResponse("error", "unable to update row " + idx, null));
@@ -260,7 +278,6 @@ public class App {
             String name = request.params("name");
             String email = "";
             String uid = "";
-            String secret = "";
             String bio = "";
             boolean success = db.registerUser(email, name, uid, bio);
             if (success) {
@@ -417,6 +434,24 @@ public class App {
         });
 
         Spark.put("/users/:user_id/bio", (request, response) -> {
+            String jwt = request.queryParams("jwt");
+            String uid = request.queryParams("uid");
+            boolean v = verify(uid, jwt);
+            if(!v) {
+                return gson.toJson(new StructuredResponse("error", "Couldn't verify user", jwt));
+            }
+            // ensure status 200 OK, with a MIME type of JSON
+            response.status(200);
+            response.type("application/json");
+            if (db == null) {
+                System.out.println("error with DB!!!!!!!!!!!!!!!!!!");
+            } else {
+                System.out.println("db is NOT null");
+            }
+            return gson.toJson(new StructuredResponse("ok", null, db.selectAllActiveUsers()));
+        });
+
+        Spark.put("/users/:user_id/name", (request, response) -> {
             String jwt = request.queryParams("jwt");
             String uid = request.queryParams("uid");
             boolean v = verify(uid, jwt);
