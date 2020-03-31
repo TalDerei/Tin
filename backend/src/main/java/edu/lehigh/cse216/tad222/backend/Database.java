@@ -10,17 +10,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
-import org.jose4j.jwa.AlgorithmConstraints.ConstraintType;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.MalformedClaimException;
-import org.jose4j.jwt.consumer.ErrorCodes;
-import org.jose4j.jwt.consumer.InvalidJwtException;
-import org.jose4j.jwt.consumer.JwtConsumer;
-import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.jose4j.lang.JoseException;
 
 import java.util.HashSet;
@@ -79,7 +73,7 @@ public class Database {
     private PreparedStatement mInsertUser;
 
     private PreparedStatement mUpdateNickname;
-
+    
     private PreparedStatement mSelectAllUser;
 
     private PreparedStatement mDeleteLike;
@@ -199,7 +193,7 @@ public class Database {
             // tblData table:
             db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
             db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?)");
-            db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject, message FROM tblData");
+            db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject, message FROM tblData"); 
             db.mSelectOne = db.mConnection.prepareStatement("SELECT id, subject, message from tblData WHERE id = ?");
             db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
 
@@ -252,7 +246,7 @@ public class Database {
     /**
      * Insert a row into the database
      * 
-     * @param uid   The subject for this new row
+     * @param uid The subject for this new row
      * @param email The message body for this new rowz
      * 
      * @return The number of rows that were inserted
@@ -291,9 +285,8 @@ public class Database {
         ArrayList<RowData> res = new ArrayList<RowData>();
         try {
             ResultSet rs = mSelectAll.executeQuery();
-            while (rs.next()) {
-                res.add(new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"),
-                        rs.getString("user_id")));
+            while (rs.next()) { 
+                res.add(new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"), rs.getString("user_id")));
             }
             rs.close();
             return res;
@@ -318,8 +311,7 @@ public class Database {
             mSelectOne.setInt(1, id);
             ResultSet rs = mSelectOne.executeQuery();
             if (rs.next()) {
-                res = new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"),
-                        rs.getString("user_id"));
+                res = new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"), rs.getString("user_id"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -410,7 +402,7 @@ public class Database {
         int res = 0;
         try {
             mIsRegistered.setString(1, u.getUserID());
-            // res = mIsRegistered.executeQuery().getFetchSize();
+            //res = mIsRegistered.executeQuery().getFetchSize();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -443,9 +435,8 @@ public class Database {
         ArrayList<User> res = new ArrayList<User>();
         try {
             ResultSet rs = mSelectAllUser.executeQuery();
-            while (rs.next()) {
-                res.add(new User(rs.getString("email"), rs.getString("nickname"), rs.getString("id"),
-                        rs.getString("biography")));
+            while (rs.next()) { 
+                res.add(new User(rs.getString("email"), rs.getString("nickname"), rs.getString("id"), rs.getString("biography")));
             }
             rs.close();
             return res;
@@ -458,8 +449,8 @@ public class Database {
     /**
      * Insert a row into the database
      * 
-     * @param uid      The users' id
-     * @param email    The user's email
+     * @param uid The users' id
+     * @param email The user's email
      * @param nickname The user's nickname
      * 
      * @return The number of rows that were inserted
@@ -475,7 +466,7 @@ public class Database {
             e.printStackTrace();
         }
         return res;
-
+        
     }
 
     int updateUser(String uid) {
@@ -523,7 +514,7 @@ public class Database {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return res;
+        return res; 
     }
 
     int updateOneLike(String uid, int likes) {
@@ -535,7 +526,7 @@ public class Database {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return res;
+        return res; 
     }
 
     int deleteLike(String uid) {
@@ -549,19 +540,19 @@ public class Database {
         return res;
     }
 
-    String produceJWTKey(User u) throws JoseException {
-        // Generate an RSA key pair, which will be used for signing and verification of
-        // the JWT, wrapped in a JWK
+    String produceJWTKey(User u) throws JoseException{
+        // Generate an RSA key pair, which will be used for signing and verification of the JWT, wrapped in a JWK
         RsaJsonWebKey rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
-
+        
         // Give the JWK a Key ID (kid), which is just the polite thing to do
         rsaJsonWebKey.setKeyId("k" + jwtPubKeys.size());
         JwtClaims claims = new JwtClaims();
         claims.setIssuer("BuzzServer");
+        claims.setAudience(u.getEmail());
         claims.setGeneratedJwtId();
         claims.setIssuedAtToNow();
         claims.setClaim("email", u.getEmail());
-        claims.setClaim("name", u.getNickName());
+        claims.setClaim("name", "name");
         claims.setClaim("biography", u.getBio());
         claims.setClaim("userID", u.getUserID());
 
@@ -575,44 +566,11 @@ public class Database {
         jws.setKeyIdHeaderValue(rsaJsonWebKey.getKeyId());
         // Set the signature algorithm
         jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
-
+        
         String uid = u.getUserID();
         jwtPubKeys.put(uid, rsaJsonWebKey.getPublicKey());
 
         return jws.getCompactSerialization();
-    }
-
-    User consumeJWTKey(String uid, String jwt) {
-        User res = null;
-        JwtConsumer jwtConsumer = new JwtConsumerBuilder()
-                .setExpectedIssuer("BuzzServer") // whom the JWT needs to have been issued by
-                .setVerificationKey(getPublicKey(uid)) // verify the signature with the public key
-                .setJwsAlgorithmConstraints( // only allow the expected signature algorithm(s) in the given context
-                        ConstraintType.WHITELIST, AlgorithmIdentifiers.RSA_USING_SHA256) // which is only RS256 here
-                .build(); // create the JwtConsumer instance
-
-        try {
-            // Validate the JWT and process it to the Claims
-            JwtClaims jwtClaims = jwtConsumer.processToClaims(jwt);
-            res = new User(jwtClaims.getClaimValueAsString("email"),
-                jwtClaims.getClaimValueAsString("name"), jwtClaims.getClaimValueAsString("userID"),
-                jwtClaims.getClaimValueAsString("biography"));
-        } catch (InvalidJwtException e) {
-            // InvalidJwtException will be thrown, if the JWT failed processing or
-            // validation in anyway.
-            // Hopefully with meaningful explanations(s) about what went wrong.
-            System.out.println("Invalid JWT! " + e);
-
-            // Or maybe the audience was invalid
-            if (e.hasErrorCode(ErrorCodes.AUDIENCE_INVALID)) {
-                try {
-                    System.out.println("JWT had wrong audience: " + e.getJwtContext().getJwtClaims().getAudience());
-                } catch (MalformedClaimException e1) {
-                    e1.printStackTrace();
-                }
-            }
-        }
-        return res;
     }
 
     PublicKey getPublicKey(String uid){
