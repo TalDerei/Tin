@@ -13,6 +13,7 @@ const MessagePage = (props: any): JSX.Element | null => {
   const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);// state for checking if the message had been posted
   const [responseMessages, setResponseMessages] = useState<Object[]>([]);// state for updating the messages collected so far
 
+
   //using React's 'useEffect' function
   useEffect(() => {
     /**
