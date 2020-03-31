@@ -10,11 +10,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
+import org.jose4j.jwa.AlgorithmConstraints.ConstraintType;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
+import org.jose4j.jwt.MalformedClaimException;
+import org.jose4j.jwt.consumer.ErrorCodes;
+import org.jose4j.jwt.consumer.InvalidJwtException;
+import org.jose4j.jwt.consumer.JwtConsumer;
+import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.jose4j.lang.JoseException;
 
 import java.util.HashSet;
@@ -74,6 +80,8 @@ public class Database {
 
     private PreparedStatement mUpdateNickname;
     
+    private PreparedStatement mSelectOneUser;
+    
     private PreparedStatement mSelectAllUser;
 
     private PreparedStatement mDeleteLike;
@@ -82,11 +90,15 @@ public class Database {
 
     private PreparedStatement mUpdateOneLike;
 
+    private PreparedStatement mLikesNeutral;
+
     private PreparedStatement mIsRegistered;
 
     Set<User> activeUsers;
     HashMap<String, PublicKey> jwtPubKeys;
     HashMap<String, String> jwtKeys;
+
+    
 
     /**
      * RowData is like a struct in C: we use it to hold data, and we allow direct
@@ -194,8 +206,8 @@ public class Database {
             // tblData table:
             db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
             db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?)");
-            db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject, message FROM tblData"); 
-            db.mSelectOne = db.mConnection.prepareStatement("SELECT id, subject, message from tblData WHERE id = ?");
+            db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject, message, user_id FROM tblData"); 
+            db.mSelectOne = db.mConnection.prepareStatement("SELECT id, subject, message, user_id from tblData WHERE id = ?");
             db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
 
             // UserData table:
@@ -203,10 +215,12 @@ public class Database {
             db.mUpdateUser = db.mConnection.prepareStatement("UPDATE tblData SET user_id = ? WHERE id = ?");
             db.mInsertUser = db.mConnection.prepareStatement("INSERT INTO UserData VALUES (default, ?, ?, ?)");
             db.mUpdateNickname = db.mConnection.prepareStatement("UPDATE UserData SET nickname = ? WHERE id = ?");
-            db.mSelectAllUser = db.mConnection.prepareStatement("SELECT id, email, nickname FROM UserData");
+            db.mSelectOneUser = db.mConnection.prepareStatement("SELECT id, email, nickname, biography FROM UserData WHERE id = ?");
+            db.mSelectAllUser = db.mConnection.prepareStatement("SELECT id, email, nickname, biography FROM UserData");
 
             // likes table:
             db.mDeleteLike = db.mConnection.prepareStatement("DELETE FROM likes WHERE user_id = ?");
+            db.mLikesNeutral = db.mConnection.prepareStatement("SELECT SUM(likes.likes) AS total FROM likes WHERE likes.message_id = ?");
             db.mInsertOneLike = db.mConnection.prepareStatement("INSERT INTO likes VALUES (?, ?, ?)");
             db.mUpdateOneLike = db.mConnection.prepareStatement("UPDATE likes SET likes = ? WHERE user_id = ?");
 
@@ -431,6 +445,20 @@ public class Database {
         return res;
     }
 
+    User selectOneUser(String uid) {
+        User res = null;
+        try {
+            mSelectOneUser.setString(1, uid);
+            ResultSet rs = mSelectOneUser.executeQuery();
+            res = new User(rs.getString("email"), rs.getString("nickname"), rs.getString("id"), rs.getString("biography"));
+            rs.close();
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     ArrayList<User> selectAllUsers() {
         System.out.println("Selecting All Users");
         ArrayList<User> res = new ArrayList<User>();
@@ -530,6 +558,20 @@ public class Database {
         return res; 
     }
 
+    int getTotalLikes(int id){
+        int res = -1;
+        try {
+            mLikesNeutral.setInt(1, id);
+            ResultSet rs = mLikesNeutral.executeQuery();
+            rs.next();
+            res = rs.getInt("total");
+            rs.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
     int deleteLike(String uid) {
         int res = -1;
         try {
@@ -572,6 +614,39 @@ public class Database {
         jwtPubKeys.put(uid, rsaJsonWebKey.getPublicKey());
 
         return jws.getCompactSerialization();
+    }
+
+    User consumeJWTKey(String uid, String jwt) {
+        User res = null;
+        JwtConsumer jwtConsumer = new JwtConsumerBuilder()
+                .setExpectedIssuer("BuzzServer") // whom the JWT needs to have been issued by
+                .setVerificationKey(getPublicKey(uid)) // verify the signature with the public key
+                .setJwsAlgorithmConstraints( // only allow the expected signature algorithm(s) in the given context
+                        ConstraintType.WHITELIST, AlgorithmIdentifiers.RSA_USING_SHA256) // which is only RS256 here
+                .build(); // create the JwtConsumer instance
+
+        try {
+            // Validate the JWT and process it to the Claims
+            JwtClaims jwtClaims = jwtConsumer.processToClaims(jwt);
+            res = new User(jwtClaims.getClaimValueAsString("email"),
+                jwtClaims.getClaimValueAsString("name"), jwtClaims.getClaimValueAsString("userID"),
+                jwtClaims.getClaimValueAsString("biography"));
+        } catch (InvalidJwtException e) {
+            // InvalidJwtException will be thrown, if the JWT failed processing or
+            // validation in anyway.
+            // Hopefully with meaningful explanations(s) about what went wrong.
+            System.out.println("Invalid JWT! " + e);
+
+            // Or maybe the audience was invalid
+            if (e.hasErrorCode(ErrorCodes.AUDIENCE_INVALID)) {
+                try {
+                    System.out.println("JWT had wrong audience: " + e.getJwtContext().getJwtClaims().getAudience());
+                } catch (MalformedClaimException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        }
+        return res;
     }
 
     PublicKey getPublicKey(String uid){

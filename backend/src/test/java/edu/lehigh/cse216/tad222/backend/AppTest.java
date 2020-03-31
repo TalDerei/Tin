@@ -1,18 +1,10 @@
 package edu.lehigh.cse216.tad222.backend;
 
-import java.util.Arrays;
-import java.util.List;
-
-import org.jose4j.jwa.AlgorithmConstraints.ConstraintType;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.consumer.ErrorCodes;
-import org.jose4j.jwt.consumer.InvalidJwtException;
-import org.jose4j.jwt.consumer.JwtConsumer;
-import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.jose4j.lang.JoseException;
 
 import junit.framework.Test;
@@ -77,7 +69,7 @@ public class AppTest extends TestCase {
 
         MockDatabase db = new MockDatabase();
         db.jwtPubKeys.put(u.getUserID(), rsaJsonWebKey.getPublicKey());
-        assertTrue(db.verify(u.getUserID(), jwt));
+        assertTrue(!db.verify(u.getUserID(), jwt).toString().contains("error"));
         db.jwtPubKeys.remove(u.getUserID());
     }
 

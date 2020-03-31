@@ -53,9 +53,12 @@ class MockDatabase {
         return jws.getCompactSerialization();
     }
 
-    boolean verify(String uid, String jwt) {
+    Object verify(String uid, String jwt) {
+        if(uid.isEmpty() || uid == null || jwt.isEmpty() || jwt == null) {
+            return new StructuredResponse("error", "No uid and/or jwt given", null);
+        }
         JsonWebSignature jws = new JsonWebSignature(); 
-        PublicKey pk = this.jwtPubKeys.get(uid);
+        PublicKey pk = jwtPubKeys.get(uid);
         boolean verified = false;
         jws.setAlgorithmConstraints(
                 new AlgorithmConstraints(ConstraintType.WHITELIST, AlgorithmIdentifiers.RSA_USING_SHA256));
@@ -67,6 +70,10 @@ class MockDatabase {
             je.printStackTrace();
         }
 
-        return verified;
+        if(verified) {
+            return new StructuredResponse("error", "Couldn't verify user", jwt);
+        }
+
+        return "Verification successful";
     }
 }
