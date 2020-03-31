@@ -85,7 +85,7 @@ public class Database {
     private PreparedStatement mIsRegistered;
 
     Set<User> activeUsers;
-    HashMap<String, PublicKey> jwtPubKeys = new HashMap<String, PublicKey>();
+    HashMap<String, PublicKey> jwtPubKeys;
     HashMap<String, String> jwtKeys;
 
     /**
@@ -131,6 +131,7 @@ public class Database {
      */
     private Database() {
         activeUsers = new HashSet<User>();
+        jwtPubKeys = new HashMap<String, PublicKey>();
         jwtKeys = new HashMap<String, String>();
     }
 
