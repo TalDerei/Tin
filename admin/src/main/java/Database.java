@@ -323,7 +323,7 @@ public class Database {
             db.mUpdateUser = db.mConnection.prepareStatement("UPDATE tblData SET user_id = ? WHERE id = ?");
             db.mInsertUser = db.mConnection.prepareStatement("INSERT INTO UserData VALUES (default, ?, ?, ?)");
             db.mUpdateNickname = db.mConnection.prepareStatement("UPDATE UserData SET nickname = ? WHERE id = ?");
-            db.mSelectAllUser = db.mConnection.prepareStatement("SELECT id, email, nickname FROM UserData");
+            db.mSelectAllUser = db.mConnection.prepareStatement("SELECT id, email, nickname, biography FROM UserData");
 
             // 3. prepared statements associated with likes table
             db.mCreateLikes = db.mConnection.prepareStatement("CREATE TABLE likes (user_id INTEGER NOT NULL, message_id INTEGER NOT NULL, likes INTEGER NOT NULL, " +

@@ -271,7 +271,7 @@ public class App {
                 System.out.println("  Current Users ");
                 System.out.println("  -------------------------");
                 for (Database.UserData rd : res) {
-                    System.out.println("  [" + rd.mId + "] " + " [email] " + rd.mEmail + " [nickname] " + rd.mNickname);
+                    System.out.println("  [" + rd.mId + "] " + " [email] " + rd.mEmail + " [nickname] " + rd.mNickname + " [biography] " + rd.mBiography);
                 }
             } else if (action == 's') {
                 String email = getString(in, "Enter the email");
