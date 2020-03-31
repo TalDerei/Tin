@@ -80,6 +80,8 @@ public class Database {
 
     private PreparedStatement mUpdateNickname;
 
+    private PreparedStatement mSelectOneUser;
+
     private PreparedStatement mSelectAllUser;
 
     private PreparedStatement mDeleteLike;
@@ -87,6 +89,8 @@ public class Database {
     private PreparedStatement mInsertOneLike;
 
     private PreparedStatement mUpdateOneLike;
+
+    private PreparedStatement mSelectOneLike;
 
     private PreparedStatement mIsRegistered;
 
@@ -208,9 +212,11 @@ public class Database {
             db.mUpdateUser = db.mConnection.prepareStatement("UPDATE tblData SET user_id = ? WHERE id = ?");
             db.mInsertUser = db.mConnection.prepareStatement("INSERT INTO UserData VALUES (default, ?, ?, ?)");
             db.mUpdateNickname = db.mConnection.prepareStatement("UPDATE UserData SET nickname = ? WHERE id = ?");
+            db.mSelectOneUser = db.mConnection.prepareStatement("SELECT id, email, nickname FROM UserData WHERE id = ?");
             db.mSelectAllUser = db.mConnection.prepareStatement("SELECT id, email, nickname FROM UserData");
 
             // likes table:
+            db.mSelectOneLike = db.mConnection.prepareStatement("SELECT FROM likes WHERE message_id = ?");
             db.mDeleteLike = db.mConnection.prepareStatement("DELETE FROM likes WHERE user_id = ?");
             db.mInsertOneLike = db.mConnection.prepareStatement("INSERT INTO likes VALUES (?, ?, ?)");
             db.mUpdateOneLike = db.mConnection.prepareStatement("UPDATE likes SET likes = ? WHERE user_id = ?");
@@ -438,6 +444,22 @@ public class Database {
         return res;
     }
 
+    User selectOneUser(String uid) {
+        User res = null;
+        try {
+            mSelectOneUser.setString(1, uid);
+            ResultSet rs = mSelectOneUser.executeQuery();
+            if (rs.next()) {
+                res = new User(rs.getString("email"), rs.getString("nickname"), rs.getString("id"),
+                        rs.getString("biography"));
+            }
+            rs.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
     ArrayList<User> selectAllUsers() {
         System.out.println("Selecting All Users");
         ArrayList<User> res = new ArrayList<User>();
@@ -520,6 +542,18 @@ public class Database {
             mInsertOneLike.setInt(2, messageId);
             mInsertOneLike.setInt(3, 0);
             res = mInsertOneLike.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    // Select Like with message ID
+    int selectOneLike(int id) {
+        int res = -1;
+        try {
+            mUpdateOneLike.setInt(1, id);
+            res = mSelectOneLike.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
