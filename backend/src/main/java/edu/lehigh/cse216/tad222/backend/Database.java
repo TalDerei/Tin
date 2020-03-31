@@ -453,10 +453,8 @@ public class Database {
         try {
             mSelectOneUser.setString(1, uid);
             ResultSet rs = mSelectOneUser.executeQuery();
-            if (rs.next()) {
-                res = new User(rs.getString("email"), rs.getString("nickname"), rs.getString("id"),
-                        rs.getString("biography"));
-            }
+            res = new User(rs.getString("email"), rs.getString("nickname"), rs.getString("id"),
+                    rs.getString("biography"));
             rs.close();
         } catch (SQLException e) {
             e.printStackTrace();
