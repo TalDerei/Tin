@@ -92,7 +92,6 @@ public class App {
          */
 
         Spark.get("/", (request, response) -> {
-            System.out.println("Redirected to /messages");
             response.redirect("/messages");
             return "Redirect to /messages";
         });
@@ -102,7 +101,6 @@ public class App {
         // return it. If there's no data, we return "[]", so there's no need
         // for error handling.
         Spark.get("/messages", (request, response) -> {
-            System.out.println("Entered messages GET");
             // ensure status 200 OK, with a MIME type of JSON
             response.status(200);
             response.type("application/json");
@@ -128,9 +126,6 @@ public class App {
         // Server Error. Otherwise, we have an integer, and the only possible
         // error is that it doesn't correspond to a row with data.
         Spark.get("/messages/:id", (request, response) -> { // QUERY PARAMETER
-            // ensure status 200 OK, with a MIME type of JSON
-            response.status(200);
-            response.type("application/json");
             int idx = Integer.parseInt(request.params("id"));
             String jwt = request.queryParams("jwt");
             String uid = request.queryParams("uid");
@@ -138,7 +133,9 @@ public class App {
             if(v.contains("error")) {
                 return v;
             }*/
-            
+            // ensure status 200 OK, with a MIME type of JSON
+            response.status(200);
+            response.type("application/json");
             int likes = db.selectOneLike(idx);
             Database.RowData data = db.selectOne(idx);
             String nickname = db.selectOneUser(data.mUser_id).getNickName();
@@ -156,24 +153,21 @@ public class App {
         // request should have a session_id, validate it against a stored session_id in
         // the user_table
         Spark.post("/messages", (request, response) -> {
-            response.status(200);
-            response.type("application/json");
-            System.out.println("Entered messages POST");
             String jwt = request.queryParams("jwt");
             String uid = request.queryParams("uid");
-            /*String v = gson.toJson(verify(uid, jwt));
+            String v = gson.toJson(verify(uid, jwt));
             if(v.contains("error")) {
                 return v;
-            }*/
+            }
             // NB: if gson.Json fails, Spark will reply with status 500 Internal
             // Server Error
             SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
             // ensure status 200 OK, with a MIME type of JSON
             // NB: even on error, we return 200, but with a JSON object that
             // describes the error.
-            
+            response.status(200);
+            response.type("application/json");
             // NB: createEntry checks for null title and message
-            System.out.println(req.mTitle + " " + req.mMessage);
             int newId = db.insertRow(req.mTitle, req.mMessage);
             if (newId == -1) {
                 return gson.toJson(new StructuredResponse("error", "error performing insertion", null));
@@ -187,9 +181,6 @@ public class App {
         Spark.put("/messages/:id", (request, response) -> {
             // If we can't get an ID or can't parse the JSON, Spark will send
             // a status 500
-            // ensure status 200 OK, with a MIME type of JSON
-            response.status(200);
-            response.type("application/json");
             int idx = Integer.parseInt(request.params("id"));
             SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
             String jwt = request.queryParams("jwt");
@@ -202,7 +193,9 @@ public class App {
             if(!uid.equals(data.mUser_id)) {
                 return gson.toJson(new StructuredResponse("error", "User tried to update somebody else's comment", null));
             }
-            
+            // ensure status 200 OK, with a MIME type of JSON
+            response.status(200);
+            response.type("application/json");
             int result = db.updateOne(idx, req.mMessage);
             if (result == -1) {
                 return gson.toJson(new StructuredResponse("error", "unable to update row " + idx, null));
@@ -213,9 +206,6 @@ public class App {
 
         // DELETE route for removing a row from the DataStore
         Spark.delete("/messages/:id", (request, response) -> {
-            // ensure status 200 OK, with a MIME type of JSON
-            response.status(200);
-            response.type("application/json");
             String jwt = request.queryParams("jwt");
             String uid = request.queryParams("uid");
             String v = gson.toJson(verify(uid, jwt));
@@ -224,7 +214,9 @@ public class App {
             }
             // If we can't get an ID, Spark will send a status 500
             int idx = Integer.parseInt(request.params("id"));
-            
+            // ensure status 200 OK, with a MIME type of JSON
+            response.status(200);
+            response.type("application/json");
             // NB: we won't concern ourselves too much with the quality of the
             // message sent on a successful delete
             int result = db.deleteRow(idx);
@@ -236,9 +228,6 @@ public class App {
         });
 
         Spark.put("/likes/:id", (request, response) -> {
-            // ensure status 200 OK, with a MIME type of JSON
-            response.status(200);
-            response.type("application/json");
             String jwt = request.queryParams("jwt");
             String uid = request.queryParams("uid");
             String v = gson.toJson(verify(uid, jwt));
@@ -248,7 +237,9 @@ public class App {
             // If we can't get an ID or can't parse the JSON, Spark will send
             // a status 500
             int idx = Integer.parseInt(request.params("id"));
-            
+            // ensure status 200 OK, with a MIME type of JSON
+            response.status(200);
+            response.type("application/json");
             System.out.println("idx is: " + idx);
 
             int result = db.updateLikes(idx);
