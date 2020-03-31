@@ -2,7 +2,6 @@ package edu.lehigh.cse216.tad222.backend;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import org.jose4j.jwa.AlgorithmConstraints.ConstraintType;
 import org.jose4j.jwk.RsaJsonWebKey;
@@ -77,25 +76,21 @@ public class AppTest extends TestCase {
         }
 
         MockDatabase db = new MockDatabase();
-
-        assertNotNull(db.jwtPubKeys);
-
         db.jwtPubKeys.put(u.getUserID(), rsaJsonWebKey.getPublicKey());
         assertTrue(db.verify(u.getUserID(), jwt));
         db.jwtPubKeys.remove(u.getUserID());
     }
 
     public void verifyDatabaseJWTProduction(){
+        MockDatabase db = new MockDatabase();
         User u = new User("email", "nickname", "b", "This is fake");
         String jwt = "";
         try {
-            jwt = App.getDatabase().produceJWTKey(u);
+            jwt = db.produceJWTKey(u);
         } catch (JoseException e) {
             e.printStackTrace();
         }
-
-        MockDatabase db = new MockDatabase();
-        assertNotNull(db.jwtPubKeys.get(u.getUserID()));
+        assertTrue(db.jwtPubKeys.get(u.getUserID()) != null);
         db.jwtPubKeys.remove(u.getUserID());
     }
 }
