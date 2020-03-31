@@ -6,6 +6,7 @@ android {
     defaultConfig {
         applicationId "edu.lehigh.cse216.teamtin"
         minSdkVersion 15
+        multiDexEnabled true
         targetSdkVersion 29
         versionCode 1
         versionName "1.0"
@@ -16,6 +17,9 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+    }
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES'
     }
 }
 
@@ -34,4 +38,7 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
     androidTestImplementation 'androidx.test:rules:1.2.0-beta01'
+    implementation 'com.google.android.gms:play-services-auth:17.0.0'
+    implementation 'com.google.api-client:google-api-client-android:1.30.9'
+    implementation 'com.squareup.picasso:picasso:2.71828'
 }
