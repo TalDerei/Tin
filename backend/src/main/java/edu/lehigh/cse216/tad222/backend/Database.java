@@ -92,8 +92,6 @@ public class Database {
 
     private PreparedStatement mSelectOneLike;
 
-    private PreparedStatement mLikesNeutral;
-
     private PreparedStatement mIsRegistered;
 
     Set<User> activeUsers;
@@ -220,7 +218,6 @@ public class Database {
             // likes table:
             db.mSelectOneLike = db.mConnection.prepareStatement("SELECT FROM likes WHERE message_id = ?");
             db.mDeleteLike = db.mConnection.prepareStatement("DELETE FROM likes WHERE user_id = ?");
-            db.mLikesNeutral = db.mConnection.prepareStatement("SELECT SUM(likes.likes) AS total FROM likes WHERE likes.message_id = ?");
             db.mInsertOneLike = db.mConnection.prepareStatement("INSERT INTO likes VALUES (?, ?, ?)");
             db.mUpdateOneLike = db.mConnection.prepareStatement("UPDATE likes SET likes = ? WHERE user_id = ?");
 
@@ -330,7 +327,6 @@ public class Database {
                 res = new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"),
                         rs.getString("user_id"));
             }
-            rs.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -556,11 +552,8 @@ public class Database {
     int selectOneLike(int id) {
         int res = -1;
         try {
-            mLikesNeutral.setInt(1, id);
-            ResultSet rs = mLikesNeutral.executeQuery();
-            rs.next();
-            res = rs.getInt("total");
-            rs.close();
+            mUpdateOneLike.setInt(1, id);
+            res = mSelectOneLike.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
