@@ -2,31 +2,34 @@ package edu.lehigh.cse216.tad222.backend;
 
 public class User {
 
-    private String name;
     private String email;
-    private String clientID;
+    private String nickname;
     private String userID;
+    private String bio;
 
-    public User(String name, String email, String cid, String userID) {
+    public User(String email, String nickname, String userID, String bio) {
         this.email = email;
-        this.name = name;
-        clientID = cid;
+        this.nickname = nickname;
         this.userID = userID;
-    }
-
-    public String getName() {
-        return name;
     }
 
     public String getEmail() {
         return email;
     }
     
-    public String getClientID() {
-        return clientID;
+    public String getNickName() {
+        return nickname;
+    }
+
+    public void setNickName(String newNickName) {
+        nickname = newNickName;
     }
 
     public String getUserID() {
         return userID;
+    }
+
+    public String getBio(){
+        return bio;
     }
 }

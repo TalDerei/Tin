@@ -24,12 +24,6 @@ import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwa.AlgorithmConstraints.ConstraintType;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
-import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.MalformedClaimException;
-import org.jose4j.jwt.consumer.ErrorCodes;
-import org.jose4j.jwt.consumer.InvalidJwtException;
-import org.jose4j.jwt.consumer.JwtConsumer;
-import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.jose4j.lang.JoseException;
 
 import java.io.IOException;
@@ -47,21 +41,6 @@ public class App {
 
         // Get the port on which to listen for requests
         Spark.port(getIntFromEnv("PORT", 4567));
-
-        // create a modified version of Spark's embedded Jetty server
-        /*
-         * JettyServerFactory jf = new JettyServerFactory(){
-         * 
-         * @Override public Server create(int maxThreads, int minThreads, int
-         * threadTimeoutMillis) { Server s = new Server(getIntFromEnv("PORT", 4567));
-         * return s; } }; ServletContextHandler context = new
-         * ServletContextHandler(ServletContextHandler.SESSIONS);
-         * context.setContextPath(Util.SITE); context.addServlet(new ServletHolder(new
-         * AuthCodeServlet()), "/users/login"); context.addServlet(new ServletHolder(new
-         * AuthCodeCallbackServlet()), "/users/login/callback");
-         * 
-         * EmbeddedJettyServer server = new EmbeddedJettyServer(jf, context);
-         */
 
         // Database URL
         Map<String, String> env = System.getenv();
@@ -148,6 +127,12 @@ public class App {
         // error is that it doesn't correspond to a row with data.
         Spark.get("/messages/:id", (request, response) -> { // QUERY PARAMETER
             int idx = Integer.parseInt(request.params("id"));
+            String jwt = request.queryParams("jwt");
+            String uid = request.queryParams("uid");
+            boolean v = verify(uid, jwt);
+            if(!v) {
+                return gson.toJson(new StructuredResponse("error", "Couldn't verify user", jwt));
+            }
             // ensure status 200 OK, with a MIME type of JSON
             response.status(200);
             response.type("application/json");
@@ -166,6 +151,12 @@ public class App {
         // request should have a session_id, validate it against a stored session_id in
         // the user_table
         Spark.post("/messages", (request, response) -> {
+            String jwt = request.queryParams("jwt");
+            String uid = request.queryParams("uid");
+            boolean v = verify(uid, jwt);
+            if(!v) {
+                return gson.toJson(new StructuredResponse("error", "Couldn't verify user", jwt));
+            }
             // NB: if gson.Json fails, Spark will reply with status 500 Internal
             // Server Error
             SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
@@ -190,6 +181,16 @@ public class App {
             // a status 500
             int idx = Integer.parseInt(request.params("id"));
             SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
+            String jwt = request.queryParams("jwt");
+            String uid = request.queryParams("uid");
+            boolean v = verify(uid, jwt);
+            if(!v) {
+                return gson.toJson(new StructuredResponse("error", "Couldn't verify user", jwt));
+            }
+            Database.RowData data = db.selectOne(idx);
+            if(!uid.equals(data.mUser_id)) {
+                return gson.toJson(new StructuredResponse("error", "User tried to update somebody else's comment", null));
+            }
             // ensure status 200 OK, with a MIME type of JSON
             response.status(200);
             response.type("application/json");
@@ -203,6 +204,12 @@ public class App {
 
         // DELETE route for removing a row from the DataStore
         Spark.delete("/messages/:id", (request, response) -> {
+            String jwt = request.queryParams("jwt");
+            String uid = request.queryParams("uid");
+            boolean v = verify(uid, jwt);
+            if(!v) {
+                return gson.toJson(new StructuredResponse("error", "Couldn't verify user", jwt));
+            }
             // If we can't get an ID, Spark will send a status 500
             int idx = Integer.parseInt(request.params("id"));
             // ensure status 200 OK, with a MIME type of JSON
@@ -219,6 +226,12 @@ public class App {
         });
 
         Spark.put("/likes/:id", (request, response) -> {
+            String jwt = request.queryParams("jwt");
+            String uid = request.queryParams("uid");
+            boolean v = verify(uid, jwt);
+            if(!v) {
+                return gson.toJson(new StructuredResponse("error", "Couldn't verify user", jwt));
+            }
             // If we can't get an ID or can't parse the JSON, Spark will send
             // a status 500
             int idx = Integer.parseInt(request.params("id"));
@@ -248,7 +261,8 @@ public class App {
             String email = "";
             String uid = "";
             String secret = "";
-            boolean success = db.registerUser(name, email, uid, secret);
+            String bio = "";
+            boolean success = db.registerUser(email, name, uid, bio);
             if (success) {
                 return gson.toJson(new StructuredResponse("ok", "User " + name + " was registered", uid));
             } else {
@@ -267,8 +281,7 @@ public class App {
                                                        // registration
                     .append("&idToken=" + idToken).append("&response_type=code")
                     .append("&scope=https://www.googleapis.com/auth/userinfo.profile") // scope is the api permissions
-                                                                                       // we are
-                    // requesting
+                                                                                       // we are requesting
                     .append("&redirect_uri=" + Util.SITE + "/users/login/callback") // the servlet that google redirects
                                                                                     // to after
                     // authorization
@@ -307,28 +320,27 @@ public class App {
             // get the access token from json and request info from Google
             JsonObject jsonObject = gson.fromJson(body, JsonObject.class);
 
-            // google tokens expire after an hour, but since we requested offline access we
-            // can get a new token without user involvement via the refresh token
+            // 
             String accessToken = jsonObject.get("access_token").getAsString();
             JsonObject json = gson
                     .fromJson((new StringBuilder("https://www.googleapis.com/auth/userinfo.profile?access_token=")
                             .append(accessToken).toString()), JsonObject.class);
-            String name = json.get("name").getAsString();
+            String nickname = json.get("name").getAsString();
             String email = json.get("email").getAsString();
-            String cid = request.params("client_id");
             String uid = json.get("id").getAsString();
+            String bio = "";
 
             if (!email.contains("lehigh.edu")) {
-                return new StructuredResponse("error", "User " + name + " is not part of lehigh.edu", null);
+                return gson.toJson(new StructuredResponse("error", "User " + nickname + " is not part of lehigh.edu", null));
             }
 
-            User u = new User(name, email, cid, uid);
-            String jwt = db.produceJWTKey(u);
+            User u = new User(email, nickname, uid, bio);
+            String jwt = accessToken + " " + db.produceJWTKey(u);
 
             if (db.setUserActive(u)) {
-                return gson.toJson(new StructuredResponse("ok", "User " + name + " was logged in", jwt));
+                return gson.toJson(new StructuredResponse("ok", "User " + nickname + " was logged in", jwt));
             } else {
-                return gson.toJson(new StructuredResponse("error", "User " + name + " was already logged in", null));
+                return gson.toJson(new StructuredResponse("error", "User " + nickname + " was already logged in", null));
             }
         });
 
@@ -346,6 +358,12 @@ public class App {
 
         // Get a list of active users
         Spark.get("/users/", (request, response) -> {
+            String jwt = request.queryParams("jwt");
+            String uid = request.queryParams("uid");
+            boolean v = verify(uid, jwt);
+            if(!v) {
+                return gson.toJson(new StructuredResponse("error", "Couldn't verify user", jwt));
+            }
             // ensure status 200 OK, with a MIME type of JSON
             response.status(200);
             response.type("application/json");
@@ -354,10 +372,16 @@ public class App {
             } else {
                 System.out.println("db is NOT null");
             }
-            return gson.toJson(new StructuredResponse("ok", null, db.selectAllActiveUsers()));
+            return gson.toJson(new StructuredResponse("ok", null, db.selectAllUsers()));
         });
 
         Spark.get("/users/:user_id", (request, response) -> {
+            String jwt = request.queryParams("jwt");
+            String uid = request.queryParams("uid");
+            boolean v = verify(uid, jwt);
+            if(!v) {
+                return gson.toJson(new StructuredResponse("error", "Couldn't verify user", jwt));
+            }
             // ensure status 200 OK, with a MIME type of JSON
             response.status(200);
             response.type("application/json");
@@ -370,6 +394,12 @@ public class App {
         });
 
         Spark.post("/users/:user_id/bio", (request, response) -> {
+            String jwt = request.queryParams("jwt");
+            String uid = request.queryParams("uid");
+            boolean v = verify(uid, jwt);
+            if(!v) {
+                return gson.toJson(new StructuredResponse("error", "Couldn't verify user", jwt));
+            }
             // ensure status 200 OK, with a MIME type of JSON
             response.status(200);
             response.type("application/json");
@@ -382,6 +412,12 @@ public class App {
         });
 
         Spark.put("/users/:user_id/bio", (request, response) -> {
+            String jwt = request.queryParams("jwt");
+            String uid = request.queryParams("uid");
+            boolean v = verify(uid, jwt);
+            if(!v) {
+                return gson.toJson(new StructuredResponse("error", "Couldn't verify user", jwt));
+            }
             // ensure status 200 OK, with a MIME type of JSON
             response.status(200);
             response.type("application/json");
@@ -504,7 +540,6 @@ public class App {
             jws.setKey(pk);
             verified = jws.verifySignature();
         } catch (JoseException je) {
-            // TODO Auto-generated catch block
             je.printStackTrace();
         }
 

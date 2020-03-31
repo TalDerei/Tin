@@ -10,16 +10,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
-import org.jose4j.jwa.AlgorithmConstraints.ConstraintType;
-import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
-import org.jose4j.jwt.consumer.JwtConsumer;
-import org.jose4j.jwt.consumer.JwtConsumerBuilder;
-import org.jose4j.keys.resolvers.HttpsJwksVerificationKeyResolver;
 import org.jose4j.lang.JoseException;
 
 import java.util.HashSet;
@@ -71,24 +66,27 @@ public class Database {
 
     private PreparedStatement mUpdateLikes;
 
-    private PreparedStatement mCreateRegUserTable;
+    private PreparedStatement mDeleteUser;
 
-    private PreparedStatement mDropRegUserTable;
+    private PreparedStatement mUpdateUser;
 
-    private PreparedStatement mRegisterUser;
+    private PreparedStatement mInsertUser;
+
+    private PreparedStatement mUpdateNickname;
+    
+    private PreparedStatement mSelectAllUser;
+
+    private PreparedStatement mDeleteLike;
+
+    private PreparedStatement mInsertOneLike;
+
+    private PreparedStatement mUpdateOneLike;
 
     private PreparedStatement mIsRegistered;
-
-    private PreparedStatement mLogin;
-
-    private PreparedStatement mLogoff;
-
-    private static final String regUsers = "userTable";
 
     Set<User> activeUsers;
     HashMap<String, PublicKey> jwtPubKeys;
     HashMap<String, String> jwtKeys;
-    HttpsJwks httpsJkws;
 
     /**
      * RowData is like a struct in C: we use it to hold data, and we allow direct
@@ -114,16 +112,16 @@ public class Database {
          */
         String mMessage;
 
-        int mlikes;
+        String mUser_id;
 
         /**
          * Construct a RowData object by providing values for its fields
          */
-        public RowData(int id, String subject, String message, int likes) {
+        public RowData(int id, String subject, String message, String uid) {
             mId = id;
             mSubject = subject;
             mMessage = message;
-            mlikes = likes;
+            mUser_id = uid;
         }
     }
 
@@ -135,7 +133,6 @@ public class Database {
         activeUsers = new HashSet<User>();
         jwtPubKeys = new HashMap<String, PublicKey>();
         jwtKeys = new HashMap<String, String>();
-        httpsJkws = new HttpsJwks(Util.SITE + "/jwks");
     }
 
     /**
@@ -194,35 +191,24 @@ public class Database {
         // Attempt to create all of our prepared statements. If any of these
         // fail, the whole getDatabase() call should fail
         try {
-            // NB: we can easily get ourselves in trouble here by typing the
-            // SQL incorrectly. We really should have things like "tblData"
-            // as constants, and then build the strings for the statements
-            // from those constants.
-
-            // Note: no "IF NOT EXISTS" or "IF EXISTS" checks on table
-            // creation/deletion, so multiple executions will cause an exception
-            db.mCreateTable = db.mConnection
-                    .prepareStatement("CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) "
-                            + "NOT NULL, message VARCHAR(500) NOT NULL)");
-            db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData");
-
-            db.mCreateRegUserTable = db.mConnection.prepareStatement("CREATE TABLE " + regUsers + " (name VARCHAR(50) "
-                    + "NOT NULL, uid VARCHAR(500) NOT NULL, secret VARCHAR(500) NOT NULL)");
-            db.mDropRegUserTable = db.mConnection.prepareStatement("DROP TABLE " + regUsers);
-
-            // Standard CRUD operations
+            // tblData table:
             db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
-            db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?, ?)");
-            db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject, message, likes FROM tblData");
-            db.mSelectOne = db.mConnection.prepareStatement("SELECT * from tblData WHERE id=?");
+            db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?)");
+            db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject, message FROM tblData"); 
+            db.mSelectOne = db.mConnection.prepareStatement("SELECT id, subject, message from tblData WHERE id = ?");
             db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
-            db.mUpdateLikes = db.mConnection.prepareStatement("UPDATE tblData SET likes = likes+1 WHERE id = ?");
-            db.mRegisterUser = db.mConnection
-                    .prepareStatement("INSERT INTO " + regUsers + " Values (default, ?, ?, ?)");
-            db.mIsRegistered = db.mConnection.prepareStatement("SELECT uid FROM " + regUsers + " WHERE checkUser = ?"
-                    + " WHERE EXISTS" + "(SELECT 2" + "FROM " + regUsers + " u" + "Where u.uid = checkUser" + ")");
-            db.mLogin = db.mConnection.prepareStatement("INSERT");
-            db.mLogoff = db.mConnection.prepareStatement("DELETE");
+
+            // UserData table:
+            db.mDeleteUser = db.mConnection.prepareStatement("DELETE FROM UserData WHERE id = ?");
+            db.mUpdateUser = db.mConnection.prepareStatement("UPDATE tblData SET user_id = ? WHERE id = ?");
+            db.mInsertUser = db.mConnection.prepareStatement("INSERT INTO UserData VALUES (default, ?, ?, ?)");
+            db.mUpdateNickname = db.mConnection.prepareStatement("UPDATE UserData SET nickname = ? WHERE id = ?");
+            db.mSelectAllUser = db.mConnection.prepareStatement("SELECT id, email, nickname FROM UserData");
+
+            // likes table:
+            db.mDeleteLike = db.mConnection.prepareStatement("DELETE FROM likes WHERE user_id = ?");
+            db.mInsertOneLike = db.mConnection.prepareStatement("INSERT INTO likes VALUES (?, ?, ?)");
+            db.mUpdateOneLike = db.mConnection.prepareStatement("UPDATE likes SET likes = ? WHERE user_id = ?");
 
         } catch (SQLException e) {
             System.err.println("Error creating prepared statement");
@@ -261,8 +247,8 @@ public class Database {
     /**
      * Insert a row into the database
      * 
-     * @param subject The subject for this new row
-     * @param message The message body for this new row
+     * @param uid The subject for this new row
+     * @param email The message body for this new rowz
      * 
      * @return The number of rows that were inserted
      */
@@ -271,7 +257,6 @@ public class Database {
         try {
             mInsertOne.setString(1, subject);
             mInsertOne.setString(2, message);
-            mInsertOne.setInt(3, 0);
             count += mInsertOne.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -301,9 +286,8 @@ public class Database {
         ArrayList<RowData> res = new ArrayList<RowData>();
         try {
             ResultSet rs = mSelectAll.executeQuery();
-            while (rs.next()) {
-                res.add(new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"),
-                        rs.getInt("likes")));
+            while (rs.next()) { 
+                res.add(new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"), rs.getString("user_id")));
             }
             rs.close();
             return res;
@@ -328,8 +312,7 @@ public class Database {
             mSelectOne.setInt(1, id);
             ResultSet rs = mSelectOne.executeQuery();
             if (rs.next()) {
-                res = new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"),
-                        rs.getInt("likes"));
+                res = new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"), rs.getString("user_id"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -410,9 +393,9 @@ public class Database {
      * Add a new user to Registered Users
      * 
      */
-    boolean registerUser(String name, String email, String uid, String secret) {
+    boolean registerUser(String email, String nickname, String uid, String bio) {
         // session_id random string for user is created and passed to front end
-        User u = new User(name, email, uid, secret);
+        User u = new User(email, nickname, uid, bio);
         return false;
     }
 
@@ -420,7 +403,7 @@ public class Database {
         int res = 0;
         try {
             mIsRegistered.setString(1, u.getUserID());
-            res = mIsRegistered.executeQuery().getFetchSize();
+            //res = mIsRegistered.executeQuery().getFetchSize();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -443,7 +426,117 @@ public class Database {
     ArrayList<String> selectAllActiveUsers() {
         ArrayList<String> res = new ArrayList<String>();
         for (User u : activeUsers) {
-            res.add(u.getName());
+            res.add(u.getEmail());
+        }
+        return res;
+    }
+
+    ArrayList<User> selectAllUsers() {
+        System.out.println("Selecting All Users");
+        ArrayList<User> res = new ArrayList<User>();
+        try {
+            ResultSet rs = mSelectAllUser.executeQuery();
+            while (rs.next()) { 
+                res.add(new User(rs.getString("email"), rs.getString("nickname"), rs.getString("id"), rs.getString("biography")));
+            }
+            rs.close();
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Insert a row into the database
+     * 
+     * @param uid The users' id
+     * @param email The user's email
+     * @param nickname The user's nickname
+     * 
+     * @return The number of rows that were inserted
+     */
+    int insertUser(String uid, String email, String nickname) {
+        int res = -1;
+        try {
+            mInsertUser.setString(1, uid);
+            mInsertUser.setString(2, email);
+            mInsertUser.setString(3, nickname);
+            res = mInsertUser.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+        
+    }
+
+    int updateUser(String uid) {
+        int res = -1;
+        try {
+            mUpdateUser.setString(1, uid);
+            mUpdateUser.setString(2, uid);
+            res = mUpdateUser.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    int updateNickname(String uid, String nickname) {
+        int res = -1;
+        try {
+            mUpdateNickname.setString(1, nickname);
+            mUpdateNickname.setString(2, uid);
+            res = mUpdateNickname.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    int deleteUser(String uid) {
+        int res = -1;
+        try {
+            mDeleteUser.setString(1, uid);
+            res = mDeleteUser.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    int insertOneLike(String uid, int messageId) {
+        int res = -1;
+        try {
+            mInsertOneLike.setString(1, uid);
+            mInsertOneLike.setInt(2, messageId);
+            mInsertOneLike.setInt(3, 0);
+            res = mInsertOneLike.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res; 
+    }
+
+    int updateOneLike(String uid, int likes) {
+        int res = -1;
+        try {
+            mUpdateOneLike.setInt(1, likes);
+            mUpdateOneLike.setString(2, uid);
+            res = mUpdateOneLike.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res; 
+    }
+
+    int deleteLike(String uid) {
+        int res = -1;
+        try {
+            mDeleteLike.setString(1, uid);
+            res = mDeleteLike.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
         return res;
     }
@@ -453,15 +546,15 @@ public class Database {
         RsaJsonWebKey rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
         
         // Give the JWK a Key ID (kid), which is just the polite thing to do
-        rsaJsonWebKey.setKeyId("k" + jwtKeys.size());
+        rsaJsonWebKey.setKeyId("k" + jwtPubKeys.size());
         JwtClaims claims = new JwtClaims();
         claims.setIssuer("BuzzServer");
-        claims.setAudience(u.getName());
+        claims.setAudience(u.getEmail());
         claims.setGeneratedJwtId();
         claims.setIssuedAtToNow();
         claims.setClaim("email", u.getEmail());
         claims.setClaim("name", "name");
-        claims.setClaim("client_id", u.getClientID());
+        claims.setClaim("biography", u.getBio());
         claims.setClaim("userID", u.getUserID());
 
         JsonWebSignature jws = new JsonWebSignature();
@@ -477,13 +570,8 @@ public class Database {
         
         String uid = u.getUserID();
         jwtPubKeys.put(uid, rsaJsonWebKey.getPublicKey());
-        
 
-        return uid + " " + jws.getCompactSerialization();
-    }
-
-    HttpsJwks getHttpJwks() {
-        return httpsJkws;
+        return jws.getCompactSerialization();
     }
 
     PublicKey getPublicKey(String uid){
@@ -494,4 +582,3 @@ public class Database {
         return false;
     }
 }
-
