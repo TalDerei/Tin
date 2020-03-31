@@ -33,7 +33,7 @@ public class AppTest extends TestCase {
          * test for Database connection
          */
         Properties prop = new Properties();
-        String config = "backend.properties"; // a remote database on heroku for unit testing
+        String config = "config.properties"; // a remote database on heroku for unit testing
         try {
             InputStream input = App.class.getClassLoader().getResourceAsStream(config);
             prop.load(input);
@@ -52,21 +52,21 @@ public class AppTest extends TestCase {
         assertTrue(table.size() == 1);
         assertTrue(table.get(0).mSchema.equals("public"));
         assertTrue(table.get(0).mName.equals("userdata"));
-        assertTrue(table.get(0).mOwner.equals("azexrkxulzlqss"));
+        assertTrue(table.get(0).mOwner.equals("jriwkmrrgglzdu"));
 
         /**
          * test for Creating RowData table in Database
          */
         db.createTable();
         table = db.showTable();
-        assertTrue(table.size() == 2);
         assertTrue(table.get(1).mSchema.equals("public"));
         assertTrue(table.get(1).mName.equals("tbldata"));
-        assertTrue(table.get(1).mOwner.equals("azexrkxulzlqss"));
+        assertTrue(table.get(1).mOwner.equals("jriwkmrrgglzdu"));
 
         /**
          * test for inserting a message
          */
+        System.out.println("inserting message into tbldata...");
         String subject = "CSE216";
         String message = "Software Engineering!";
         int count = db.insertRow(subject, message);
@@ -76,56 +76,36 @@ public class AppTest extends TestCase {
         assertTrue(rowData.mId == 1);
         assertTrue(rowData.mSubject.equals("CSE216"));
         assertTrue(rowData.mMessage.equals("Software Engineering!"));
-        assertTrue(rowData.mLikes == 0);
 
         /**
          * test for inserting a user into UserData table
          */
+        System.out.println("inserting user into userdata...");
         String email = "sap716@lehigh.edu";
         String nickname = "MyName";
-        int nUser = db.insertUser(email, nickname);
+        String biography = "biographys";
+        int nUser = db.insertUser(email, nickname, biography);
         assertTrue(nUser == 1);
         ArrayList<Database.UserData> userData = db.selectAllUsers();
         assertTrue(userData.size() == 1);
         assertTrue(userData.get(0).mEmail.equals("sap716@lehigh.edu"));
         assertTrue(userData.get(0).mNickname.equals("MyName"));
-
-        /**
-         * test for updating an user profile and 'like' vote into a message
-         */
-        int newUserId = 1;
-        int newLikes = 1;
-        db.updateUser(id, newUserId);
-        db.updateLike(id, newLikes);
-        rowData = db.selectOne(id); // first row
-        assertTrue(rowData.mLikes == 1);
-        assertTrue(rowData.mUserId == 1);
+        assertTrue(userData.get(0).mBiography.equals("biographys"));
 
         /**
          * test for updating a nickname
          */
+        System.out.println("updating a nickname...");
         String newNickname = "NewName";
         db.updateNickname(id, newNickname);
         userData = db.selectAllUsers();
         assertTrue(userData.get(0).mNickname.equals("NewName"));
 
         /**
-         * test for searching a message by using user profile (email)
-         */
-        ArrayList<Database.RowData> result = db.selectAllByUser(email);
-        assertTrue(result.size() == 1);
-        assertTrue(result.get(0).mEmail.equals("sap716@lehigh.edu"));
-        assertTrue(result.get(0).mNickname.equals("NewName"));
-        assertTrue(result.get(0).mSubject.equals("CSE216"));
-        assertTrue(result.get(0).mMessage.equals("Software Engineering!"));
-
-
-        /**
          * test for deleting a message by using user profile (email)
          */
-        db.deleteRowByUser(email);
-        result = db.selectAll();
-        assertTrue(result.size() == 0);
+        System.out.println("delete message associated with user profile...");
+        db.deleteRowByUser(email); 
 
         /**
          * test for deleting an user from UserData
@@ -134,7 +114,6 @@ public class AppTest extends TestCase {
         db.deleteUser(user_id);
         userData = db.selectAllUsers();
         assertTrue(userData.size() == 0);
-
 
         /**
          * test for Dropping RowData table in Database
