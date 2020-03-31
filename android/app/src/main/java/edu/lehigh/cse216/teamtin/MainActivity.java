@@ -1,7 +1,9 @@
 package edu.lehigh.cse216.teamtin;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,16 +18,20 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
+import com.android.volley.DefaultRetryPolicy;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     /**
@@ -33,6 +39,16 @@ public class MainActivity extends AppCompatActivity {
      */
     ArrayList<Datum> mData = new ArrayList<>();
     String url = "https://limitless-ocean-62391.herokuapp.com/messages";
+
+    private String profileName;
+    private String profileEmail;
+
+    /**
+     *  map holds messages for given username (mTitle)
+     */
+    Map<String, List<String>> map = new LinkedHashMap<String, List<String>>();
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,10 +59,16 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        Intent intent = getIntent();
+        profileName = intent.getStringExtra("givenName") + " " + intent.getStringExtra("familyName");
+        profileEmail = intent.getStringExtra("email");
         getRequestBackend();
     }
 
 
+    /**
+     * GET method to see messages
+     */
     public void getRequestBackend() {
         // Instantiate the RequestQueue.
         RequestQueue queue = Volley.newRequestQueue(this);
@@ -55,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
+                        Log.d("GET", response);
                         populateListFromVolley(response);
                     }
                 }, new Response.ErrorListener() {
@@ -64,10 +87,16 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        stringRequest.setRetryPolicy(new DefaultRetryPolicy(10000, 0,
+                        DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
         // Add the request to the RequestQueue.
         queue.add(stringRequest);
     }
 
+
+    /**
+     *  deprecated function
+     */
     public void postRequestBackend() {
         // Instantiate the RequestQueue.
         RequestQueue queue = Volley.newRequestQueue(this);
@@ -78,8 +107,6 @@ public class MainActivity extends AppCompatActivity {
                     public void onResponse(String response) {
                         // response
                         Log.d("Response", response);
-
-                        getRequestBackend();
                     }
                 },
                 new Response.ErrorListener()
@@ -102,8 +129,39 @@ public class MainActivity extends AppCompatActivity {
             }
         };
         queue.add(postRequest);
-
     }
+
+    /**
+     *  Post a message with JSONObject
+     */
+    public void postJsonRequestBackend(String result) {
+        RequestQueue queue = Volley.newRequestQueue(this);
+        JSONObject object = new JSONObject();
+        Log.d("who", profileName);
+        try {
+            //input your API parameters
+            object.put("mTitle", profileName);
+            object.put("mMessage",result);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        // Enter the correct url for your api service site
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, url, object,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        Log.d("onResponse", response.toString());
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.d("onErrorResponse", error.toString());
+            }
+
+        });
+        queue.add(jsonObjectRequest);
+    }
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -130,6 +188,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void populateListFromVolley(String response){
+        mData.clear();
         try {
             JSONObject jsonObject = new JSONObject(response);
             JSONArray json = jsonObject.getJSONArray("mData");
@@ -137,6 +196,9 @@ public class MainActivity extends AppCompatActivity {
                 String sub = json.getJSONObject(i).getString("mSubject");
                 String str = json.getJSONObject(i).getString("mMessage");
                 mData.add(new Datum(sub, str));
+                if (!map.containsKey(sub))
+                    map.put(sub, new ArrayList<String>());
+                map.get(sub).add(str);
             }
         } catch (final JSONException e) {
             Log.d("vld222", "Error parsing JSON file: " + e.getMessage());
@@ -148,6 +210,9 @@ public class MainActivity extends AppCompatActivity {
         ItemListAdapter adapter = new ItemListAdapter(this, mData);
         rv.setAdapter(adapter);
 
+        /*
+         click event on message
+         */
         adapter.setClickListener(new ItemListAdapter.ClickListener() {
             @Override
             public void onClick(Datum d) {
@@ -156,39 +221,43 @@ public class MainActivity extends AppCompatActivity {
                 i.putExtra("messageText", d.mText);
                 i.putExtra("messageUser", d.mSubject);
                 startActivityForResult(i, 789); // 789 is the number that will come back to us
-
-
-                /*
-                setContentView(R.layout.activity_vote);
-                TextView head = findViewById(R.id.messageHeading);
-                head.setText("hey");
-                TextView body = findViewById(R.id.fullMessage);
-                body.setText("asdf");
-                //Toast.makeText(MainActivity.this, d.mIndex + " --> " + d.mText,
-                  //      Toast.LENGTH_LONG).show();*/
             }
         });
+
+        /*
+         click event on profile image
+         */
+        adapter.setImageClickListener(new ItemListAdapter.ClickListener() {
+            @Override
+            public void onClick(Datum d) {
+                ArrayList<String> messages = (ArrayList<String>) map.get(d.mSubject);
+                Intent i = new Intent(getApplicationContext(), ProfileActivity.class);
+                i.putExtra("messageUser", d.mSubject);
+                i.putStringArrayListExtra("messages", messages);
+                Log.d("setImageClickListener", "size: " + messages.size());
+                startActivityForResult(i, 789); // 789 is the number that will come back to us
+            }
+        });
+        adapter.notifyDataSetChanged();
     }
+
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         // Check which request we're responding to
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 789) {
-            // Make sure the request was successful
-            if (resultCode == RESULT_OK) {
-                // Get the "extra" string of data
-                //Intent i = new Intent(getApplicationContext(), MainActivity.class);
-                //i.putExtra("label_contents", "Type a message to post:");
-                //startActivityForResult(i, 789); // 789 is the number that will come back to us
-                // Request a string response from the provided URL.
-
-                postRequestBackend();
-
+        if (resultCode == Activity.RESULT_OK) {
+            if (requestCode == 789) {
+                String result = data.getStringExtra("result");
+                Log.d("onActivityResult", result);
+                postJsonRequestBackend(result);
+                SystemClock.sleep(1000);
                 Toast.makeText(MainActivity.this, "Message Posted!", Toast.LENGTH_LONG).show();
-            } else {
-                Toast.makeText(MainActivity.this, "Message Cancelled.", Toast.LENGTH_LONG).show();
+                getRequestBackend();
             }
         }
     }
+
+
 }
