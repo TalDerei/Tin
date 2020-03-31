@@ -9,6 +9,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -39,10 +40,11 @@ public class PostActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 if (!et.getText().toString().equals("")) {
+                    String result = et.getText().toString();
+                    Log.d("PostActivity", result);
                     Intent i = new Intent();
-                    i.putExtra("result", et.getText().toString());
+                    i.putExtra("result", result);
                     setResult(Activity.RESULT_OK, i);
-
                     finish();
                 }
             }
