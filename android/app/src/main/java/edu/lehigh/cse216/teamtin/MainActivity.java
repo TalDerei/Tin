@@ -2,6 +2,7 @@ package edu.lehigh.cse216.teamtin;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.net.http.HttpResponseCache;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
@@ -28,11 +29,15 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+
+import javax.net.ssl.HttpsURLConnection;
 
 public class MainActivity extends AppCompatActivity {
     /**
@@ -44,12 +49,13 @@ public class MainActivity extends AppCompatActivity {
     private String profileName;
     private String profileEmail;
 
+    private long lastUpdateTime;
+    private long expires;
+
     /**
      *  map holds messages for given username (mTitle)
      */
     Map<String, List<String>> map = new LinkedHashMap<String, List<String>>();
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,12 +66,30 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        enableHttpResponseCache();
+        lastUpdateTime = 0;
+        try {
+            File httpCacheDir = new File(getCacheDir(), "http");
+            long httpCacheSize = 10 * 1024 * 1024; // 10 MiB
+            HttpResponseCache.install(httpCacheDir, httpCacheSize);
+        } catch (IOException e) {
+            Log.i("info:", "HTTP response cache installation failed:" + e);
+        }
+
         Intent intent = getIntent();
         profileName = intent.getStringExtra("givenName") + " " + intent.getStringExtra("familyName");
         profileEmail = intent.getStringExtra("email");
         getRequestBackend();
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        HttpResponseCache cache = HttpResponseCache.getInstalled();
+        if (cache != null) {
+            cache.flush();
+        }
+    }
 
     /**
      * GET method to see messages
@@ -258,6 +282,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //enables the HttpResponseCache for supported devices
     private void enableHttpResponseCache() {
         try {
             long httpCacheSize = 10 * 1024 * 1024; // 10 MiB
@@ -270,4 +295,23 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void updateCache(URL url) {
+        // url represents the website containing the content to place into the cache.
+        try {
+            HttpsURLConnection conn = (HttpsURLConnection) url.openConnection();
+
+            long currentTime = System.currentTimeMillis();
+            expires = conn.getHeaderFieldDate("Expires", currentTime);
+            long lastModified = conn.getHeaderFieldDate("Last-Modified", currentTime);
+
+            // lastUpdateTime represents when the cache was last updated.
+            if (lastModified < lastUpdateTime) {
+                // skip update
+            } else {
+                lastUpdateTime = lastModified;
+            }
+        } catch (IOException e) {
+            Log.e("error", Log.getStackTraceString(e));
+        }
+    }
 }
