@@ -1,2 +1,6 @@
 .vscode
 .idea
+.factorypath
+.project
+.gradle/*
+*/.settings/
