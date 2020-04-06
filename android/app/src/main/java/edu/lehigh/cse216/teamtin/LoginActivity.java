@@ -58,6 +58,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         GoogleSignInOptions gso = new GoogleSignInOptions
                 .Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(getString(R.string.server_client_id))
+                .requestServerAuthCode(getString(R.string.server_client_id), false)
                 .requestEmail()
                 .build();
         mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -121,12 +122,13 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                 familyName = account.getFamilyName();
                 givenName = account.getGivenName();
                 idToken = account.getIdToken();
+                String code = account.getServerAuthCode();
                 Log.d("onActivityResult", "email is " + email);
                 Log.d("onActivityResult", "ID Token is " + idToken);
 
                 //TODO: send an ID token to backend server
                 RequestQueue queue = Volley.newRequestQueue(this);
-                String targetUrl = url + "/users/login?idToken=" + idToken;
+                String targetUrl = url + "/users/login?idToken=" + idToken + "&code=" + code;
                 Log.d("POST URL", targetUrl);
 
                 StringRequest stringRequest = new StringRequest(Request.Method.POST,
