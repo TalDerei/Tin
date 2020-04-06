@@ -123,6 +123,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                 givenName = account.getGivenName();
                 idToken = account.getIdToken();
                 String code = account.getServerAuthCode();
+                Log.d("onActivityResult", code);
                 Log.d("onActivityResult", "email is " + email);
                 Log.d("onActivityResult", "ID Token is " + idToken);
 
