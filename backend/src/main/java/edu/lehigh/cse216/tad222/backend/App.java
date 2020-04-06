@@ -335,8 +335,11 @@ public class App {
             }
 
             String code = request.queryParams("code");
+            if (code == null) {
+                return gson.toJson(new StructuredResponse("error", "Code was null", null));
+            }
             // get the access token by post to Google
-            String body = post("https://accounts.google.com/o/oauth2/token",
+            String body = post("https://oauth2.googleapis.com/token",
                     ImmutableMap.<String, String>builder().put("code", code).put("client_id", cid)
                             .put("client_secret", cis)
                             .put("redirect_uri", Util.SITE + "/messages")
