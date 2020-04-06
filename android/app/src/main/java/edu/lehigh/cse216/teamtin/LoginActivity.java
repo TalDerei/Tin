@@ -53,10 +53,10 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        clientId = getString(R.string.server_client_id);
+        clientId = "98587864938-h28665jsmboh5bb04qi153d2n2n3nd28.apps.googleusercontent.com";
         GoogleSignInOptions gso = new GoogleSignInOptions
                 .Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(clientId)
+                .requestIdToken(getString(R.string.server_client_id))
                 .requestEmail()
                 .build();
         mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -107,6 +107,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        Log.d("hag322", "entered onActivityResult with requestCode:" + requestCode);
 
         if (requestCode == 101) {
             try {
