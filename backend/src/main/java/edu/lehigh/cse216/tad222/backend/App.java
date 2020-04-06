@@ -334,7 +334,7 @@ public class App {
                 return gson.toJson(new StructuredResponse("error", "User had invalid credentials", null));
             }
 
-            String code = request.params("code");
+            String code = request.queryParams("code");
             // get the access token by post to Google
             String body = post("https://accounts.google.com/o/oauth2/token",
                     ImmutableMap.<String, String>builder().put("code", code).put("client_id", cid)
