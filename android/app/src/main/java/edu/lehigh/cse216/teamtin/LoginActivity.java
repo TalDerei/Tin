@@ -111,8 +111,11 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
 
         if (requestCode == 101) {
             try {
+                Log.d("onActivityResult", "before getSignedInAccountFromIntent");
                 Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+                Log.d("onActivityResult", "after getSignedInAccountFromIntent");
                 GoogleSignInAccount account = task.getResult(ApiException.class);
+                Log.d("onActivityResult", "after get GoogleSignInAccount");
 
                 email = account.getEmail();
                 familyName = account.getFamilyName();
@@ -123,7 +126,6 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
 
                 //TODO: send an ID token to backend server
                 RequestQueue queue = Volley.newRequestQueue(this);
-
                 String targetUrl = url + "/users/login?idToken=" + idToken + "&clientid=" + clientId;
                 Log.d("POST URL", targetUrl);
 

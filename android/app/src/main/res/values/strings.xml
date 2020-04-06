@@ -57,5 +57,5 @@
     <!-- Server Client ID.  This should be a valid Web OAuth 2.0 Client ID obtained
          from https://console.developers.google.com/ -->
     <!--  name="server_client_id">614929998850-94etcg61tom3qm6t560cboko3hfl66dc.apps.googleusercontent.com -->
-    <string name="server_client_id">98587864938-h28665jsmboh5bb04qi153d2n2n3nd28.apps.googleusercontent.com</string>
+    <string name="server_client_id">98587864938-kjbvh78jj6ln49k0j2s8poc8ehng9cqm.apps.googleusercontent.com</string>
 </resources>
