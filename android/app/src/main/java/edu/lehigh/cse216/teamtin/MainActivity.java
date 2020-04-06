@@ -108,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
                 }, new Response.ErrorListener() {
             @Override
             public void onErrorResponse(VolleyError error) {
-                Log.e("vld222", "That didn't work!");
+                Log.e("hag322", "That didn't work!");
             }
         });
 
@@ -226,10 +226,10 @@ public class MainActivity extends AppCompatActivity {
                 map.get(sub).add(str);
             }
         } catch (final JSONException e) {
-            Log.d("vld222", "Error parsing JSON file: " + e.getMessage());
+            Log.d("hag322", "Error parsing JSON file: " + e.getMessage());
             return;
         }
-        Log.d("vld222", "Successfully parsed JSON file.");
+        Log.d("hag322", "Successfully parsed JSON file.");
         RecyclerView rv = findViewById(R.id.datum_list_view);
         rv.setLayoutManager(new LinearLayoutManager(this));
         ItemListAdapter adapter = new ItemListAdapter(this, mData);
