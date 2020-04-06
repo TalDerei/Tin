@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import com.android.volley.Header;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -90,7 +91,6 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         });
     }
 
-
     private void onLoggedIn(GoogleSignInAccount googleSignInAccount) {
         Intent intent = new Intent(this, MainActivity.class);
         Log.d("email", email);
@@ -126,7 +126,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
 
                 //TODO: send an ID token to backend server
                 RequestQueue queue = Volley.newRequestQueue(this);
-                String targetUrl = url + "/users/login?idToken=" + idToken + "&clientid=" + clientId;
+                String targetUrl = url + "/users/login?idToken=" + idToken;
                 Log.d("POST URL", targetUrl);
 
                 StringRequest stringRequest = new StringRequest(Request.Method.POST,
@@ -139,7 +139,11 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                         }, new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Log.d("Error", "Error in response!");
+                        String r = "";
+                        for(Header h : error.networkResponse.allHeaders) {
+                            r += h.getName() + " " + h.getValue() + "\n";
+                        }
+                        Log.d("Error", "Error in response!\n" + r);
                     }
                 });
                 // Add the request to the RequestQueue.
