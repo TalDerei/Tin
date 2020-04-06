@@ -137,7 +137,6 @@ public class App {
             
             response.status(200);
             response.type("application/json");
-            int likes = db.getTotalLikes(idx);
             Database.RowData data = db.selectOne(idx);
             if (data == null) {
                 return gson.toJson(new StructuredResponse("error", idx + " not found", null));
@@ -220,9 +219,12 @@ public class App {
             // NB: we won't concern ourselves too much with the quality of the
             // message sent on a successful delete
             int result = db.deleteRow(idx);
+            int likeRes = db.removeMessageLikes(idx);
             if (result == -1) {
                 return gson.toJson(new StructuredResponse("error", "unable to delete row " + idx, null));
-            } else {
+            } else if(likeRes == -1) {
+                return gson.toJson(new StructuredResponse("error", "unable to delete likes for message_id " + idx, null));
+            }else {
                 return gson.toJson(new StructuredResponse("ok", null, null));
             }
         });
@@ -250,9 +252,57 @@ public class App {
              * StructuredResponse("error", "unable to parse body: " + req.mMessage, null));
              * }
              */
-            int result = db.updateLikes(idx);
+            int result = db.insertOneLike(uid, idx);
             if (result == -1) {
-                return gson.toJson(new StructuredResponse("error", "unable to update row " + idx, null));
+                return gson.toJson(new StructuredResponse("error", "unable to update likes for message_id " + idx, null));
+            } else if (result == -2) {
+                return gson.toJson(new StructuredResponse("warning", "User with id " + uid + " already liked message_id " + idx, null));
+            } else {
+                return gson.toJson(new StructuredResponse("ok", null, result));
+            }
+        });
+
+        Spark.delete("/likes/:id", (request, response) -> {
+            String jwt = request.queryParams("jwt");
+            String uid = request.queryParams("uid");
+            /*String v = gson.toJson(verify(uid, jwt));
+            if(v.contains("error")) {
+                return v;
+            }*/
+            // If we can't get an ID or can't parse the JSON, Spark will send
+            // a status 500
+            int idx = Integer.parseInt(request.params("id"));
+            // ensure status 200 OK, with a MIME type of JSON
+            response.status(200);
+            response.type("application/json");
+            System.out.println("idx is: " + idx);
+
+            int result = db.deleteLike(uid);
+            if (result == -1) {
+                return gson.toJson(new StructuredResponse("error", "unable to update likes for message_id " + idx, null));
+            } else {
+                return gson.toJson(new StructuredResponse("ok", null, result));
+            }
+        });
+
+        Spark.post("/likes/:id", (request, response) -> {
+            String jwt = request.queryParams("jwt");
+            String uid = request.queryParams("uid");
+            /*String v = gson.toJson(verify(uid, jwt));
+            if(v.contains("error")) {
+                return v;
+            }*/
+            // If we can't get an ID or can't parse the JSON, Spark will send
+            // a status 500
+            int idx = Integer.parseInt(request.params("id"));
+            // ensure status 200 OK, with a MIME type of JSON
+            response.status(200);
+            response.type("application/json");
+            System.out.println("idx is: " + idx);
+            int likes = 0; //placeholder
+            int result = db.updateOneLike(uid, likes);
+            if (result == -1) {
+                return gson.toJson(new StructuredResponse("error", "unable to update likes for message_id " + idx, null));
             } else {
                 return gson.toJson(new StructuredResponse("ok", null, result));
             }
@@ -264,7 +314,7 @@ public class App {
             String uid = "";
             String secret = "";
             String bio = "";
-            boolean success = db.registerUser(email, name, uid, bio);
+            boolean success = false;//db.registerUser(email, name, uid, bio);
             if (success) {
                 return gson.toJson(new StructuredResponse("ok", "User " + name + " was registered", uid));
             } else {

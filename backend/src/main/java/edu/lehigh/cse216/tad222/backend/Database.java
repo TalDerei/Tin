@@ -84,9 +84,13 @@ public class Database {
     
     private PreparedStatement mSelectAllUser;
 
+    private PreparedStatement mRemoveLike;
+
     private PreparedStatement mDeleteLike;
 
     private PreparedStatement mInsertOneLike;
+
+    private PreparedStatement mGetLikeUser;
 
     private PreparedStatement mUpdateOneLike;
 
@@ -97,8 +101,6 @@ public class Database {
     Set<User> activeUsers;
     HashMap<String, PublicKey> jwtPubKeys;
     HashMap<String, String> jwtKeys;
-
-    
 
     /**
      * RowData is like a struct in C: we use it to hold data, and we allow direct
@@ -126,14 +128,17 @@ public class Database {
 
         String mUser_id;
 
+        int mLikes;
+
         /**
          * Construct a RowData object by providing values for its fields
          */
-        public RowData(int id, String subject, String message, String uid) {
+        public RowData(int id, String subject, String message, String uid, int likes) {
             mId = id;
             mSubject = subject;
             mMessage = message;
             mUser_id = uid;
+            this.mLikes = likes;
         }
     }
 
@@ -219,7 +224,9 @@ public class Database {
             db.mSelectAllUser = db.mConnection.prepareStatement("SELECT id, email, nickname, biography FROM UserData");
 
             // likes table:
+            db.mRemoveLike = db.mConnection.prepareStatement("DELETE FROM likes WHERE message_id = ?");
             db.mDeleteLike = db.mConnection.prepareStatement("DELETE FROM likes WHERE user_id = ?");
+            db.mGetLikeUser = db.mConnection.prepareStatement("SELECT FROM likes WHERE user_id = ? AND message_id = ?");
             db.mLikesNeutral = db.mConnection.prepareStatement("SELECT SUM(likes.likes) AS total FROM likes WHERE likes.message_id = ?");
             db.mInsertOneLike = db.mConnection.prepareStatement("INSERT INTO likes VALUES (?, ?, ?)");
             db.mUpdateOneLike = db.mConnection.prepareStatement("UPDATE likes SET likes = ? WHERE user_id = ?");
@@ -278,6 +285,18 @@ public class Database {
         return count;
     }
 
+    int getUserMessageLikes(String uid, int messageId) {
+        int res = -1;
+        try {
+            mGetLikeUser.setString(1, uid);
+            mGetLikeUser.setInt(2, messageId);
+            res = mGetLikeUser.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
     int updateLikes(int id) {
         int res = -1;
         try {
@@ -301,7 +320,8 @@ public class Database {
         try {
             ResultSet rs = mSelectAll.executeQuery();
             while (rs.next()) { 
-                res.add(new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"), rs.getString("user_id")));
+                res.add(new RowData(rs.getInt("id"), rs.getString("subject"),
+                    rs.getString("message"), rs.getString("user_id"), getTotalLikes(rs.getInt("id"))));
             }
             rs.close();
             return res;
@@ -326,7 +346,8 @@ public class Database {
             mSelectOne.setInt(1, id);
             ResultSet rs = mSelectOne.executeQuery();
             if (rs.next()) {
-                res = new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"), rs.getString("user_id"));
+                res = new RowData(rs.getInt("id"), rs.getString("subject"),
+                    rs.getString("message"), rs.getString("user_id"), getTotalLikes(id));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -407,11 +428,11 @@ public class Database {
      * Add a new user to Registered Users
      * 
      */
-    boolean registerUser(String email, String nickname, String uid, String bio) {
+    /**boolean registerUser(String email, String nickname, String uid, String bio) {
         // session_id random string for user is created and passed to front end
         User u = new User(email, nickname, uid, bio);
         return false;
-    }
+    }*/
 
     boolean isRegistered(User u) {
         int res = 0;
@@ -533,12 +554,27 @@ public class Database {
         return res;
     }
 
+    int removeMessageLikes(int messageId) {
+        int res = -1;
+        try {
+            mRemoveLike.setInt(1, messageId);
+            res = mRemoveLike.executeUpdate();
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return res;
+        }
+    }
+
     int insertOneLike(String uid, int messageId) {
         int res = -1;
+        if(getUserMessageLikes(uid, messageId) > 0) {
+            return -2;
+        }
         try {
             mInsertOneLike.setString(1, uid);
             mInsertOneLike.setInt(2, messageId);
-            mInsertOneLike.setInt(3, 0);
+            mInsertOneLike.setInt(3, 1);
             res = mInsertOneLike.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -651,9 +687,5 @@ public class Database {
 
     PublicKey getPublicKey(String uid){
         return jwtPubKeys.get(uid);
-    }
-
-    boolean addJWT(String jwt){
-        return false;
     }
 }
