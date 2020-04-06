@@ -326,11 +326,13 @@ public class App {
         Spark.post("/users/login", (request, response) -> {
             response.status(200);
             response.type("application/json");
-            String cid = request.queryParams("client_id");
+            String cid = env.get("CLIENT_ID");
+            String cis = env.get("CLIENT_SECRET");
             String idToken = request.queryParams("idToken");
             StringBuilder oauthUrl = new StringBuilder().append("https://accounts.google.com/o/oauth2/auth")
                     .append("?client_id=").append(cid) // the client id from the api console
                                                        // registration
+                    //.append("&client_secret").append(cis)
                     .append("&idToken=" + idToken).append("&response_type=code")
                     .append("&scope=https://www.googleapis.com/auth/userinfo.profile") // scope is the api permissions
                                                                                        // we are requesting
@@ -364,8 +366,8 @@ public class App {
             String code = request.params("code");
             // get the access token by post to Google
             String body = post("https://accounts.google.com/o/oauth2/token",
-                    ImmutableMap.<String, String>builder().put("code", code).put("client_id", Util.getClientId())
-                            .put("client_secret", Util.getClientSecret())
+                    ImmutableMap.<String, String>builder().put("code", code).put("client_id", env.get("CLIENT_ID"))
+                            .put("client_secret", env.get("CLIENT_SECRET"))
                             .put("redirect_uri", Util.SITE + "/users/login/callback")
                             .put("grant_type", "authorization_code").build());
 
