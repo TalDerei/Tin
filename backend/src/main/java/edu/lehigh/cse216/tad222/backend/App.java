@@ -329,24 +329,43 @@ public class App {
             String cid = env.get("CLIENT_ID");
             String cis = env.get("CLIENT_SECRET");
             String idToken = request.queryParams("idToken");
-            StringBuilder oauthUrl = new StringBuilder().append("https://accounts.google.com/o/oauth2/auth")
-                    .append("?client_id=").append(cid) // the client id from the api console
-                                                       // registration
-                    //.append("&client_secret").append(cis)
-                    .append("&idToken=" + idToken).append("&response_type=code")
-                    .append("&scope=https://www.googleapis.com/auth/userinfo.profile") // scope is the api permissions
-                                                                                       // we are requesting
-                    .append("&redirect_uri=" + Util.SITE + "/users/login/callback") // the servlet that google redirects
-                                                                                    // to after
-                    // authorization
-                    // .append("&state=this_can_be_anything_to_help_correlate_the_response%3Dlike_session_id")
-                    .append("&access_type=offline") // here we are asking to access to user's data while they are not
-                                                    // signed
-                                                    // in
-                    .append("&approval_prompt=force"); // this requires them to verify which account to use, if they are
-                                                       // already signed in
-            response.redirect(oauthUrl.toString());
-            return gson.toJson(response.body());
+
+            if (request.queryParams("error") != null) {
+                return gson.toJson(new StructuredResponse("error", "User had invalid credentials", null));
+            }
+
+            String code = request.params("code");
+            // get the access token by post to Google
+            String body = post("https://accounts.google.com/o/oauth2/token",
+                    ImmutableMap.<String, String>builder().put("code", code).put("client_id", cid)
+                            .put("client_secret", cis)
+                            .put("redirect_uri", Util.SITE + "/messages")
+                            .put("grant_type", "authorization_code").build());
+
+            // get the access token from json and request info from Google
+            JsonObject jsonObject = gson.fromJson(body, JsonObject.class);
+
+            String accessToken = jsonObject.get("access_token").getAsString();
+            JsonObject json = gson
+                    .fromJson((new StringBuilder("https://www.googleapis.com/auth/userinfo.profile?access_token=")
+                            .append(accessToken).toString()), JsonObject.class);
+            String nickname = json.get("name").getAsString();
+            String email = json.get("email").getAsString();
+            String uid = json.get("id").getAsString();
+            String bio = "";
+
+            if (!email.contains("lehigh.edu")) {
+                return gson.toJson(new StructuredResponse("error", "User " + nickname + " is not part of lehigh.edu", null));
+            }
+
+            User u = new User(email, nickname, uid, bio);
+            String jwt = accessToken + " " + db.produceJWTKey(u);
+
+            if (db.setUserActive(u)) {
+                return gson.toJson(new StructuredResponse("ok", "User " + nickname + " was logged in", jwt));
+            } else {
+                return gson.toJson(new StructuredResponse("error", "User " + nickname + " was already logged in", null));
+            }
         });
 
         Spark.get("/users/login", (request, response) -> {
