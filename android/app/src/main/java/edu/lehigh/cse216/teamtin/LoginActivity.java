@@ -29,6 +29,13 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
 
 
 public class LoginActivity extends AppCompatActivity implements GoogleApiClient.OnConnectionFailedListener{
@@ -94,7 +101,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         });
     }
 
-    private void onLoggedIn(GoogleSignInAccount googleSignInAccount) {
+    private void onLoggedIn(GoogleSignInAccount googleSignInAccount, String JWTjson) {
         Intent intent = new Intent(this, MainActivity.class);
         Log.d("email", email);
         Log.d("familyName", familyName);
@@ -102,6 +109,18 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         intent.putExtra("email", email);
         intent.putExtra("familyName", familyName);
         intent.putExtra("givenName", givenName);
+        try {
+            JSONObject jo = new JacksonFactory()
+                    .fromString(JWTjson, JSONObject.class)
+                    .getJSONObject("mData");
+            Log.d("jwtTest", "user_id: " + jo.getString("user_id"));
+            Log.d("jwtTest", "jwt: " + jo.getString("jwt"));
+            intent.putExtra("user_id", jo.getString("user_id"));
+            intent.putExtra("jwt", jo.getString("jwt"));
+        } catch(IOException | JSONException e) {
+            Log.e("error", "Problem with JSON", e);
+        }
+
         startActivity(intent);
         finish();
     }
@@ -117,7 +136,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                 Log.d("onActivityResult", "before getSignedInAccountFromIntent");
                 Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
                 Log.d("onActivityResult", "after getSignedInAccountFromIntent");
-                GoogleSignInAccount account = task.getResult(ApiException.class);
+                final GoogleSignInAccount account = task.getResult(ApiException.class);
                 Log.d("onActivityResult", "after get GoogleSignInAccount");
 
                 email = account.getEmail();
@@ -139,23 +158,18 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                         new Response.Listener<String>() {
                             @Override
                             public void onResponse(String response) {
-                                Log.d("onResponse", "JWT is " + response);
+                                Log.d("onResponse", "JWT recieved");
+                                onLoggedIn(account, response);
+
                             }
                         }, new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        String r = "";
-                        for(Header h : error.networkResponse.allHeaders) {
-                            r += h.getName() + " " + h.getValue() + "\n";
-                        }
-                        Log.d("Error", "Error in response!\n" + r);
+                        Log.d("Error", "Error in response!");
                     }
                 });
                 // Add the request to the RequestQueue.
                 queue.add(stringRequest);
-
-                onLoggedIn(account);
-
             } catch (ApiException e) {
                 Log.w("Error", "signInResult:failed code=" + e.getStatusCode());
             }
