@@ -7,6 +7,7 @@ import spark.Spark;
 import com.google.common.collect.ImmutableMap;
 //Import Google's JSON library
 import com.google.gson.*;
+import com.google.gson.stream.JsonReader;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -27,6 +28,7 @@ import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.lang.JoseException;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.security.PublicKey;
 import java.util.*;
 
@@ -349,9 +351,10 @@ public class App {
             JsonObject jsonObject = gson.fromJson(body, JsonObject.class);
 
             String accessToken = jsonObject.get("access_token").getAsString();
-            JsonObject json = gson
-                    .fromJson((new StringBuilder("https://www.googleapis.com/auth/userinfo.profile?access_token=")
-                            .append(accessToken).toString()), JsonObject.class);
+            String jsonString = get((new StringBuilder("https://www.googleapis.com/auth/userinfo.profile?access_token=")
+                            .append(accessToken).toString()));
+            System.out.println(jsonString);
+            JsonObject json = gson.fromJson(jsonString, JsonPrimitive.class).getAsJsonObject();
             String nickname = json.get("name").getAsString();
             String email = json.get("email").getAsString();
             String uid = json.get("id").getAsString();
