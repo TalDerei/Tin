@@ -30,6 +30,8 @@ import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.JsonObjectParser;
+import com.google.api.client.json.JsonParser;
 import com.google.api.client.json.jackson2.JacksonFactory;
 
 import org.json.JSONException;
@@ -111,9 +113,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         intent.putExtra("givenName", givenName);
         try {
             Log.d("jwtTest", JWTjson);
-            JSONObject jo = new JacksonFactory()
-                    .fromString(JWTjson, JSONObject.class)
-                    .getJSONObject("mData");
+            JSONObject jo = new JacksonFactory().createJsonParser(JWTjson).parse(JSONObject.class);
             Log.d("jwtTest", "user_id: " + jo.getString("mUser_id"));
             Log.d("jwtTest", "jwt: " + jo.getString("mJWT"));
             intent.putExtra("user_id", jo.getString("mUser_id"));
