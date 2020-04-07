@@ -26,6 +26,7 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.OnCompleteListener;
 
@@ -60,6 +61,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                 .requestIdToken(getString(R.string.server_client_id))
                 .requestServerAuthCode(getString(R.string.server_client_id), false)
                 .requestEmail()
+                .requestScopes(new Scope("https://www.googleapis.com/auth/userinfo.profile"))
                 .build();
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .enableAutoManage(this, this)
