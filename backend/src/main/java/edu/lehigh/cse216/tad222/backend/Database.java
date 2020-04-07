@@ -633,7 +633,7 @@ public class Database {
         claims.setClaim("email", u.getEmail());
         claims.setClaim("name", "name");
         claims.setClaim("biography", u.getBio());
-        claims.setClaim("userID", u.getUserID());
+        //claims.setClaim("userID", u.getUserID());
 
         JsonWebSignature jws = new JsonWebSignature();
 
@@ -646,8 +646,7 @@ public class Database {
         // Set the signature algorithm
         jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
         
-        String uid = u.getUserID();
-        jwtPubKeys.put(uid, rsaJsonWebKey.getPublicKey());
+        jwtPubKeys.put(u.getUserID(), rsaJsonWebKey.getPublicKey());
 
         return jws.getCompactSerialization();
     }

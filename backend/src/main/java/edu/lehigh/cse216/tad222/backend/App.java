@@ -351,13 +351,13 @@ public class App {
             JsonObject jsonObject = gson.fromJson(body, JsonObject.class);
 
             String accessToken = jsonObject.get("access_token").getAsString();
-            String jsonString = get((new StringBuilder("https://www.googleapis.com/auth/userinfo.profile?access_token=")
+            String jsonString = get((new StringBuilder("https://www.googleapis.com/oauth2/v3/userinfo?access_token=")
                             .append(accessToken).toString()));
-            System.out.println(jsonString);
-            JsonObject json = gson.fromJson(jsonString, JsonPrimitive.class).getAsJsonObject();
+            //System.out.println(jsonString);
+            JsonObject json = gson.fromJson(jsonString, JsonObject.class);
             String nickname = json.get("name").getAsString();
             String email = json.get("email").getAsString();
-            String uid = json.get("id").getAsString();
+            String uid = json.get("sub").getAsString();
             String bio = "";
 
             if (!email.contains("lehigh.edu")) {
@@ -365,7 +365,7 @@ public class App {
             }
 
             User u = new User(email, nickname, uid, bio);
-            String jwt = accessToken + " " + db.produceJWTKey(u);
+            String jwt = "{\n\"user_id\":\"" + uid + "\"\n\"jwt\":\"" + db.produceJWTKey(u) + "\"\n}";
 
             if (db.setUserActive(u)) {
                 return gson.toJson(new StructuredResponse("ok", "User " + nickname + " was logged in", jwt));
@@ -378,49 +378,6 @@ public class App {
             response.status(200);
             response.type("application/json");
             return request.queryParams("client_id");
-        });
-
-        // callback for login route
-        Spark.post("/users/login/callback", (request, response) -> {
-            response.status(200);
-            response.type("application/json");
-            if (request.queryParams("error") != null) {
-                return gson.toJson(new StructuredResponse("error", "User had invalid credentials", null));
-            }
-
-            String code = request.params("code");
-            // get the access token by post to Google
-            String body = post("https://accounts.google.com/o/oauth2/token",
-                    ImmutableMap.<String, String>builder().put("code", code).put("client_id", env.get("CLIENT_ID"))
-                            .put("client_secret", env.get("CLIENT_SECRET"))
-                            .put("redirect_uri", Util.SITE + "/users/login/callback")
-                            .put("grant_type", "authorization_code").build());
-
-            // get the access token from json and request info from Google
-            JsonObject jsonObject = gson.fromJson(body, JsonObject.class);
-
-            // 
-            String accessToken = jsonObject.get("access_token").getAsString();
-            JsonObject json = gson
-                    .fromJson((new StringBuilder("https://www.googleapis.com/auth/userinfo.profile?access_token=")
-                            .append(accessToken).toString()), JsonObject.class);
-            String nickname = json.get("name").getAsString();
-            String email = json.get("email").getAsString();
-            String uid = json.get("id").getAsString();
-            String bio = "";
-
-            if (!email.contains("lehigh.edu")) {
-                return gson.toJson(new StructuredResponse("error", "User " + nickname + " is not part of lehigh.edu", null));
-            }
-
-            User u = new User(email, nickname, uid, bio);
-            String jwt = accessToken + " " + db.produceJWTKey(u);
-
-            if (db.setUserActive(u)) {
-                return gson.toJson(new StructuredResponse("ok", "User " + nickname + " was logged in", jwt));
-            } else {
-                return gson.toJson(new StructuredResponse("error", "User " + nickname + " was already logged in", null));
-            }
         });
 
         Spark.delete("/users/logoff", (request, response) -> {
