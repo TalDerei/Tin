@@ -365,14 +365,9 @@ public class App {
             }
 
             User u = new User(email, nickname, uid, bio);
-            //final String jwt = "{\n\"user_id\":\"" + uid + "\"\n\"jwt\":\"" + db.produceJWTKey(u) + "\"\n}";
-            Object jo = gson.toJson(new Object () {
-                String mJWT = db.produceJWTKey(u);
-                String mUser_id = uid;
-            });
             
             if (db.setUserActive(u)) {
-                return gson.toJson(new StructuredResponse("ok", "User " + nickname + " was logged in", jo));
+                return gson.toJson(new AuthResponse(db.produceJWTKey(u), uid));
             } else {
                 return gson.toJson(new StructuredResponse("error", "User " + nickname + " was already logged in", null));
             }
