@@ -357,7 +357,7 @@ public class App {
             JsonObject json = gson.fromJson(jsonString, JsonObject.class);
             String nickname = json.get("name").getAsString();
             String email = json.get("email").getAsString();
-            String uid = json.get("sub").getAsString();
+            final String uid = json.get("sub").getAsString();
             String bio = "";
 
             if (!email.contains("lehigh.edu")) {
@@ -365,10 +365,14 @@ public class App {
             }
 
             User u = new User(email, nickname, uid, bio);
-            String jwt = "{\n\"user_id\":\"" + uid + "\"\n\"jwt\":\"" + db.produceJWTKey(u) + "\"\n}";
-
+            //final String jwt = "{\n\"user_id\":\"" + uid + "\"\n\"jwt\":\"" + db.produceJWTKey(u) + "\"\n}";
+            Object jo = gson.toJson(new Object () {
+                String mJWT = db.produceJWTKey(u);
+                String mUser_id = uid;
+            });
+            
             if (db.setUserActive(u)) {
-                return gson.toJson(new StructuredResponse("ok", "User " + nickname + " was logged in", jwt));
+                return gson.toJson(new StructuredResponse("ok", "User " + nickname + " was logged in", jo));
             } else {
                 return gson.toJson(new StructuredResponse("error", "User " + nickname + " was already logged in", null));
             }
