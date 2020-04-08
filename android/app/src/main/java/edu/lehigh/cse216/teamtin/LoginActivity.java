@@ -112,13 +112,13 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         intent.putExtra("familyName", familyName);
         intent.putExtra("givenName", givenName);
         try {
-            Log.d("jwtTest", JWTjson);
-            JSONObject jo = new JacksonFactory().createJsonParser(JWTjson).parse(JSONObject.class);
-            Log.d("jwtTest", "user_id: " + jo.getString("mUser_id"));
-            Log.d("jwtTest", "jwt: " + jo.getString("mJWT"));
+            //Log.d("jwtTest", JWTjson);
+            JSONObject jo = new JSONObject(JWTjson);
+            //Log.d("jwtTest", "user_id: " + jo.getString("mUser_id"));
+            //Log.d("jwtTest", "jwt: " + jo.getString("mJWT"));
             intent.putExtra("user_id", jo.getString("mUser_id"));
             intent.putExtra("jwt", jo.getString("mJWT"));
-        } catch(IOException | JSONException e) {
+        } catch(JSONException e) {
             Log.e("error", "Problem with JSON", e);
         }
 

@@ -5,8 +5,11 @@
     <item
         android:id="@+id/action_home"
         android:orderInCategory="100"
-        android:title="Message Board (Home)"
-        app:showAsAction="never" />
+        android:title="@string/message_home_button"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/action_camera"
+        android:title="@string/action_camera" />
 
 
 </menu>

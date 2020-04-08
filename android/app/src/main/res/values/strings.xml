@@ -2,7 +2,9 @@
     <string name="app_name" translatable="false">TeamTin</string>
     <string name="title_activity_second" translatable="false">SecondActivity</string>
     <string name="title_activity_login" translatable="false">Google Sign in/Out</string>
+    <string name="message_home_button">Message Board (Home)</string>
     <string name="action_settings">Post a New Message</string>
+    <string name="action_camera">Take a picture</string>
     <string name="title_item_list">Items</string>
     <string name="title_item_detail">item Detail</string>
     <string name="title_activity_vote">voteActivity</string>
@@ -26,6 +28,7 @@
 
     <!-- Button labels -->
     <string name="sign_out">Sign Out</string>
+    <string name="take_picture">Take Picture</string>
     <string name="disconnect">Disconnect</string>
     <string name="refresh_token">Get Fresh Token</string>
 

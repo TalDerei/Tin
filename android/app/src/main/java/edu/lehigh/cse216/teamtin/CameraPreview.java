@@ -1,0 +1,87 @@
+package edu.lehigh.cse216.teamtin;
+
+import android.content.Context;
+import android.hardware.Camera;
+import android.util.Log;
+import android.view.SurfaceView;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.SurfaceHolder;
+
+import java.io.IOException;
+import java.util.List;
+
+public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback {
+
+    SurfaceView surfaceView;
+    SurfaceHolder holder;
+    Camera.Size previewSize;
+    List<Camera.Size> supportedPreviewSizes;
+    Camera cam;
+
+    public CameraPreview(Context context) {
+        super(context);
+        surfaceView = new SurfaceView(context);
+        addView(surfaceView);
+
+        // Install a SurfaceHolder.Callback so we get notified when the
+        // underlying surface is created and destroyed.
+        holder = surfaceView.getHolder();
+        holder.addCallback(this);
+    }
+
+    public void setCamera(Camera cm) {
+        cam = cm;
+
+        if(cam != null) {
+            Camera.Parameters params = cam.getParameters();
+            supportedPreviewSizes = params.getSupportedPreviewSizes();
+
+            this.requestLayout();
+
+        }
+    }
+
+    @Override
+    public void surfaceCreated(SurfaceHolder holder) {
+        try {
+            cam.setPreviewDisplay(holder);
+        } catch (IOException e) {
+            Log.e("CameraError", e.getMessage(), e);
+        } catch (NullPointerException e) {
+            Log.e("CameraError", "Camera was set to null");
+        }
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        Camera.Parameters parameters = cam.getParameters();
+        parameters.setPreviewSize(previewSize.width, previewSize.height);
+        requestLayout();
+
+        cam.setParameters(parameters);
+        cam.startPreview();
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder holder) {
+        cam.stopPreview();
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        if (changed && getChildCount() > 0) {
+            final View child = getChildAt(0);
+
+            final int width = r - l;
+            final int height = b - t;
+
+            int previewWidth = width;
+            int previewHeight = height;
+            if (previewSize != null) {
+                previewWidth = previewSize.width;
+                previewHeight = previewSize.height;
+            }
+        }
+    }
+}

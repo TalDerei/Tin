@@ -49,6 +49,9 @@ public class MainActivity extends AppCompatActivity {
     private String profileName;
     private String profileEmail;
 
+    private String uid;
+    private String jwt;
+
     private long lastUpdateTime;
     private long expires;
 
@@ -79,6 +82,8 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = getIntent();
         profileName = intent.getStringExtra("givenName") + " " + intent.getStringExtra("familyName");
         profileEmail = intent.getStringExtra("email");
+        uid = intent.getStringExtra("user_id");
+        jwt = intent.getStringExtra("jwt");
         getRequestBackend();
     }
 
@@ -98,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
         // Instantiate the RequestQueue.
         RequestQueue queue = Volley.newRequestQueue(this);
         // Request a string response from the provided URL.
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, url,
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, url + "?user_id=" + uid + "&jwt=" + jwt,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
@@ -125,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
     public void postRequestBackend() {
         // Instantiate the RequestQueue.
         RequestQueue queue = Volley.newRequestQueue(this);
-        StringRequest postRequest = new StringRequest(Request.Method.POST, url,
+        StringRequest postRequest = new StringRequest(Request.Method.POST, url + "?user_id=" + uid + "&jwt=" + jwt,
                 new Response.Listener<String>()
                 {
                     @Override
@@ -171,7 +176,7 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         // Enter the correct url for your api service site
-        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, url, object,
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, url  + "?user_id=" + uid + "&jwt=" + jwt, object,
                 new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
@@ -202,14 +207,21 @@ public class MainActivity extends AppCompatActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        if (id == R.id.action_post) {
-            Intent i = new Intent(getApplicationContext(), PostActivity.class);
-            i.putExtra("label_contents", "Type a message to post:");
-            startActivityForResult(i, 789); // 789 is the number that will come back to us
-            return true;
-        }
+        Intent i;
+        switch (id) {
+            case R.id.action_post:
+                i = new Intent(getApplicationContext(), PostActivity.class);
+                i.putExtra("label_contents", "Type a message to post:");
+                startActivityForResult(i, 789); // 789 is the number that will come back to us
+                return true;
+            case R.id.action_camera:
+                i = new Intent(getApplicationContext(), CameraActivity.class);
 
-        return super.onOptionsItemSelected(item);
+                startActivityForResult(i, 789);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     private void populateListFromVolley(String response){

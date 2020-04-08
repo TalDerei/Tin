@@ -20,14 +20,20 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <include layout="@layout/content_camera" />
+    <include
+        layout="@layout/content_camera"
+        android:layout_height="646dp" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab"
+    <Button
+        android:id="@+id/takePicture"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/fab_margin"
-        app:srcCompat="@android:drawable/ic_dialog_email" />
+        android:layout_gravity="bottom|center"
+        android:layout_marginBottom="15"
+        android:background="#655F5F"
+        android:text="@string/take_picture"
+        android:visibility="visible"
+        app:layout_insetEdge="none"
+        tools:visibility="visible" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
