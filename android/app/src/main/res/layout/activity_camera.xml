@@ -20,16 +20,14 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <include
-        layout="@layout/content_camera"
-        android:layout_height="646dp" />
+    <include layout="@layout/content_camera" />
 
     <Button
         android:id="@+id/takePicture"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center"
-        android:layout_marginBottom="15"
+        android:layout_marginBottom="15dp"
         android:background="#655F5F"
         android:text="@string/take_picture"
         android:visibility="visible"

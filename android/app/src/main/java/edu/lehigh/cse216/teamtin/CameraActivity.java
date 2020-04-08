@@ -84,5 +84,4 @@ public class CameraActivity extends AppCompatActivity {
             cm = null;
         }
     }
-
 }
