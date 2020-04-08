@@ -8,6 +8,7 @@
     <string name="title_item_list">Items</string>
     <string name="title_item_detail">item Detail</string>
     <string name="title_activity_vote">voteActivity</string>
+    <string name="title_activity_camera">CameraActivity</string>
     <!-- Sign-in status messages -->
     <string name="signed_in_fmt">Signed in as: %s</string>
     <string name="signed_in">Signed in</string>

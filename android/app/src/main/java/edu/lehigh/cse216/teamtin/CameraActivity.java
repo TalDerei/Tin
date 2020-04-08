@@ -1,5 +1,6 @@
 package edu.lehigh.cse216.teamtin;
 
+import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraManager;
@@ -37,11 +38,11 @@ public class CameraActivity extends AppCompatActivity {
         } catch (Exception e) {
             Log.e(getString(R.string.app_name), "failed to open Camera");
             e.printStackTrace();
+            startActivity(new Intent(getApplicationContext(), MainActivity.class));
+            finish();
         }
         preview = new CameraPreview(getApplicationContext());
         preview.setCamera(cm);
-
-
 
         setContentView(R.layout.activity_camera);
         Toolbar toolbar = findViewById(R.id.toolbar);
