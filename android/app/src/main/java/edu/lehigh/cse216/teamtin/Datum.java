@@ -1,6 +1,6 @@
 package edu.lehigh.cse216.teamtin;
 
-class Datum {
+public class Datum {
     /**
      * An integer index for this piece of data
      */

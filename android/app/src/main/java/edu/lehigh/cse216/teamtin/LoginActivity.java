@@ -70,7 +70,8 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                 .requestIdToken(getString(R.string.server_client_id))
                 .requestServerAuthCode(getString(R.string.server_client_id), false)
                 .requestEmail()
-                .requestScopes(new Scope("https://www.googleapis.com/auth/userinfo.profile"))
+                .requestScopes(new Scope("https://www.googleapis.com/auth/userinfo.profile"),
+                        new Scope("https://www.googleapis.com/auth/drive"))
                 .build();
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .enableAutoManage(this, this)

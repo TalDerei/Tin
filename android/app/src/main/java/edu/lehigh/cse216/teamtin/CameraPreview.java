@@ -21,7 +21,7 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback {
 
     public CameraPreview(Context context) {
         super(context);
-        surfaceView = new SurfaceView(context);
+        surfaceView = findViewById(R.id.surfaceView);
         addView(surfaceView);
 
         // Install a SurfaceHolder.Callback so we get notified when the
@@ -36,9 +36,9 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback {
         if(cam != null) {
             Camera.Parameters params = cam.getParameters();
             supportedPreviewSizes = params.getSupportedPreviewSizes();
+            List<String> focusModes = params.getSupportedFocusModes();
 
             this.requestLayout();
-
         }
     }
 
@@ -55,8 +55,17 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback {
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        cam.stopPreview();
         Camera.Parameters parameters = cam.getParameters();
         parameters.setPreviewSize(previewSize.width, previewSize.height);
+        int orientation = getResources().getConfiguration().orientation;
+        int rotation = 0;
+        if(orientation == 1) {
+            cam.setDisplayOrientation(0);
+        } else if (orientation == 2) {
+            cam.setDisplayOrientation(90);
+        }
+
         requestLayout();
 
         cam.setParameters(parameters);

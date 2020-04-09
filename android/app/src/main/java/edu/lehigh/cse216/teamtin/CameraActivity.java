@@ -1,6 +1,7 @@
 package edu.lehigh.cse216.teamtin;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraManager;
@@ -13,9 +14,20 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import android.os.Environment;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.Toast;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class CameraActivity extends AppCompatActivity {
 
@@ -26,7 +38,15 @@ public class CameraActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        PackageManager pm = this.getPackageManager();
+        if(!pm.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)) {
+            Log.w("Camera", "This device does not have a camera.");
+            Toast.makeText(getApplicationContext(), "This device does not have a camera", Toast.LENGTH_LONG);
+            startActivity(new Intent(getApplicationContext(), MainActivity.class));
+            finish();
+        }
         try {
+
             int id = Camera.CameraInfo.CAMERA_FACING_BACK;
 
             if (cm != null) {
@@ -42,6 +62,8 @@ public class CameraActivity extends AppCompatActivity {
             finish();
         }
         preview = new CameraPreview(getApplicationContext());
+        FrameLayout fl = (FrameLayout) findViewById(R.id.camera_frame_layout);
+        fl.addView(preview);
         preview.setCamera(cm);
 
         setContentView(R.layout.activity_camera);
@@ -67,8 +89,25 @@ public class CameraActivity extends AppCompatActivity {
                     @Override
                     public void onPictureTaken(byte[] data, Camera camera) {
                         Log.d("Camera", "A picture would be saved here");
-                        camera.startPreview();
-                        preview.setCamera(camera);
+                        File mediaFileDir = new File(Environment.getExternalStoragePublicDirectory(
+                                Environment.DIRECTORY_PICTURES), "TheBuzzPictures");
+                        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+                        File pictureFile = new File(mediaFileDir.getPath() + File.separator +
+                                "IMG_"+ timeStamp + ".jpg");
+                        if (pictureFile == null){
+                            Log.w("Picture", "Error creating media file, check storage permissions");
+                            return;
+                        }
+
+                        try {
+                            FileOutputStream fos = new FileOutputStream(pictureFile);
+                            fos.write(data);
+                            fos.close();
+                        } catch (FileNotFoundException e) {
+                            Log.e("Picture", "File not found: " + e.getMessage());
+                        } catch (IOException e) {
+                            Log.e("Picture", "Error accessing file: " + e.getMessage());
+                        }
                         Log.d("Camera", "JPG Picture saved");
                     }
                 });
@@ -84,5 +123,8 @@ public class CameraActivity extends AppCompatActivity {
             cm.release();
             cm = null;
         }
+    }
+    WindowManager getActivityWindowManager() {
+        return this.getWindowManager();
     }
 }

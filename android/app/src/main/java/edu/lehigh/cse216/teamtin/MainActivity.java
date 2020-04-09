@@ -107,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        Log.d("GET", response);
+                        Log.d("GET", "response received");
                         populateListFromVolley(response);
                     }
                 }, new Response.ErrorListener() {
