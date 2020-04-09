@@ -45,4 +45,23 @@ public class StructuredResponse {
         response.type("application/json");
         response.status(200);
     }
+
+    public void setSuccessful(String mMessage) {
+        this.mStatus = "ok";
+        this.mMessage = mMessage;
+    }
+
+    public void setStringData(String mData) {
+        this.mData = mData;
+    }
+
+    public void setError(String mMessage) {
+        this.mStatus = "error";
+        this.mMessage = mMessage;
+    }
+
+    public void setError(Exception e) {
+        this.mStatus = "error";
+        this.mMessage = e.getMessage();
+    }
 }

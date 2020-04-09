@@ -9,6 +9,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.gson.*;
 import com.google.gson.stream.JsonReader;
 
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -38,8 +42,10 @@ import java.util.*;
 public class App {
 
     private static Database db;
+    private static final Gson gson = new Gson();
 
     public static void main(String[] args) {
+
 
         // Get the port on which to listen for requests
         Spark.port(getIntFromEnv("PORT", 4567));
@@ -463,6 +469,71 @@ public class App {
             }
             return gson.toJson(new StructuredResponse("ok", null, db.selectAllActiveUsers()));
         });
+
+        Spark.post("/upload", (request, response) -> {
+            StructuredResponse sResponse = new StructuredResponse(response);
+            // FileRequest freq = App.getGson().fromJson(request.body(),FileRequest.class);
+            if (request.attributes().contains("authorized")) {
+                try {
+                    String time = "" + java.lang.System.currentTimeMillis();
+                    java.io.File upload = new java.io.File(time);
+                    if (!upload.exists() && !upload.mkdirs()) {
+                        throw new RuntimeException("Failed to create directory " + upload.getAbsolutePath());
+                    }
+
+                    // apache commons-fileupload to handle file upload
+                    DiskFileItemFactory factory = new DiskFileItemFactory();
+                    factory.setRepository(upload);
+                    ServletFileUpload fileUpload = new ServletFileUpload(factory);
+                    List<FileItem> items = fileUpload.parseRequest(request.raw());
+
+                    Iterator<FileItem> iter = items.iterator();
+
+                    java.io.File uploadedFile = null;
+                    String mime = "unknown";
+                    boolean hasMime = false;
+                    boolean hasFile = false;
+                    boolean hasWritten = false;
+                    String ret = "null";
+
+                    while (iter.hasNext()) {
+                        FileItem item = iter.next();
+                        if (item.getFieldName().equals("uploaded_file")) {
+                            uploadedFile = new java.io.File("uploads/" + upload.getName());
+                            item.write(uploadedFile);
+                            hasFile = true;
+                        } else if (item.getFieldName().equals("mime")) {
+                            mime = item.getString();
+                            hasMime = true;
+                        }
+
+                        if (!hasWritten && hasMime && hasFile) {
+                            hasWritten = true;
+                            ret = uploadFile(uploadedFile, time, mime);
+                        }
+
+                    }
+
+                    if (!ret.equals("null")) {
+                        sResponse.mData = ret;
+                        sResponse.setSuccessful("file uploaded!!!");
+                        sResponse.setStringData(ret);
+                    } else {
+                        sResponse.setError("upload in google drive failed");
+                    }
+
+                } catch (RuntimeException e) {
+                    response.status(200);
+                    e.printStackTrace();
+                    sResponse.setError(e);
+                }
+            }
+            return App.getGson().toJson(sResponse);
+        });
+    }
+
+    static Gson getGson() {
+        return gson;
     }
 
     /**
