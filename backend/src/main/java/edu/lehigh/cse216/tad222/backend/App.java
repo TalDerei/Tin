@@ -8,6 +8,15 @@ import com.google.common.collect.ImmutableMap;
 //Import Google's JSON library
 import com.google.gson.*;
 import com.google.gson.stream.JsonReader;
+import com.google.api.client.http.FileContent;
+import com.google.api.services.drive.model.File;
+import com.google.api.services.drive.Drive;
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.drive.DriveScopes;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
@@ -35,7 +44,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.security.PublicKey;
 import java.util.*;
-
+import java.security.GeneralSecurityException;
 /**
  * For now, our app creates an HTTP server that can only get and add data.
  */
@@ -43,6 +52,50 @@ public class App {
 
     private static Database db;
     private static final Gson gson = new Gson();
+    public static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
+    public static final JsonFactory JSON_FACTORY = new JacksonFactory();
+    private static final String SERVICE_ACCOUNT_PKCS12_FILE_PATH = "./target/ServiceAccountKeyP12.p12";
+    public static final List<String> SCOPES = Collections.singletonList(DriveScopes.DRIVE);
+    public static final String APPLICATION_NAME = "Naked Mole Rat backend";
+
+    public static String uploadFile(java.io.File UPLOAD_FILE, String name, String mime) throws IOException, GeneralSecurityException {
+        // boolean useDirectUpload = true;
+        String ret = null;
+
+        com.google.api.services.drive.model.File fmeta = new com.google.api.services.drive.model.File();
+        fmeta.setName(name);
+        System.out.println(mime);
+        FileContent mediaContent = new FileContent(mime, UPLOAD_FILE);
+
+        String folderId = "1Fymro-BqFNjg7y7x4SeKJh8E4cp8z-AB";
+        fmeta.setParents(Collections.singletonList(folderId));
+        try {
+            File file = setup().files().create(fmeta, mediaContent).setFields("id, parents").execute();
+            System.out.println("File ID executed: " + file.getId());
+            return file.getId();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "null";
+        }
+    }
+
+    public static Drive setup() throws IOException, GeneralSecurityException {
+
+        String emailAddress = "naked-mole-rat@naked-mole-rat-1581918623500.iam.gserviceaccount.com";
+        GoogleCredential credential = new GoogleCredential.Builder().setTransport(HTTP_TRANSPORT)
+                .setJsonFactory(JSON_FACTORY).setServiceAccountId(emailAddress)
+                .setServiceAccountPrivateKeyFromP12File(new java.io.File(SERVICE_ACCOUNT_PKCS12_FILE_PATH))
+                .setServiceAccountScopes(SCOPES).build();
+
+        if (!credential.refreshToken()) {
+            throw new RuntimeException("Failed OAuth to refresh the token");
+        }
+
+        Drive service = new Drive.Builder(App.HTTP_TRANSPORT, App.JSON_FACTORY, credential)
+                .setApplicationName(App.APPLICATION_NAME).build();
+
+        return service;
+    }
 
     public static void main(String[] args) {
 
