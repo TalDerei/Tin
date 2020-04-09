@@ -8,6 +8,11 @@
   <name>backend</name>
   <url>http://maven.apache.org</url>
   <dependencies>
+  <dependency>
+    <groupId>org.apache.httpcomponents</groupId>
+    <artifactId>httpclient</artifactId>
+    <version>4.3.4</version>
+</dependency>
    <dependency>
       <groupId>com.google.apis</groupId>
       <artifactId>google-api-services-drive</artifactId>
