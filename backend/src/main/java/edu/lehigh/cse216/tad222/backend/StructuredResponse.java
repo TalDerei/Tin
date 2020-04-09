@@ -1,4 +1,5 @@
 package edu.lehigh.cse216.tad222.backend;
+import spark.Response;
 
 /**
  * StructuredResponse provides a common format for success and failure messages,
@@ -37,5 +38,11 @@ public class StructuredResponse {
         mStatus = (status != null) ? status : "invalid";
         mMessage = message;
         mData = data;
+    }
+
+    public StructuredResponse(Response response) {
+        this("error", "Unable to authorize with provided token. Ensure token is still in memory and not null", null);
+        response.type("application/json");
+        response.status(200);
     }
 }
