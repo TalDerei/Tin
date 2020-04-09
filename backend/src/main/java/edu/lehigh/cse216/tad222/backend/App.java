@@ -81,7 +81,7 @@ public class App {
 
     public static Drive setup() throws IOException, GeneralSecurityException {
 
-        String emailAddress = "naked-mole-rat@naked-mole-rat-1581918623500.iam.gserviceaccount.com";
+        String emailAddress = "internaldriveuser@the-buzz-1584144072767.iam.gserviceaccount.com";
         GoogleCredential credential = new GoogleCredential.Builder().setTransport(HTTP_TRANSPORT)
                 .setJsonFactory(JSON_FACTORY).setServiceAccountId(emailAddress)
                 .setServiceAccountPrivateKeyFromP12File(new java.io.File(SERVICE_ACCOUNT_PKCS12_FILE_PATH))
