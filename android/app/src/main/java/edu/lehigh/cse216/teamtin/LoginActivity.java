@@ -167,7 +167,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                         }, new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Log.d("Error", "Error in response!");
+                        Log.d("Error", error.getMessage());
                     }
                 });
                 // Add the request to the RequestQueue.

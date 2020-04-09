@@ -29,11 +29,12 @@
         android:id="@+id/camera_frame_layout"
         android:layout_width="match_parent"
         android:layout_height="681dp"
-        android:translationY="51dp">
+        android:translationY="51dp"
+        android:visibility="visible">
 
         <SurfaceView
-            android:id="@+id/surfaceView"
-            android:layout_width="100dp"
+            android:id="@+id/surface_view"
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:scaleX="1"
             android:scaleY="1"
@@ -41,7 +42,6 @@
             android:translationY="05dp"
             android:visibility="visible"
             tools:visibility="visible" />
-
     </FrameLayout>
 
     <Button

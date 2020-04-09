@@ -19,14 +19,18 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback {
     List<Camera.Size> supportedPreviewSizes;
     Camera cam;
 
-    public CameraPreview(Context context) {
+    public CameraPreview(Context context, SurfaceView sv) {
         super(context);
-        surfaceView = findViewById(R.id.surfaceView);
-        addView(surfaceView);
+        surfaceView = sv;
+        if(surfaceView == null) {
+            Log.e("SurfaceView", "SurfaceView is null for some reason");
+        }
+        //addView(surfaceView);
 
         // Install a SurfaceHolder.Callback so we get notified when the
         // underlying surface is created and destroyed.
         holder = surfaceView.getHolder();
+        holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
         holder.addCallback(this);
     }
 
@@ -57,7 +61,8 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback {
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
         cam.stopPreview();
         Camera.Parameters parameters = cam.getParameters();
-        parameters.setPreviewSize(previewSize.width, previewSize.height);
+        if(previewSize != null) parameters.setPreviewSize(previewSize.width, previewSize.height);
+
         int orientation = getResources().getConfiguration().orientation;
         int rotation = 0;
         if(orientation == 1) {
@@ -74,7 +79,7 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback {
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
-        cam.stopPreview();
+        if(cam != null) cam.stopPreview();
     }
 
     @Override

@@ -16,7 +16,9 @@ import androidx.appcompat.widget.Toolbar;
 
 import android.os.Environment;
 import android.util.Log;
+import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -45,30 +47,34 @@ public class CameraActivity extends AppCompatActivity {
             startActivity(new Intent(getApplicationContext(), MainActivity.class));
             finish();
         }
-        try {
 
+        //Ensure setContentView is called before doing anything else with the View
+        setContentView(R.layout.activity_camera);
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        FrameLayout fl = findViewById(R.id.camera_frame_layout);
+        SurfaceView sv = (SurfaceView) fl.getChildAt(0);
+        preview = new CameraPreview(getApplicationContext(), sv);
+        preview.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        fl.addView(preview);
+
+        try {
             int id = Camera.CameraInfo.CAMERA_FACING_BACK;
 
             if (cm != null) {
                 cm.release();
                 cm = null;
             }
+
             cm = Camera.open(id);
             //Say the camera is open
         } catch (Exception e) {
-            Log.e(getString(R.string.app_name), "failed to open Camera");
-            e.printStackTrace();
+            Log.e(getString(R.string.app_name), e.getMessage(), e);
             startActivity(new Intent(getApplicationContext(), MainActivity.class));
             finish();
         }
-        preview = new CameraPreview(getApplicationContext());
-        FrameLayout fl = (FrameLayout) findViewById(R.id.camera_frame_layout);
-        fl.addView(preview);
         preview.setCamera(cm);
-
-        setContentView(R.layout.activity_camera);
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
 
         takePicture = findViewById(R.id.takePicture);
         takePicture.setOnClickListener(new View.OnClickListener() {
