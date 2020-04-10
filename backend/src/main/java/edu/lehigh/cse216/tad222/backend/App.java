@@ -40,7 +40,9 @@ import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.lang.JoseException;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.StringReader;
 import java.security.PublicKey;
 import java.util.*;
@@ -95,6 +97,28 @@ public class App {
                 .setApplicationName(App.APPLICATION_NAME).build();
 
         return service;
+    }
+
+    public static String getMimeType(String fileId) {
+        try {
+            File file = setup().files().get(fileId).execute();
+            String mime = file.getMimeType();
+            return mime;
+        } catch (Exception e) {
+            System.out.println("an error occured: " + e);
+        }
+        return null;
+    }
+
+    public static ByteArrayOutputStream downloadFromDrive(String fileId) {
+        try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            setup().files().get(fileId).executeMediaAndDownloadTo(outputStream);
+            return outputStream;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ByteArrayOutputStream();
+        }
     }
 
     public static void main(String[] args) {
@@ -582,6 +606,33 @@ public class App {
                 }
             }
             return App.getGson().toJson(sResponse);
+        });
+
+        Spark.get("/file/:fileId", (request, response) -> {
+            if (request.attributes().contains("authorized")) {
+                String fileId = request.params("fileId");
+                String mime = getMimeType(fileId);
+                ByteArrayOutputStream os = downloadFromDrive(fileId);
+                // response.raw().setContentType("application/octet-stream");
+                response.raw().setContentType(mime);
+                response.raw().setHeader("Content-Disposition", "attachment; mime=" + mime);
+                OutputStream toConn = response.raw().getOutputStream();
+                toConn.write(os.toByteArray());
+                toConn.flush();
+                return response;
+            } else {
+                // response.raw().setContentType("application/octet-stream");
+                response.raw().setContentType("text/plain");
+                response.raw().setHeader("Content-Disposition", "attachment; mime=string");
+                String failed = "not authorized";
+                // BinaryOutputStream os = new BinaryOutputStream();
+                byte[] b = failed.getBytes(java.nio.charset.Charset.forName("UTF-8"));
+                // os.write(b,0,b.length);
+                OutputStream toConn = response.raw().getOutputStream();
+                toConn.write(b);
+                toConn.flush();
+                return response;
+            }
         });
     }
 
