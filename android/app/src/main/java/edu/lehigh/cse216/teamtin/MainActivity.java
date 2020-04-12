@@ -82,8 +82,10 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = getIntent();
         profileName = intent.getStringExtra("givenName") + " " + intent.getStringExtra("familyName");
         profileEmail = intent.getStringExtra("email");
-        uid = intent.getStringExtra("user_id");
-        jwt = intent.getStringExtra("jwt");
+        if(intent.getBooleanExtra("login", false)){
+            uid = intent.getStringExtra("user_id");
+            jwt = intent.getStringExtra("jwt");
+        }
         getRequestBackend();
     }
 
@@ -192,7 +194,6 @@ public class MainActivity extends AppCompatActivity {
         queue.add(jsonObjectRequest);
     }
 
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -216,8 +217,11 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case R.id.action_camera:
                 i = new Intent(getApplicationContext(), CameraActivity.class);
-
-                startActivityForResult(i, 789);
+                startActivityForResult(i, 790);
+                return true;
+            case R.id.action_gallery:
+                i = new Intent(getApplicationContext(), Gallery.class);
+                startActivityForResult(i, 791);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -290,6 +294,8 @@ public class MainActivity extends AppCompatActivity {
                 SystemClock.sleep(1000);
                 Toast.makeText(MainActivity.this, "Message Posted!", Toast.LENGTH_LONG).show();
                 getRequestBackend();
+            } else if (requestCode == 789) {
+
             }
         }
     }

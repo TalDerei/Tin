@@ -1,10 +1,13 @@
 package edu.lehigh.cse216.teamtin;
 
+import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraManager;
+import android.net.Uri;
 import android.os.Bundle;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -15,7 +18,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
@@ -95,26 +101,32 @@ public class CameraActivity extends AppCompatActivity {
                     @Override
                     public void onPictureTaken(byte[] data, Camera camera) {
                         Log.d("Camera", "A picture would be saved here");
-                        File mediaFileDir = new File(Environment.getExternalStoragePublicDirectory(
-                                Environment.DIRECTORY_PICTURES), "TheBuzzPictures");
-                        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-                        File pictureFile = new File(mediaFileDir.getPath() + File.separator +
-                                "IMG_"+ timeStamp + ".jpg");
-                        if (pictureFile == null){
-                            Log.w("Picture", "Error creating media file, check storage permissions");
-                            return;
-                        }
+                        FileOutputStream outStream = null;
 
                         try {
-                            FileOutputStream fos = new FileOutputStream(pictureFile);
-                            fos.write(data);
-                            fos.close();
+                            File picDir = Environment.getExternalStorageDirectory();
+                            File dir = new File (picDir.getAbsolutePath() + "/TheBuzz");
+                            dir.mkdirs();
+
+                            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+                            String fileName = String.format("%s.jpg", "IMG_" + timeStamp);
+                            File outFile = new File(dir, fileName);
+
+                            outStream = new FileOutputStream(outFile);
+                            outStream.write(data);
+                            outStream.flush();
+                            outStream.close();
+
+                            Log.d("Camera", "Wrote Picture to " + outFile.getAbsolutePath());
+
+                            Intent mediaScanIntent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                            mediaScanIntent.setData(Uri.fromFile(outFile));
+                            sendBroadcast(mediaScanIntent);
                         } catch (FileNotFoundException e) {
-                            Log.e("Picture", "File not found: " + e.getMessage());
+                            e.printStackTrace();
                         } catch (IOException e) {
-                            Log.e("Picture", "Error accessing file: " + e.getMessage());
+                            e.printStackTrace();
                         }
-                        Log.d("Camera", "JPG Picture saved");
                     }
                 });
             }
@@ -123,6 +135,10 @@ public class CameraActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
+        private void refreshGallery(File file) {
+
+        }
+
     private void releaseCameraAndPreview() {
         preview.setCamera(null);
         if (cm != null) {
@@ -130,7 +146,29 @@ public class CameraActivity extends AppCompatActivity {
             cm = null;
         }
     }
-    WindowManager getActivityWindowManager() {
-        return this.getWindowManager();
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_camera, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        Intent i;
+        switch (id) {
+            case R.id.action_home:
+                i = new Intent(getApplicationContext(), MainActivity.class);
+                finish();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 }

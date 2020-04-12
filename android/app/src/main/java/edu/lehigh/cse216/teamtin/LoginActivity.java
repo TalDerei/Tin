@@ -117,6 +117,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
             JSONObject jo = new JSONObject(JWTjson);
             //Log.d("jwtTest", "user_id: " + jo.getString("mUser_id"));
             //Log.d("jwtTest", "jwt: " + jo.getString("mJWT"));
+            intent.putExtra("login", true);
             intent.putExtra("user_id", jo.getString("mUser_id"));
             intent.putExtra("jwt", jo.getString("mJWT"));
         } catch(JSONException e) {
@@ -167,7 +168,8 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                         }, new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Log.d("Error", error.getMessage());
+                        String ret = error.getMessage();
+                        Log.e("Error", ret != null ? ret : "no error message given", error);
                     }
                 });
                 // Add the request to the RequestQueue.

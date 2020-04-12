@@ -16,5 +16,8 @@
         android:id="@+id/action_camera"
         android:title="@string/action_camera"
         app:showAsAction="never" />
-
+    <item
+        android:id="@+id/action_gallery"
+        android:title="@string/action_gallery"
+        app:showAsAction="never" />
 </menu>

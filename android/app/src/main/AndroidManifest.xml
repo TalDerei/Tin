@@ -3,12 +3,15 @@
     package="edu.lehigh.cse216.teamtin">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.GET_ACCOUNTS"/>
-    <uses-permission android:name="android.permission.USE_CREDENTIALS"/>
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <uses-permission android:name="android.permission.USE_CREDENTIALS" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -18,22 +21,25 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
+            android:name=".Gallery"
+            android:label="@string/title_activity_gallery"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
+        <activity
             android:name=".voteActivity"
             android:label="@string/title_activity_vote"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".ProfileActivity"
             android:label="@string/title_activity_second"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".PostActivity"
             android:label="@string/title_activity_second"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
-        <!--android:name=".MainActivity"-->
+            android:theme="@style/AppTheme.NoActionBar" /> <!-- android:name=".MainActivity" -->
         <activity
             android:name=".LoginActivity"
             android:label="@string/app_name"
@@ -47,7 +53,7 @@
         <activity
             android:name=".CameraActivity"
             android:label="@string/title_activity_camera"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:theme="@style/AppTheme.NoActionBar" />
     </application>
 
 </manifest>
