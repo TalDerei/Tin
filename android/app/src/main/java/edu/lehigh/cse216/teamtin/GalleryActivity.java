@@ -1,6 +1,7 @@
 package edu.lehigh.cse216.teamtin;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -17,36 +18,32 @@ import android.view.MenuItem;
 import android.view.View;
 
 import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class Gallery extends AppCompatActivity {
-    Map<String, String> map = new HashMap<String, String>();
+public class GalleryActivity extends AppCompatActivity {
+    ArrayList<File> data;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        data = new ArrayList<>();
         setContentView(R.layout.activity_gallery);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_camera, menu);
+        getMenuInflater().inflate(R.menu.menu_gallery, menu);
         return true;
     }
 
@@ -69,28 +66,43 @@ public class Gallery extends AppCompatActivity {
     }
 
     private void populateFromGallery(File dir) {
+        data.clear();
+
+        if(dir == null || !dir.isDirectory()) {
+            Log.e("Gallery", "A proper directory was not passed in");
+            return;
+        }
+
+        final LinkedList<File> directories = new LinkedList<File>();
+        directories.add(dir);
+        for (File f : directories) {
+            // add in sub directories for future iteration
+            directories.addAll(Arrays.asList(dir.listFiles(pathname ->  {
+                return pathname.isDirectory();
+            })));
+
+            // add in pictures from directory
+            data.addAll(Arrays.asList(dir.listFiles(pathname ->  {
+                return pathname.getAbsolutePath().contains(".jpg");
+            })));
+        }
 
         RecyclerView rv = findViewById(R.id.picture_list_view);
         rv.setLayoutManager(new LinearLayoutManager(this));
-        //placeholder
-        ArrayList<Datum> mData = new ArrayList<>();
-        PictureListAdapter adapter = new PictureListAdapter(this, mData);
+        PictureListAdapter adapter = new PictureListAdapter(this, data);
         rv.setAdapter(adapter);
 
         adapter.setClickListener((PictureListAdapter.ClickListener) (d) -> {
             //this intent will bring us to a page where you can up and down vote
-            Intent i = new Intent(getApplicationContext(), voteActivity.class);
+             Intent i = new Intent(getApplicationContext(), voteActivity.class);
             startActivityForResult(i, 791); // 791 is the number that will come back to us
         });
 
-        /*
-         click event on profile image
-         */
         adapter.setImageClickListener( (PictureListAdapter.ClickListener) (d) -> {
-            String messages = (String) map.get(d.mSubject);
-            Intent i = new Intent(getApplicationContext(), ProfileActivity.class);
-            Log.d("setImageClickListener", "message: " + messages);
-            startActivityForResult(i, 791); // 791 is the number that will come back to us
+            Intent i = new Intent();
+            i.putExtra("image", d.getAbsolutePath());
+            Log.d("setImageClickListener", "Image Selected");
         });
+        adapter.notifyDataSetChanged();
     }
 }

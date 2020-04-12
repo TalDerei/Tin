@@ -220,7 +220,7 @@ public class MainActivity extends AppCompatActivity {
                 startActivityForResult(i, 790);
                 return true;
             case R.id.action_gallery:
-                i = new Intent(getApplicationContext(), Gallery.class);
+                i = new Intent(getApplicationContext(), GalleryActivity.class);
                 startActivityForResult(i, 791);
                 return true;
             default:

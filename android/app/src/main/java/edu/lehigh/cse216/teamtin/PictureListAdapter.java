@@ -2,6 +2,7 @@ package edu.lehigh.cse216.teamtin;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,6 +11,7 @@ import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.io.File;
 import java.util.ArrayList;
 
 class PictureListAdapter extends RecyclerView.Adapter<PictureListAdapter.ViewHolder> {
@@ -24,7 +26,7 @@ class PictureListAdapter extends RecyclerView.Adapter<PictureListAdapter.ViewHol
     }
 
     interface ClickListener{
-        void onClick(Datum d);
+        void onClick(File d);
     }
     private ClickListener mClickListener;
     private ClickListener mImageClickListener;
@@ -32,10 +34,10 @@ class PictureListAdapter extends RecyclerView.Adapter<PictureListAdapter.ViewHol
     void setClickListener(ClickListener c) { mClickListener = c;}
     void setImageClickListener(ClickListener d) { mImageClickListener = d;}
 
-    private ArrayList<Datum> mData;
+    private ArrayList<File> mData;
     private LayoutInflater mLayoutInflater;
 
-    PictureListAdapter(Context context, ArrayList<Datum> data) {
+    PictureListAdapter(Context context, ArrayList<File> data) {
         mData = data;
         mLayoutInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
@@ -51,14 +53,14 @@ class PictureListAdapter extends RecyclerView.Adapter<PictureListAdapter.ViewHol
         @SuppressLint("InflateParams") View view = mLayoutInflater.inflate(R.layout.list_item,
                 null);
         // E/RecyclerView: No adapter attached
-        // try parent, false); instead of null but then it spaces thme out
+        // try parent, false); instead of null but then it spaces them out
         return new ViewHolder(view);
     }
 
     @SuppressLint("SetTextI18n")
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-        final Datum d = mData.get(position);
+        final File d = mData.get(position);
         final View.OnClickListener listener = new View.OnClickListener(){
             @Override
             public void onClick(View view) {

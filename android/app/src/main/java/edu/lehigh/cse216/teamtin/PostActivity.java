@@ -3,6 +3,7 @@ package edu.lehigh.cse216.teamtin;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -10,17 +11,25 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
 
+import java.util.Arrays;
+import java.util.LinkedList;
+
+import io.opencensus.trace.Link;
+
 /** This activity is where the user will add a message to post.
  * They can post a message or cancel and go back to the list of all the messages.
  */
 
 public class PostActivity extends AppCompatActivity {
+
+    LinkedList<String> files = new LinkedList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,7 +68,24 @@ public class PostActivity extends AppCompatActivity {
                 finish();
             }
         });
+
+        Button bAddFile = findViewById(R.id.fetchFile2);
+        bCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivityForResult(new Intent(),791);
+            }
+        });
     }
 
-
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // Check which request we're responding to
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == Activity.RESULT_OK) {
+            if (requestCode == 791) {
+                files.add(data.getStringExtra("image"));
+            }
+        }
+    }
 }

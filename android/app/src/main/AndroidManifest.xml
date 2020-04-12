@@ -21,7 +21,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".Gallery"
+            android:name=".GalleryActivity"
             android:label="@string/title_activity_gallery"
             android:theme="@style/AppTheme.NoActionBar"></activity>
         <activity
