@@ -112,12 +112,33 @@ public class Database {
      * A prepared statement statement for updating likes
      */
     private PreparedStatement mLikesNuetral;
+
+    private PreparedStatement mCreateGoogleContent;
     /**
      * boolean for our database membership test: 
      * if mHasUserData == true, then drop UserData table first before dropping tblData
      */
     private boolean mHasUserData = false;
 
+
+    public static class GoogleDriveContent {
+        int mId;
+        String mFileId;
+        int mMessageID;
+        String mURL;
+        int mStorage;
+        String mDiskQuota;
+        public void setURL (String fileId) {
+            mURL = "https://drive.google.com/open?id=" + fileId;
+        }
+
+        public GoogleDriveContent (int id, String fileId, int messageId) {
+            mId = id;
+            mFileId = fileId;
+            mMessageID = messageId;
+        }
+
+    }
 
     public static class RowData {
         /**
@@ -335,6 +356,7 @@ public class Database {
             db.mUpdateOneLike = db.mConnection.prepareStatement("UPDATE likes SET likes = ? WHERE user_id = ?");
             db.mLikesNuetral = db.mConnection.prepareStatement("SELECT SUM(likes.likes) AS total FROM likes WHERE likes.message_id = ?");
             
+            db.mCreateGoogleContent = db.mConnection.prepareStatement("CREATE TABLE google content (");
             // 4. prepared statements associated with JOIN between tbldata & userdata
             // list of all of the posts, including the email address of the user who made each post
             db.mSelectAllByUser = db.mConnection.prepareStatement("SELECT tblData.id, tblData.subject, tblData.message, UserData.email FROM tblData " + 
@@ -715,6 +737,15 @@ public class Database {
         try {
             System.out.println("Create Table...");
             mCreateTable.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    void createGoogleContent() {
+        try {
+            System.out.println("Create google content table...");
+            mCreateGoogleContent.execute();
         } catch (SQLException e) {
             e.printStackTrace();
         }

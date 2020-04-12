@@ -40,6 +40,7 @@ public class App {
         System.out.println("  [w] Update a like vote in tblData");
         System.out.println("  [x] Update a nickname in UserData");
         System.out.println("  [q] Quit Program");
+        System.out.println(" [z] Create google content table");
         System.out.println("  [?] Help (this message)");
     }
 
@@ -148,6 +149,8 @@ public class App {
                 menu();
             } else if (action == 'q') {
                 break;
+            } else if (action == 'z') {
+                db.createGoogleContent();
             } else if (action == 'b') {
                 db.createTable();
             } else if (action == 'a') {
