@@ -66,9 +66,9 @@ public class CameraPreview extends ViewGroup implements SurfaceHolder.Callback {
         int orientation = getResources().getConfiguration().orientation;
         int rotation = 0;
         if(orientation == 1) {
-            cam.setDisplayOrientation(0);
-        } else if (orientation == 2) {
             cam.setDisplayOrientation(90);
+        } else if (orientation == 2) {
+            cam.setDisplayOrientation(0);
         }
 
         requestLayout();
