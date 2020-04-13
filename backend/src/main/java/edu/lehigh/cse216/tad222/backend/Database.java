@@ -732,7 +732,20 @@ public class Database {
         return res;
     }
 
-    PublicKey getPublicKey(String uid)throws TimeoutException,InterruptedException,MemcachedException {
-        return jwtPubKeys.get(uid);
+    PublicKey getPublicKey(String uid) {
+        PublicKey toReturn = null;
+        try{
+           toReturn = jwtPubKeys.get(uid);
+        }catch (TimeoutException te) {
+            System.err.println("Timeout during set or get: " +
+                               te.getMessage());
+        } catch (InterruptedException ie) {
+            System.err.println("Interrupt during set or get: " +
+                               ie.getMessage());
+        } catch (MemcachedException me) {
+            System.err.println("Memcached error during get or set: " +
+                               me.getMessage());
+        }
+        return toReturn;
     }
 }
