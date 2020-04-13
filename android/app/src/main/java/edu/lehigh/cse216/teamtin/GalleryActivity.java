@@ -10,9 +10,11 @@ import com.google.android.material.snackbar.Snackbar;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.os.Environment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -30,17 +32,22 @@ import java.util.List;
 import java.util.Map;
 
 public class GalleryActivity extends AppCompatActivity {
-    ArrayList<File> data;
+    ArrayList<PictureData> data;
     Intent img;
+    File dir;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         data = new ArrayList<>();
         img = new Intent();
+        dir = Environment.getExternalStorageDirectory();
         setContentView(R.layout.activity_gallery);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        populateFromGallery(dir);
     }
 
     @Override
@@ -68,42 +75,54 @@ public class GalleryActivity extends AppCompatActivity {
 
     private void populateFromGallery(File dir) {
         data.clear();
-
+        Log.d("File", dir.getAbsolutePath());
         if(dir == null || !dir.isDirectory()) {
             Log.e("Gallery", "A proper directory was not passed in");
             return;
         }
 
-        final LinkedList<File> directories = new LinkedList<File>();
+        final ArrayList<File> directories = new ArrayList<>();
         directories.add(dir);
         for (File f : directories) {
+            //Log.d("File search", f.getName());
             // add in sub directories for future iteration
-            directories.addAll(Arrays.asList(dir.listFiles(pathname ->  {
+            File[] temp = f.listFiles(pathname ->  {
                 return pathname.isDirectory();
-            })));
+            });
+            if(temp != null) {
+                directories.addAll(Arrays.asList(temp));
+            }
+        }
 
+        for(int i = 0; i < directories.size(); i++) {
             // add in pictures from directory
-            data.addAll(Arrays.asList(dir.listFiles(pathname ->  {
+            File[] temp = directories.get(i).listFiles(pathname ->  {
                 return pathname.getAbsolutePath().contains(".jpg");
-            })));
+            });
+            Log.d("File", Integer.toString(temp.length));
+            if(temp != null) {
+                for(int j = 0 ; j < temp.length; j++) {
+                    data.add(new PictureData(temp[j]));
+                }
+            }
         }
 
         RecyclerView rv = findViewById(R.id.picture_list_view);
-        rv.setLayoutManager(new LinearLayoutManager(this));
+        rv.setLayoutManager(new GridLayoutManager(this, 5));
         PictureListAdapter adapter = new PictureListAdapter(this, data);
         rv.setAdapter(adapter);
 
         adapter.setClickListener((PictureListAdapter.ClickListener) (d) -> {
-            //this intent will bring us to a page where you can up and down vote
-            Intent i = new Intent(getApplicationContext(), voteActivity.class);
-            startActivityForResult(i, 791); // 791 is the number that will come back to us
-        });
-
-        adapter.setImageClickListener( (PictureListAdapter.ClickListener) (d) -> {
-            img.putExtra("image", d.getAbsolutePath());
+            img.putExtra("image", d.mPath);
             Log.d("setImageClickListener", "Image Selected");
             setResult(791, img);
             finish();
+        });
+
+        adapter.setImageClickListener( (PictureListAdapter.ClickListener) (d) -> {
+            img.putExtra("image", d.mPath);
+            Log.d("setImageClickListener", "Image Selected");
+            setResult(791, img);
         });
         adapter.notifyDataSetChanged();
     }

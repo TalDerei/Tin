@@ -105,6 +105,7 @@ public class CameraActivity extends AppCompatActivity {
 
                         try {
                             File picDir = Environment.getExternalStorageDirectory();
+                            Log.d("File", picDir.getAbsolutePath());
                             File dir = new File (picDir.getAbsolutePath() + "/TheBuzz");
                             dir.mkdirs();
 
@@ -175,5 +176,11 @@ public class CameraActivity extends AppCompatActivity {
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        releaseCameraAndPreview();
     }
 }

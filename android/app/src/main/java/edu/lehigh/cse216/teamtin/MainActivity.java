@@ -49,7 +49,9 @@ public class MainActivity extends AppCompatActivity {
      * mData holds the data we get from Volley
      */
     ArrayList<Datum> mData = new ArrayList<>();
+
     Map<String, File> mFilesId = new HashMap<String, File>();
+    String driveUrl = "https://drive.google.com/open?id=";//append fileId at the end
     String messagesUrl = "https://limitless-ocean-62391.herokuapp.com/messages";
     String pictureUrl = "https://limitless-ocean-62391.herokuapp.com/upload";
     String fileDownloadUrl = "https://limitless-ocean-62391.herokuapp.com/file";
@@ -181,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d("who", profileName);
         try {
-            if (files.length > 0){
+            if (files != null && files.length > 0){
                 //for (String path : files) {
                 File f = new File(files[0]);
                 byte[] content = FileUtils.readFileToByteArray(f);

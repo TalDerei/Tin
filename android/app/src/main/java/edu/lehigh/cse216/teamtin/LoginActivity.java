@@ -151,8 +151,8 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                 Log.d("onActivityResult", "email is " + email);
                 Log.d("onActivityResult", "ID Token is " + idToken);
 
-                //TODO: send an ID token to backend server
-                RequestQueue queue = Volley.newRequestQueue(this);
+                //TODO: remove workaround
+                /*RequestQueue queue = Volley.newRequestQueue(this);
                 String targetUrl = url + "/users/login?idToken=" + idToken + "&code=" + code;
                 Log.d("POST URL", targetUrl);
 
@@ -173,7 +173,9 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                     }
                 });
                 // Add the request to the RequestQueue.
-                queue.add(stringRequest);
+                queue.add(stringRequest);*/
+                // TODO: remove this when login works
+                onLoggedIn(null, "placeholder");
             } catch (ApiException e) {
                 Log.w("Error", "signInResult:failed code=" + e.getStatusCode());
             }
