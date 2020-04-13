@@ -28,6 +28,20 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.PublicKey;
 
+import net.rubyeye.xmemcached.MemcachedClient;
+import net.rubyeye.xmemcached.MemcachedClientBuilder;
+import net.rubyeye.xmemcached.XMemcachedClientBuilder;
+import net.rubyeye.xmemcached.auth.AuthInfo;
+import net.rubyeye.xmemcached.command.BinaryCommandFactory;
+import net.rubyeye.xmemcached.exception.MemcachedException;
+import net.rubyeye.xmemcached.utils.AddrUtil;
+
+import java.lang.InterruptedException;
+import java.net.InetSocketAddress;
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.TimeoutException;
+
 public class Database {
     /**
      * The connection to the database. When there is no connection, it should be
@@ -99,8 +113,8 @@ public class Database {
     private PreparedStatement mIsRegistered;
 
     Set<User> activeUsers;
-    HashMap<String, PublicKey> jwtPubKeys;
-    HashMap<String, String> jwtKeys;
+    MemcachedClient jwtPubKeys;
+    MemcachedClient jwtKeys;
 
     /**
      * RowData is like a struct in C: we use it to hold data, and we allow direct
@@ -148,8 +162,39 @@ public class Database {
      */
     private Database() {
         activeUsers = new HashSet<User>();
-        jwtPubKeys = new HashMap<String, PublicKey>();
-        jwtKeys = new HashMap<String, String>();
+        jwtPubKeys = buildMemcached();
+        jwtKeys = buildMemcached();
+    }
+
+    public static MemcachedClient buildMemcached(){
+        List<InetSocketAddress> servers =
+      AddrUtil.getAddresses("mc4.dev.ec2.memcachier.com:11211".replace(",", " "));
+    AuthInfo authInfo =
+      AuthInfo.plain("4A3703",
+                     "85B292273D2D7A730CEE5962438DDDFB");
+
+    MemcachedClientBuilder builder = new XMemcachedClientBuilder(servers);
+
+    // Configure SASL auth for each server
+    for(InetSocketAddress server : servers) {
+      builder.addAuthInfo(server, authInfo);
+    }
+
+    // Use binary protocol
+    builder.setCommandFactory(new BinaryCommandFactory());
+    // Connection timeout in milliseconds (default: )
+    builder.setConnectTimeout(1000);
+    // Reconnect to servers (default: true)
+    builder.setEnableHealSession(true);
+    // Delay until reconnect attempt in milliseconds (default: 2000)
+    builder.setHealSessionInterval(2000);
+
+    try {
+      MemcachedClient mc = builder.build();
+      return mc;
+    } catch (IOException ioe) {
+      System.err.println("Couldn't create a connection to MemCachier: " + ioe.getMessage());
+    }
     }
 
     /**
@@ -166,6 +211,8 @@ public class Database {
     static Database getDatabase(String db_url) {
         // Create an un-configured Database object
         Database db = new Database();
+        something();
+
 
         // Give the Database object a connection, fail if we cannot get one
         /*
