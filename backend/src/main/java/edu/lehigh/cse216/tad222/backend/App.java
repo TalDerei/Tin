@@ -73,6 +73,7 @@ public class App {
 
         String folderId = folderCreated.getId();
         fmeta.setParents(Collections.singletonList(folderId));
+        fmeta.setMimeType(null);
         try {
             File file = setup().files().create(fmeta, mediaContent).setFields("id, parents").execute();
             System.out.println("File ID executed: " + file.getId());
