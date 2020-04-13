@@ -187,13 +187,17 @@ public class Database {
     builder.setEnableHealSession(true);
     // Delay until reconnect attempt in milliseconds (default: 2000)
     builder.setHealSessionInterval(2000);
+    MemcachedClient mc = null;
 
     try {
-      MemcachedClient mc = builder.build();
-      return mc;
+      mc = builder.build();
     } catch (IOException ioe) {
       System.err.println("Couldn't create a connection to MemCachier: " + ioe.getMessage());
     }
+        if(mc == null) {
+            System.out.println("Something went horribly wrong while making MemcachedClient! Fix it first!");
+        }
+    return mc;
     }
 
     /**
@@ -210,8 +214,6 @@ public class Database {
     static Database getDatabase(String db_url) {
         // Create an un-configured Database object
         Database db = new Database();
-        something();
-
 
         // Give the Database object a connection, fail if we cannot get one
         /*
@@ -670,7 +672,7 @@ public class Database {
         RsaJsonWebKey rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
         
         // Give the JWK a Key ID (kid), which is just the polite thing to do
-        rsaJsonWebKey.setKeyId("k" + jwtPubKeys.size());
+        rsaJsonWebKey.setKeyId("k" + rsaJsonWebKey);
         JwtClaims claims = new JwtClaims();
         claims.setIssuer("BuzzServer");
         claims.setAudience(u.getEmail());
@@ -692,7 +694,7 @@ public class Database {
         // Set the signature algorithm
         jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
         
-        jwtPubKeys.put(u.getUserID(), rsaJsonWebKey.getPublicKey());
+        jwtPubKeys.set(u.getUserID(), 0, rsaJsonWebKey.getPublicKey());
 
         return jws.getCompactSerialization();
     }
