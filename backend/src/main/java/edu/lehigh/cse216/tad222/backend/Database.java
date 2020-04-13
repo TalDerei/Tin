@@ -170,8 +170,7 @@ public class Database {
         List<InetSocketAddress> servers =
       AddrUtil.getAddresses("mc4.dev.ec2.memcachier.com:11211".replace(",", " "));
     AuthInfo authInfo =
-      AuthInfo.plain("4A3703",
-                     "85B292273D2D7A730CEE5962438DDDFB");
+      AuthInfo.plain("4A3703","85B292273D2D7A730CEE5962438DDDFB");
 
     MemcachedClientBuilder builder = new XMemcachedClientBuilder(servers);
 
