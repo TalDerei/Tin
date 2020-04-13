@@ -1,5 +1,6 @@
 package edu.lehigh.cse216.teamtin;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
@@ -30,11 +31,13 @@ import java.util.Map;
 
 public class GalleryActivity extends AppCompatActivity {
     ArrayList<File> data;
+    Intent img;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         data = new ArrayList<>();
+        img = new Intent();
         setContentView(R.layout.activity_gallery);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -54,10 +57,8 @@ public class GalleryActivity extends AppCompatActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        Intent i;
         switch (id) {
-            case R.id.action_home:
-                i = new Intent(getApplicationContext(), MainActivity.class);
+            case R.id.action_close_gallery:
                 finish();
                 return true;
             default:
@@ -94,14 +95,15 @@ public class GalleryActivity extends AppCompatActivity {
 
         adapter.setClickListener((PictureListAdapter.ClickListener) (d) -> {
             //this intent will bring us to a page where you can up and down vote
-             Intent i = new Intent(getApplicationContext(), voteActivity.class);
+            Intent i = new Intent(getApplicationContext(), voteActivity.class);
             startActivityForResult(i, 791); // 791 is the number that will come back to us
         });
 
         adapter.setImageClickListener( (PictureListAdapter.ClickListener) (d) -> {
-            Intent i = new Intent();
-            i.putExtra("image", d.getAbsolutePath());
+            img.putExtra("image", d.getAbsolutePath());
             Log.d("setImageClickListener", "Image Selected");
+            setResult(791, img);
+            finish();
         });
         adapter.notifyDataSetChanged();
     }

@@ -165,7 +165,12 @@ public class CameraActivity extends AppCompatActivity {
         switch (id) {
             case R.id.action_home:
                 i = new Intent(getApplicationContext(), MainActivity.class);
+                setResult(790, i);
                 finish();
+                return true;
+            case R.id.action_gallery:
+                i = new Intent(getApplicationContext(), GalleryActivity.class);
+                startActivity(i);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

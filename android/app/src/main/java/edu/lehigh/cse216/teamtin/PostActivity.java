@@ -18,6 +18,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 
@@ -29,11 +31,16 @@ import io.opencensus.trace.Link;
 
 public class PostActivity extends AppCompatActivity {
 
-    LinkedList<String> files = new LinkedList<>();
+    ArrayList<String> files;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if(files == null) {
+            files = new ArrayList<>();
+        } else {
+            files.clear();
+        }
         setContentView(R.layout.activity_second);
 
         // Get the parameter from the calling activity, and put it in the TextView
@@ -53,6 +60,7 @@ public class PostActivity extends AppCompatActivity {
                     Log.d("PostActivity", result);
                     Intent i = new Intent();
                     i.putExtra("result", result);
+                    i.putStringArrayListExtra("files", files);
                     setResult(Activity.RESULT_OK, i);
                     finish();
                 }
@@ -73,7 +81,7 @@ public class PostActivity extends AppCompatActivity {
         bCancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startActivityForResult(new Intent(),791);
+                startActivityForResult(new Intent(getApplicationContext(), GalleryActivity.class),791);
             }
         });
     }
@@ -84,7 +92,10 @@ public class PostActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == 791) {
-                files.add(data.getStringExtra("image"));
+                String path = data.getStringExtra("image");
+                if(path != null) {
+                    files.add(path);
+                }
             }
         }
     }

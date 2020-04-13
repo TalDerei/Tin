@@ -7,6 +7,7 @@
     <string name="action_camera">Take a picture</string>
     <string name="action_fetch_file">Add a file</string>
     <string name="action_gallery">Show Gallery</string>
+    <string name="action_close_gallery">Select Photo</string>
     <string name="list_selected_files">All files to be uploaded</string>
     <string name="title_item_list">Items</string>
     <string name="title_item_detail">item Detail</string>

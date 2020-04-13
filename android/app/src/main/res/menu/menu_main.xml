@@ -20,4 +20,8 @@
         android:id="@+id/action_gallery"
         android:title="@string/action_gallery"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/action_test_cache"
+        android:orderInCategory="101"
+        android:title="Cache Tester" />
 </menu>

@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.net.http.HttpResponseCache;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -24,18 +25,22 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.android.volley.DefaultRetryPolicy;
 
+import org.apache.commons.io.FileUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.CacheResponse;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Scanner;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -44,7 +49,10 @@ public class MainActivity extends AppCompatActivity {
      * mData holds the data we get from Volley
      */
     ArrayList<Datum> mData = new ArrayList<>();
-    String url = "https://limitless-ocean-62391.herokuapp.com/messages";
+    Map<String, File> mFilesId = new HashMap<String, File>();
+    String messagesUrl = "https://limitless-ocean-62391.herokuapp.com/messages";
+    String pictureUrl = "https://limitless-ocean-62391.herokuapp.com/upload";
+    String fileDownloadUrl = "https://limitless-ocean-62391.herokuapp.com/file";
 
     private String profileName;
     private String profileEmail;
@@ -105,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
         // Instantiate the RequestQueue.
         RequestQueue queue = Volley.newRequestQueue(this);
         // Request a string response from the provided URL.
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, url + "?user_id=" + uid + "&jwt=" + jwt,
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, messagesUrl + "?user_id=" + uid + "&jwt=" + jwt,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
@@ -132,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
     public void postRequestBackend() {
         // Instantiate the RequestQueue.
         RequestQueue queue = Volley.newRequestQueue(this);
-        StringRequest postRequest = new StringRequest(Request.Method.POST, url + "?user_id=" + uid + "&jwt=" + jwt,
+        StringRequest postRequest = new StringRequest(Request.Method.POST, messagesUrl + "?user_id=" + uid + "&jwt=" + jwt,
                 new Response.Listener<String>()
                 {
                     @Override
@@ -166,19 +174,50 @@ public class MainActivity extends AppCompatActivity {
     /**
      *  Post a message with JSONObject
      */
-    public void postJsonRequestBackend(String result) {
+    public void postJsonRequestBackend(String result, String[] files) {
         RequestQueue queue = Volley.newRequestQueue(this);
         JSONObject object = new JSONObject();
+        JSONObject pics = new JSONObject();
+
         Log.d("who", profileName);
         try {
+            if (files.length > 0){
+                //for (String path : files) {
+                File f = new File(files[0]);
+                byte[] content = FileUtils.readFileToByteArray(f);
+                String encodedString = Base64.encodeToString(content, Base64.DEFAULT);
+                pics.put(f.getName(), encodedString);
+                //}
+            }
             //input your API parameters
             object.put("mTitle", profileName);
-            object.put("mMessage",result);
-        } catch (JSONException e) {
+            object.put("mMessage", result);
+        } catch (JSONException | IOException e) {
             e.printStackTrace();
         }
+
+        // Only works for one file right now
+        JsonObjectRequest jsonPictureRequest = new JsonObjectRequest(Request.Method.POST, pictureUrl + "?user_id=" + uid + "&jwt=" + jwt, pics,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        try {
+                            String fid = response.getString("mMessage");
+                            mFilesId.put(fid, new File(files[0]));
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                        Log.d("onResponse", response.toString());
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.d("onErrorResponse", error.toString());
+            }
+
+        });
         // Enter the correct url for your api service site
-        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, url  + "?user_id=" + uid + "&jwt=" + jwt, object,
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, messagesUrl + "?user_id=" + uid + "&jwt=" + jwt, object,
                 new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
@@ -191,6 +230,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
         });
+        queue.add(jsonPictureRequest);
         queue.add(jsonObjectRequest);
     }
 
@@ -222,6 +262,9 @@ public class MainActivity extends AppCompatActivity {
             case R.id.action_gallery:
                 i = new Intent(getApplicationContext(), GalleryActivity.class);
                 startActivityForResult(i, 791);
+                return true;
+            case R.id.action_test_cache:
+                Log.d("Cache Test", getFileForMessage("file").getName());
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -289,12 +332,13 @@ public class MainActivity extends AppCompatActivity {
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == 789) {
                 String result = data.getStringExtra("result");
+                String[] files = data.getStringArrayExtra("files");
                 Log.d("onActivityResult", result);
-                postJsonRequestBackend(result);
+                postJsonRequestBackend(result, files);
                 SystemClock.sleep(1000);
                 Toast.makeText(MainActivity.this, "Message Posted!", Toast.LENGTH_LONG).show();
                 getRequestBackend();
-            } else if (requestCode == 789) {
+            } else if (requestCode == 790) {
 
             }
         }
@@ -331,5 +375,31 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             Log.e("error", Log.getStackTraceString(e));
         }
+    }
+
+    private File getFileForMessage(String placeholder) {
+        try {
+            HttpResponseCache responseCache = HttpResponseCache.getInstalled();
+            HttpsURLConnection huc = (HttpsURLConnection) new URL("https://limitless-ocean-62391.herokuapp.com/").openConnection();
+            if(responseCache != null){
+                URI uri = new URI("https://limitless-ocean-62391.herokuapp.com/messages");
+                CacheResponse cacheResponse = responseCache.get(uri, "GET", huc.getRequestProperties());
+                Scanner scanner = new Scanner(cacheResponse.getBody(), "UTF-8");
+                StringBuilder sb = new StringBuilder();
+                while (scanner.hasNextLine()){
+                    sb.append(scanner.nextLine());
+                }
+                Log.d("HTTP Cache Test", sb.toString());
+
+                return null;
+            }
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return null;
+        // Search for file in cache
+        // search for file in the device
+        // pull files from the web
     }
 }

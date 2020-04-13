@@ -3,9 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="edu.lehigh.cse216.teamtin.MainActivity">
     <item
-        android:id="@+id/action_home"
-        android:orderInCategory="100"
-        android:title="@string/message_home_button"
+        android:id="@+id/action_close_gallery"
+        android:title="@string/action_close_gallery"
         app:showAsAction="always" />
 
 </menu>
