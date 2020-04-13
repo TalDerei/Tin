@@ -667,7 +667,7 @@ public class Database {
         return res;
     }
 
-    String produceJWTKey(User u) throws JoseException{
+    String produceJWTKey(User u) throws JoseException, TimeoutException,InterruptedException,MemcachedException{
         // Generate an RSA key pair, which will be used for signing and verification of the JWT, wrapped in a JWK
         RsaJsonWebKey rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
         
@@ -732,7 +732,7 @@ public class Database {
         return res;
     }
 
-    PublicKey getPublicKey(String uid){
+    PublicKey getPublicKey(String uid)throws TimeoutException,InterruptedException,MemcachedException {
         return jwtPubKeys.get(uid);
     }
 }
