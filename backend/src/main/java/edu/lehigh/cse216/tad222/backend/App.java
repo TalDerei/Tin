@@ -64,16 +64,21 @@ public class App {
         // boolean useDirectUpload = true;
         String ret = null;
 
+        File fileMetadata = new File();
+        fileMetadata.setName(name);
+        fileMetadata.setMimeType("application/vnd.google-apps.folder");
+
+        File folderMade = setup().files().create(fileMetadata)
+            .setFields("id")
+            .execute();
+        String folderId = folderMade.getId();
+
         com.google.api.services.drive.model.File fmeta = new com.google.api.services.drive.model.File();
         fmeta.setName(name);
-        fmeta.setMimeType("application/vnd.google-apps.folder");
-        com.google.api.services.drive.model.File folderCreated = setup().files().create(fmeta).setFields("id").execute();
         System.out.println(mime);
         FileContent mediaContent = new FileContent(mime, UPLOAD_FILE);
 
-        String folderId = folderCreated.getId();
         fmeta.setParents(Collections.singletonList(folderId));
-        fmeta.setMimeType(null);
         try {
             File file = setup().files().create(fmeta, mediaContent).setFields("id, parents").execute();
             System.out.println("File ID executed: " + file.getId());
