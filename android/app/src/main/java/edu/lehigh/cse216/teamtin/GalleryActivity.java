@@ -29,7 +29,7 @@ public class GalleryActivity extends AppCompatActivity {
 
         data = new ArrayList<>();
         img = new Intent();
-        dir = Environment.getExternalStorageDirectory();
+        dir = new File(Environment.getExternalStorageDirectory().getAbsoluteFile() + "/TheBuzz");
         setContentView(R.layout.activity_gallery);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -87,7 +87,6 @@ public class GalleryActivity extends AppCompatActivity {
             File[] temp = directories.get(i).listFiles(pathname ->  {
                 return pathname.getAbsolutePath().contains(".jpg");
             });
-            Log.d("File", Integer.toString(temp.length));
             if(temp != null) {
                 for(int j = 0 ; j < temp.length; j++) {
                     data.add(new PictureData(temp[j]));
@@ -96,7 +95,9 @@ public class GalleryActivity extends AppCompatActivity {
         }
 
         RecyclerView rv = findViewById(R.id.picture_list_view);
-        rv.setLayoutManager(new GridLayoutManager(this, 5));
+        GridLayoutManager glm = new GridLayoutManager(this, 5);
+        glm.setUsingSpansToEstimateScrollbarDimensions(true);
+        rv.setLayoutManager(glm);
         PictureListAdapter adapter = new PictureListAdapter(this, data);
         rv.setAdapter(adapter);
 

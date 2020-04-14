@@ -1,4 +1,12 @@
 apply plugin: 'com.android.application'
+apply plugin: 'de.mobilej.unmock'
+
+unMock {
+
+    keepStartingWith "android.graphics.BitmapFactory"
+    keepStartingWith "android.graphics.Bitmap"
+    keepStartingWith "android.util.Log;"
+}
 
 android {
     compileSdkVersion 29
@@ -11,6 +19,9 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+    testOptions {
+        unitTests.returnDefaultValues = true
     }
     buildTypes {
         release {

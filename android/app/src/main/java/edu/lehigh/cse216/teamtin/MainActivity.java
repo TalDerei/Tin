@@ -16,10 +16,12 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.android.volley.AuthFailureError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
+import com.android.volley.VolleyLog;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
@@ -32,8 +34,11 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.CacheResponse;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Map;
@@ -55,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
     String messagesUrl = "https://limitless-ocean-62391.herokuapp.com/messages";
     String pictureUrl = "https://limitless-ocean-62391.herokuapp.com/upload";
     String fileDownloadUrl = "https://limitless-ocean-62391.herokuapp.com/file";
+    String allFileDownloadUrl = "https://limitless-ocean-62391.herokuapp.com/files";
 
     private String profileName;
     private String profileEmail;
@@ -97,6 +103,7 @@ public class MainActivity extends AppCompatActivity {
             jwt = intent.getStringExtra("jwt");
         }
         getRequestBackend();
+        getFileIdsFromBackend();
     }
 
     @Override
@@ -136,44 +143,101 @@ public class MainActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
+    public void getFileIdsFromBackend(){
+        RequestQueue queue = Volley.newRequestQueue(this);
+        StringRequest stringRequest = new StringRequest(Request.Method.GET,
+                allFileDownloadUrl + "?user_id=" + uid + "&jwt=" + jwt,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.d("GET", "response received");
+                        downloadFiles(response);
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("hag322", "That didn't work!");
+            }
+        });
+
+        stringRequest.setRetryPolicy(new DefaultRetryPolicy(10000, 0,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        // Add the request to the RequestQueue.
+        queue.add(stringRequest);
+    }
+
+    private void downloadFiles(String response) {
+        mFilesId.clear();
+
+        try {
+            JSONObject res = new JSONObject(response);
+            JSONArray elements = res.getJSONArray("mData");
+            for(int i = 0; i < elements.length(); i++) {
+                JSONObject jo = elements.getJSONObject(i);
+                URL u = new URL(jo.getString("url"));
+                mFilesId.put(jo.getString("fileid"), new File(u.toURI()));
+            }
+        } catch (JSONException | MalformedURLException | URISyntaxException e) {
+            Log.e("DownloadFiles", "something went wrong", e);
+            e.printStackTrace();
+        }
+    }
+
     public void postJsonFileRequestBackend(String file) {
         RequestQueue queue = Volley.newRequestQueue(this);
         JSONObject pic = new JSONObject();
+
+        StringRequest stringRequest = null;
 
         if (file != null){
             try {
                 File f = new File(file);
                 byte[] content = FileUtils.readFileToByteArray(f);
                 String encodedString = Base64.encodeToString(content, Base64.DEFAULT);
-                pic.put(f.getName(), encodedString);
-            } catch (JSONException | IOException e) {
+                // Only works for one file right now
+                stringRequest = new StringRequest(Request.Method.POST,
+                        pictureUrl + "?user_id=" + uid + "&jwt=" + jwt,
+                        new Response.Listener<String>() {
+                            @Override
+                            public void onResponse(String response) {
+                                try {
+                                    JSONObject jo = new JSONObject(response);
+                                    String fid = jo.getString("mData");
+                                    mFilesId.put(fid, new File(f.getAbsolutePath()));
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+                                Log.d("onResponse", response.toString());
+                            }
+                        }, new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Log.e("onErrorResponse", error.toString());
+                    }
+                }) {
+                    @Override
+                    public String getBodyContentType() {
+                        return "multipart/form-data";
+                    }
+
+                    @Override
+                    public byte[] getBody() throws AuthFailureError {
+                        try {
+                            return encodedString == null ? null : encodedString.getBytes("utf-8");
+                        } catch (UnsupportedEncodingException uee) {
+                            VolleyLog.wtf("Unsupported Encoding while trying to get the bytes of %s using %s", encodedString, "utf-8");
+                            return null;
+                        }
+                    }
+                };
+            } catch (IOException e) {
                 e.printStackTrace();
             }
 
         }
-
-        int messageId = 0;
-        JsonObjectRequest jsonPictureRequest = new JsonObjectRequest(Request.Method.POST,
-        pictureUrl + "/" + messageId + "?user_id=" + uid + "&jwt=" + jwt, pic,
-                new Response.Listener<JSONObject>() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        try {
-                            String fid = response.getString("mData");
-                            mFilesId.put(fid, new File(file));
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                        Log.d("onResponse", response.toString());
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.d("onErrorResponse", error.toString());
-            }
-
-        });
-        queue.add(jsonPictureRequest);
+        if(stringRequest != null) {
+            queue.add(stringRequest);
+        }
     }
 
     /**
@@ -182,17 +246,52 @@ public class MainActivity extends AppCompatActivity {
     public void postJsonRequestBackend(String result, String[] files) {
         RequestQueue queue = Volley.newRequestQueue(this);
         JSONObject object = new JSONObject();
-        JSONObject pics = new JSONObject();
+
+        StringRequest stringRequest = null;
 
         Log.d("who", profileName);
         try {
             if (files != null && files.length > 0){
-                //for (String path : files) {
                 File f = new File(files[0]);
                 byte[] content = FileUtils.readFileToByteArray(f);
-                String encodedString = Base64.encodeToString(content, Base64.DEFAULT);
-                pics.put(f.getName(), encodedString);
-                //}
+                final String encodedString = Base64.encodeToString(content, Base64.DEFAULT);
+
+                // Only works for one file right now
+                stringRequest = new StringRequest(Request.Method.POST,
+                        pictureUrl + "?user_id=" + uid + "&jwt=" + jwt,
+                        new Response.Listener<String>() {
+                            @Override
+                            public void onResponse(String response) {
+                                try {
+                                    JSONObject jo = new JSONObject(response);
+                                    String fid = jo.getString("mData");
+                                    mFilesId.put(fid, new File(files[0]));
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+                                Log.d("onResponse", response.toString());
+                            }
+                        }, new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        Log.e("onErrorResponse", error.toString());
+                    }
+                }) {
+                    @Override
+                    public String getBodyContentType() {
+                        return "multipart/form-data";
+                    }
+
+                    @Override
+                    public byte[] getBody() throws AuthFailureError {
+                        try {
+                            return encodedString == null ? null : encodedString.getBytes("utf-8");
+                        } catch (UnsupportedEncodingException uee) {
+                            VolleyLog.wtf("Unsupported Encoding while trying to get the bytes of %s using %s", encodedString, "utf-8");
+                            return null;
+                        }
+                    }
+                };
             }
             //input your API parameters
             object.put("mTitle", profileName);
@@ -201,28 +300,6 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
-        // Only works for one file right now
-        int messageId = 0;
-        JsonObjectRequest jsonPictureRequest = new JsonObjectRequest(Request.Method.POST,
-        pictureUrl + "/" + messageId + "?user_id=" + uid + "&jwt=" + jwt, pics,
-                new Response.Listener<JSONObject>() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        try {
-                            String fid = response.getString("mData");
-                            mFilesId.put(fid, new File(files[0]));
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                        Log.d("onResponse", response.toString());
-                    }
-                }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.d("onErrorResponse", error.toString());
-            }
-
-        });
         // Enter the correct url for your api service site
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.POST, messagesUrl + "?user_id=" + uid + "&jwt=" + jwt, object,
                 new Response.Listener<JSONObject>() {
@@ -237,7 +314,9 @@ public class MainActivity extends AppCompatActivity {
             }
 
         });
-        queue.add(jsonPictureRequest);
+        if(stringRequest != null) {
+            queue.add(stringRequest);
+        }
         queue.add(jsonObjectRequest);
     }
 

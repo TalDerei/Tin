@@ -2,7 +2,6 @@ package edu.lehigh.cse216.teamtin;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.util.Log;
 
 import java.io.File;
 
@@ -20,7 +19,8 @@ public class PictureData {
             mPic = pic;
             mBitmap = bitmap;
         } else {
-            Log.e("PictureData", "The passed in File is not a picture");
+            mPic = null;
+            mBitmap = null;
         }
     }
 

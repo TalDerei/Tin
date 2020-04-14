@@ -19,7 +19,7 @@
         android:layout_marginRight="10dp"
         android:layout_marginBottom="10dp"
         android:alpha="100"
-        android:background="#80FFFFFF"
+        android:background="#80F4F4F4"
         android:clickable="true"
         tools:srcCompat="@drawable/profile" />
 

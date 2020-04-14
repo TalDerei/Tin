@@ -47,15 +47,15 @@ public class PostActivityTest {
             e.printStackTrace();
         }
 
-        ViewInteraction overflowMenuButton = onView(
-                allOf(withContentDescription("More options"),
+        ViewInteraction overflowMenuButton = Espresso.onView(
+                Matchers.allOf(ViewMatchers.withContentDescription("More options"),
                         childAtPosition(
                                 childAtPosition(
-                                        withId(R.id.toolbar),
+                                        ViewMatchers.withId(R.id.toolbar),
                                         1),
                                 0),
-                        isDisplayed()));
-        overflowMenuButton.perform(click());
+                        ViewMatchers.isDisplayed()));
+        overflowMenuButton.perform(ViewActions.click());
 
         // Added a sleep statement to match the app's execution delay.
         // The recommended way to handle such scenarios is to use Espresso idling resources:
@@ -66,15 +66,15 @@ public class PostActivityTest {
             e.printStackTrace();
         }
 
-        ViewInteraction overflowMenuButton2 = onView(
-                allOf(withContentDescription("More options"),
+        ViewInteraction overflowMenuButton2 = Espresso.onView(
+                Matchers.allOf(ViewMatchers.withContentDescription("More options"),
                         childAtPosition(
                                 childAtPosition(
-                                        withId(R.id.toolbar),
+                                        ViewMatchers.withId(R.id.toolbar),
                                         1),
                                 0),
-                        isDisplayed()));
-        overflowMenuButton2.perform(click());
+                        ViewMatchers.isDisplayed()));
+        overflowMenuButton2.perform(ViewActions.click());
 
         // Added a sleep statement to match the app's execution delay.
         // The recommended way to handle such scenarios is to use Espresso idling resources:
@@ -85,15 +85,15 @@ public class PostActivityTest {
             e.printStackTrace();
         }
 
-        ViewInteraction appCompatTextView = onView(
-                allOf(withId(R.id.title), withText("Message Board (Home)"),
+        ViewInteraction appCompatTextView = Espresso.onView(
+                Matchers.allOf(ViewMatchers.withId(R.id.title), ViewMatchers.withText("Message Board (Home)"),
                         childAtPosition(
                                 childAtPosition(
-                                        withId(R.id.content),
+                                        ViewMatchers.withId(R.id.content),
                                         0),
                                 0),
-                        isDisplayed()));
-        appCompatTextView.perform(click());
+                        ViewMatchers.isDisplayed()));
+        appCompatTextView.perform(ViewActions.click());
 
         // Added a sleep statement to match the app's execution delay.
         // The recommended way to handle such scenarios is to use Espresso idling resources:
@@ -104,15 +104,15 @@ public class PostActivityTest {
             e.printStackTrace();
         }
 
-        ViewInteraction overflowMenuButton3 = onView(
-                allOf(withContentDescription("More options"),
+        ViewInteraction overflowMenuButton3 = Espresso.onView(
+                Matchers.allOf(ViewMatchers.withContentDescription("More options"),
                         childAtPosition(
                                 childAtPosition(
-                                        withId(R.id.toolbar),
+                                        ViewMatchers.withId(R.id.toolbar),
                                         1),
                                 0),
-                        isDisplayed()));
-        overflowMenuButton3.perform(click());
+                        ViewMatchers.isDisplayed()));
+        overflowMenuButton3.perform(ViewActions.click());
 
         // Added a sleep statement to match the app's execution delay.
         // The recommended way to handle such scenarios is to use Espresso idling resources:
@@ -123,35 +123,35 @@ public class PostActivityTest {
             e.printStackTrace();
         }
 
-        ViewInteraction appCompatTextView2 = onView(
-                allOf(withId(R.id.title), withText("Post a New Message"),
+        ViewInteraction appCompatTextView2 = Espresso.onView(
+                Matchers.allOf(ViewMatchers.withId(R.id.title), ViewMatchers.withText("Post a New Message"),
                         childAtPosition(
                                 childAtPosition(
-                                        withId(R.id.content),
+                                        ViewMatchers.withId(R.id.content),
                                         0),
                                 0),
-                        isDisplayed()));
-        appCompatTextView2.perform(click());
+                        ViewMatchers.isDisplayed()));
+        appCompatTextView2.perform(ViewActions.click());
 
-        ViewInteraction appCompatEditText = onView(
-                allOf(withId(R.id.editText),
+        ViewInteraction appCompatEditText = Espresso.onView(
+                Matchers.allOf(ViewMatchers.withId(R.id.editText),
                         childAtPosition(
                                 childAtPosition(
-                                        withClassName(is("androidx.constraintlayout.widget.ConstraintLayout")),
+                                        ViewMatchers.withClassName(Matchers.is("androidx.constraintlayout.widget.ConstraintLayout")),
                                         0),
                                 1),
-                        isDisplayed()));
-        appCompatEditText.perform(replaceText("the"), closeSoftKeyboard());
+                        ViewMatchers.isDisplayed()));
+        appCompatEditText.perform(ViewActions.replaceText("the"), ViewActions.closeSoftKeyboard());
 
-        ViewInteraction appCompatButton = onView(
-                allOf(withId(R.id.buttonOk), withText("OK"),
+        ViewInteraction appCompatButton = Espresso.onView(
+                Matchers.allOf(ViewMatchers.withId(R.id.buttonOk), ViewMatchers.withText("OK"),
                         childAtPosition(
                                 childAtPosition(
-                                        withClassName(is("androidx.constraintlayout.widget.ConstraintLayout")),
+                                        ViewMatchers.withClassName(Matchers.is("androidx.constraintlayout.widget.ConstraintLayout")),
                                         0),
                                 3),
-                        isDisplayed()));
-        appCompatButton.perform(click());
+                        ViewMatchers.isDisplayed()));
+        appCompatButton.perform(ViewActions.click());
 
         // Added a sleep statement to match the app's execution delay.
         // The recommended way to handle such scenarios is to use Espresso idling resources:
@@ -162,15 +162,15 @@ public class PostActivityTest {
             e.printStackTrace();
         }
 
-        ViewInteraction overflowMenuButton4 = onView(
-                allOf(withContentDescription("More options"),
+        ViewInteraction overflowMenuButton4 = Espresso.onView(
+                Matchers.allOf(ViewMatchers.withContentDescription("More options"),
                         childAtPosition(
                                 childAtPosition(
-                                        withId(R.id.toolbar),
+                                        ViewMatchers.withId(R.id.toolbar),
                                         1),
                                 0),
-                        isDisplayed()));
-        overflowMenuButton4.perform(click());
+                        ViewMatchers.isDisplayed()));
+        overflowMenuButton4.perform(ViewActions.click());
 
         // Added a sleep statement to match the app's execution delay.
         // The recommended way to handle such scenarios is to use Espresso idling resources:
@@ -181,25 +181,25 @@ public class PostActivityTest {
             e.printStackTrace();
         }
 
-        ViewInteraction appCompatTextView3 = onView(
-                allOf(withId(R.id.title), withText("Post a New Message"),
+        ViewInteraction appCompatTextView3 = Espresso.onView(
+                Matchers.allOf(ViewMatchers.withId(R.id.title), ViewMatchers.withText("Post a New Message"),
                         childAtPosition(
                                 childAtPosition(
-                                        withId(R.id.content),
+                                        ViewMatchers.withId(R.id.content),
                                         0),
                                 0),
-                        isDisplayed()));
-        appCompatTextView3.perform(click());
+                        ViewMatchers.isDisplayed()));
+        appCompatTextView3.perform(ViewActions.click());
 
-        ViewInteraction appCompatButton2 = onView(
-                allOf(withId(R.id.buttonCancel), withText("Cancel"),
+        ViewInteraction appCompatButton2 = Espresso.onView(
+                Matchers.allOf(ViewMatchers.withId(R.id.buttonCancel), ViewMatchers.withText("Cancel"),
                         childAtPosition(
                                 childAtPosition(
-                                        withClassName(is("androidx.constraintlayout.widget.ConstraintLayout")),
+                                        ViewMatchers.withClassName(Matchers.is("androidx.constraintlayout.widget.ConstraintLayout")),
                                         0),
                                 2),
-                        isDisplayed()));
-        appCompatButton2.perform(click());
+                        ViewMatchers.isDisplayed()));
+        appCompatButton2.perform(ViewActions.click());
     }
 
     private static Matcher<View> childAtPosition(
