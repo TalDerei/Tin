@@ -18,7 +18,7 @@
 }
 
 .App-header {
-  background-color: #61dafb;
+  background-color: #7f52b9;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -49,6 +49,20 @@ button {
   height: 43px;
 }
 
-#profile {
+.profile {
   margin-right: 100px;
+}
+
+.individual-message {
+  margin-bottom: 50px;
+}
+
+button.googleLogoutButton {
+  /* position: absolute;
+  bottom: 0; */
+  margin-top: 30px;
+}
+
+#input-text {
+  width: 1000px;
 }
