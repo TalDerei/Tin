@@ -1,31 +1,21 @@
 package edu.lehigh.cse216.teamtin;
 
-import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.graphics.drawable.Drawable;
+import android.content.pm.PackageManager;;
 import android.hardware.Camera;
-import android.hardware.camera2.CameraManager;
 import android.net.Uri;
 import android.os.Bundle;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
-
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import android.os.Environment;
-import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.Toast;

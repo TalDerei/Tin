@@ -2,34 +2,21 @@ package edu.lehigh.cse216.teamtin;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.os.Bundle;
-
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Environment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 
 import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 
 public class GalleryActivity extends AppCompatActivity {
     ArrayList<PictureData> data;

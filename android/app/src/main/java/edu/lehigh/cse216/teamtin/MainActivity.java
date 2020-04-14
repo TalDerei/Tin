@@ -115,7 +115,8 @@ public class MainActivity extends AppCompatActivity {
         // Instantiate the RequestQueue.
         RequestQueue queue = Volley.newRequestQueue(this);
         // Request a string response from the provided URL.
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, messagesUrl + "?user_id=" + uid + "&jwt=" + jwt,
+        StringRequest stringRequest = new StringRequest(Request.Method.GET,
+        messagesUrl + "?user_id=" + uid + "&jwt=" + jwt,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
@@ -135,44 +136,6 @@ public class MainActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
-
-    /**
-     *  deprecated function
-     */
-    public void postRequestBackend() {
-        // Instantiate the RequestQueue.
-        RequestQueue queue = Volley.newRequestQueue(this);
-        StringRequest postRequest = new StringRequest(Request.Method.POST, messagesUrl + "?user_id=" + uid + "&jwt=" + jwt,
-                new Response.Listener<String>()
-                {
-                    @Override
-                    public void onResponse(String response) {
-                        // response
-                        Log.d("Response", response);
-                    }
-                },
-                new Response.ErrorListener()
-                {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        // error
-                        Log.d("Error.Response", error.toString());
-                    }
-                }
-        ) {
-            @Override
-            protected Map<String, String> getParams()
-            {
-                Map<String, String> params = new HashMap<String, String>();
-                params.put("mTitle", "Android Test");
-                params.put("mMessage", "some message");
-
-                return params;
-            }
-        };
-        queue.add(postRequest);
-    }
-
     public void postJsonFileRequestBackend(String file) {
         RequestQueue queue = Volley.newRequestQueue(this);
         JSONObject pic = new JSONObject();
@@ -189,7 +152,9 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
-        JsonObjectRequest jsonPictureRequest = new JsonObjectRequest(Request.Method.POST, pictureUrl + "?user_id=" + uid + "&jwt=" + jwt, pic,
+        int messageId = 0;
+        JsonObjectRequest jsonPictureRequest = new JsonObjectRequest(Request.Method.POST,
+        pictureUrl + "/" + messageId + "?user_id=" + uid + "&jwt=" + jwt, pic,
                 new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
@@ -237,7 +202,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Only works for one file right now
-        JsonObjectRequest jsonPictureRequest = new JsonObjectRequest(Request.Method.POST, pictureUrl + "?user_id=" + uid + "&jwt=" + jwt, pics,
+        int messageId = 0;
+        JsonObjectRequest jsonPictureRequest = new JsonObjectRequest(Request.Method.POST,
+        pictureUrl + "/" + messageId + "?user_id=" + uid + "&jwt=" + jwt, pics,
                 new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
