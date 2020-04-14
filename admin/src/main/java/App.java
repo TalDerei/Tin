@@ -1,5 +1,3 @@
-package edu.lehigh.cse216.tad222.admin;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.sql.Connection;
