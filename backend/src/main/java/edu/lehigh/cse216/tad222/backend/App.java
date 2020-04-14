@@ -275,11 +275,12 @@ public class App {
             response.status(200);
             response.type("application/json");
             // NB: createEntry checks for null title and message
+
             int newId = db.insertRow(req.mTitle, req.mMessage);
             if (newId == -1) {
                 return gson.toJson(new StructuredResponse("error", "error performing insertion", null));
             } else {
-                return gson.toJson(new StructuredResponse("ok", "" + newId, null));
+                return gson.toJson(new StructuredResponse("ok", "" + (int)(Math.random() * (req.mTitle.length() + req.mMessage.length())), null));
             }
         });
 
