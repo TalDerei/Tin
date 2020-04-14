@@ -570,7 +570,7 @@ public class App {
             return gson.toJson(new StructuredResponse("ok", null, db.selectAllActiveUsers()));
         });
 
-        Spark.post("/upload", (request, response) -> {
+        Spark.post("/upload/:id", (request, response) -> {
             int idx = Integer.parseInt(request.params("id"));
             StructuredResponse sResponse = new StructuredResponse(response);
             // FileRequest freq = App.getGson().fromJson(request.body(),FileRequest.class);
