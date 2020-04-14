@@ -24,4 +24,7 @@
         android:id="@+id/action_test_cache"
         android:orderInCategory="101"
         android:title="Cache Tester" />
+    <item
+        android:id="@+id/action_upload"
+        android:title="@string/action_upload" />
 </menu>

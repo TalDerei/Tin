@@ -91,8 +91,9 @@ public class PostActivity extends AppCompatActivity {
                 String path = data.getStringExtra("image");
                 if(path != null) {
                     files.add(path);
+                    Log.d("PostActivity", "inserting file name into field");
                     EditText fileList = findViewById(R.id.fileList2);
-                    fileList.append(path + "/n");
+                    fileList.append(path);
                 }
             }
         }

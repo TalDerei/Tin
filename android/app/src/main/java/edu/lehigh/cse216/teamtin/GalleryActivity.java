@@ -66,6 +66,7 @@ public class GalleryActivity extends AppCompatActivity {
 
         switch (id) {
             case R.id.action_close_gallery:
+                setResult(Activity.RESULT_OK, img);
                 finish();
                 return true;
             default:
@@ -122,7 +123,6 @@ public class GalleryActivity extends AppCompatActivity {
         adapter.setImageClickListener( (PictureListAdapter.ClickListener) (d) -> {
             img.putExtra("image", d.mPath);
             Log.d("setImageClickListener", "Image Selected");
-            setResult(791, img);
         });
         adapter.notifyDataSetChanged();
     }

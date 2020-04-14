@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = getIntent();
         profileName = intent.getStringExtra("givenName") + " " + intent.getStringExtra("familyName");
         profileEmail = intent.getStringExtra("email");
-        if(intent.getBooleanExtra("login", false)){
+        if(intent.getBooleanExtra("login", false) && uid == null && jwt == null){
             uid = intent.getStringExtra("user_id");
             jwt = intent.getStringExtra("jwt");
         }
@@ -173,6 +173,44 @@ public class MainActivity extends AppCompatActivity {
         queue.add(postRequest);
     }
 
+    public void postJsonFileRequestBackend(String file) {
+        RequestQueue queue = Volley.newRequestQueue(this);
+        JSONObject pic = new JSONObject();
+
+        if (file != null){
+            try {
+                File f = new File(file);
+                byte[] content = FileUtils.readFileToByteArray(f);
+                String encodedString = Base64.encodeToString(content, Base64.DEFAULT);
+                pic.put(f.getName(), encodedString);
+            } catch (JSONException | IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        JsonObjectRequest jsonPictureRequest = new JsonObjectRequest(Request.Method.POST, pictureUrl + "?user_id=" + uid + "&jwt=" + jwt, pic,
+                new Response.Listener<JSONObject>() {
+                    @Override
+                    public void onResponse(JSONObject response) {
+                        try {
+                            String fid = response.getString("mData");
+                            mFilesId.put(fid, new File(file));
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                        Log.d("onResponse", response.toString());
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.d("onErrorResponse", error.toString());
+            }
+
+        });
+        queue.add(jsonPictureRequest);
+    }
+
     /**
      *  Post a message with JSONObject
      */
@@ -204,7 +242,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onResponse(JSONObject response) {
                         try {
-                            String fid = response.getString("mMessage");
+                            String fid = response.getString("mData");
                             mFilesId.put(fid, new File(files[0]));
                         } catch (JSONException e) {
                             e.printStackTrace();
@@ -267,6 +305,10 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case R.id.action_test_cache:
                 Log.d("Cache Test", getFileForMessage("file").getName());
+                return true;
+            case R.id.action_upload:
+                i = new Intent(getApplicationContext(), UploadActivity.class);
+                startActivityForResult(i, 792);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -340,8 +382,9 @@ public class MainActivity extends AppCompatActivity {
                 SystemClock.sleep(1000);
                 Toast.makeText(MainActivity.this, "Message Posted!", Toast.LENGTH_LONG).show();
                 getRequestBackend();
-            } else if (requestCode == 790) {
-
+            } else if (requestCode == 792) {
+                String file = data.getStringExtra("file");
+                postJsonFileRequestBackend(file);
             }
         }
     }
