@@ -647,7 +647,7 @@ public class App {
         });
 
         Spark.get("/file/:fileId", (request, response) -> {
-            if (request.attributes().contains("authorized")) {
+            // if (request.attributes().contains("authorized")) {
                 String fileId = request.params("fileId");
                 String mime = getMimeType(fileId);
                 ByteArrayOutputStream os = downloadFromDrive(fileId);
@@ -658,19 +658,23 @@ public class App {
                 toConn.write(os.toByteArray());
                 toConn.flush();
                 return response;
-            } else {
-                // response.raw().setContentType("application/octet-stream");
-                response.raw().setContentType("text/plain");
-                response.raw().setHeader("Content-Disposition", "attachment; mime=string");
-                String failed = "not authorized";
-                // BinaryOutputStream os = new BinaryOutputStream();
-                byte[] b = failed.getBytes(java.nio.charset.Charset.forName("UTF-8"));
-                // os.write(b,0,b.length);
-                OutputStream toConn = response.raw().getOutputStream();
-                toConn.write(b);
-                toConn.flush();
-                return response;
-            }
+            // } else {
+            //     // response.raw().setContentType("application/octet-stream");
+            //     response.raw().setContentType("text/plain");
+            //     response.raw().setHeader("Content-Disposition", "attachment; mime=string");
+            //     String failed = "not authorized";
+            //     // BinaryOutputStream os = new BinaryOutputStream();
+            //     byte[] b = failed.getBytes(java.nio.charset.Charset.forName("UTF-8"));
+            //     // os.write(b,0,b.length);
+            //     OutputStream toConn = response.raw().getOutputStream();
+            //     toConn.write(b);
+            //     toConn.flush();
+            //     return response;
+            // }
+        });
+
+        Spark.get("/files", (request, response) -> {
+            
         });
     }
 
