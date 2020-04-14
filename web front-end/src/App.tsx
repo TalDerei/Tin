@@ -13,7 +13,8 @@ const App = () => {
   const [signedIn, setSignedIn] = useState<boolean>(false); // state for checking if user is signed in yet
   const [userName, setUserName] = useState<string>('Patient0'); // state for updating what the user name is
   const [userEmail, setUserEmail] = useState<string>();
-  const [idToken, setToken] = useState<String>();
+  const [idToken, setIdToken] = useState<String>();
+  const [accessToken, setAccessToken] = useState<String>();
 
 
   /**
@@ -24,11 +25,12 @@ const App = () => {
     console.log(response);
     const user = response.Qt.Ad; // parse the user name from the response
     const email = response.profileObj.email;
-    const token = response.tokenId;
+    const tokenId = response.tokenId;
+    const accessToken = response.accessToken;
     setUserName(user); // set the user name
     setUserEmail(email);
-    console.log(token);
-    setToken(token);
+    setIdToken(tokenId);
+    setAccessToken(accessToken);
 
     response.Ca ? setSignedIn(true) : setSignedIn(false); // is the user successfully signed in? If yes change the state of the `signedIn` boolean accordingly
     const appLogo = document.getElementById("App-logo");// applogo element
@@ -78,6 +80,7 @@ const App = () => {
           <MessagePage
             signedIn={signedIn}
             userName={userName}
+            accessToken={accessToken}
           />
         </div>
         <div id="profilePage" >

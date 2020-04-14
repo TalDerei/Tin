@@ -7,6 +7,20 @@ import spark.Spark;
 import com.google.common.collect.ImmutableMap;
 //Import Google's JSON library
 import com.google.gson.*;
+import com.google.gson.stream.JsonReader;
+import com.google.api.client.http.FileContent;
+import com.google.api.services.drive.model.File;
+import com.google.api.services.drive.Drive;
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
+import com.google.api.client.http.HttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.drive.DriveScopes;
+
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -26,9 +40,13 @@ import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.lang.JoseException;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.security.PublicKey;
 import java.util.*;
+import java.security.GeneralSecurityException;
+
 
 /**
  * For now, our app creates an HTTP server that can only get and add data.
@@ -36,8 +54,88 @@ import java.util.*;
 public class App {
 
     private static Database db;
+    private static final Gson gson = new Gson();
+    public static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
+    public static final JsonFactory JSON_FACTORY = new JacksonFactory();
+    private static final String SERVICE_ACCOUNT_PKCS12_FILE_PATH = "./ServiceAccountKeyP12.p12";
+    public static final List<String> SCOPES = Collections.singletonList(DriveScopes.DRIVE);
+    public static final String APPLICATION_NAME = "Naked Mole Rat backend";
+
+    public static String uploadFile(java.io.File UPLOAD_FILE, String name, String mime) throws IOException, GeneralSecurityException {
+        // boolean useDirectUpload = true;
+        String ret = null;
+
+        File fileMetadata = new File();
+        fileMetadata.setName(name);
+        fileMetadata.setMimeType("application/vnd.google-apps.folder");
+
+        File folderMade = setup().files().create(fileMetadata)
+            .setFields("id")
+            .execute();
+        String folderId = folderMade.getId();
+
+        com.google.api.services.drive.model.File fmeta = new com.google.api.services.drive.model.File();
+        fmeta.setName(name);
+        System.out.println(mime);
+        FileContent mediaContent = new FileContent(mime, UPLOAD_FILE);
+
+        fmeta.setParents(Collections.singletonList(folderId));
+        try {
+            File file = setup().files().create(fmeta, mediaContent).setFields("id, parents").execute();
+            System.out.println("File ID executed: " + file.getId());
+            int dbReturned = db.insertFileRow(file.getId(), file.getSize(), name);
+            if(dbReturned == -1) {
+                System.out.println("Error when inserting file information in database!");
+            }
+            return file.getId();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "null";
+        }
+    }
+
+    public static Drive setup() throws IOException, GeneralSecurityException {
+
+        String emailAddress = "internaldriveuser@the-buzz-1584144072767.iam.gserviceaccount.com";
+        GoogleCredential credential = new GoogleCredential.Builder().setTransport(HTTP_TRANSPORT)
+                .setJsonFactory(JSON_FACTORY).setServiceAccountId(emailAddress)
+                .setServiceAccountPrivateKeyFromP12File(new java.io.File(SERVICE_ACCOUNT_PKCS12_FILE_PATH))
+                .setServiceAccountScopes(SCOPES).build();
+
+        if (!credential.refreshToken()) {
+            throw new RuntimeException("Failed OAuth to refresh the token");
+        }
+
+        Drive service = new Drive.Builder(App.HTTP_TRANSPORT, App.JSON_FACTORY, credential)
+                .setApplicationName(App.APPLICATION_NAME).build();
+
+        return service;
+    }
+
+    public static String getMimeType(String fileId) {
+        try {
+            File file = setup().files().get(fileId).execute();
+            String mime = file.getMimeType();
+            return mime;
+        } catch (Exception e) {
+            System.out.println("an error occured: " + e);
+        }
+        return null;
+    }
+
+    public static ByteArrayOutputStream downloadFromDrive(String fileId) {
+        try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            setup().files().get(fileId).executeMediaAndDownloadTo(outputStream);
+            return outputStream;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ByteArrayOutputStream();
+        }
+    }
 
     public static void main(String[] args) {
+
 
         // Get the port on which to listen for requests
         Spark.port(getIntFromEnv("PORT", 4567));
@@ -47,12 +145,17 @@ public class App {
         String db_url = env.get("DATABASE_URL");
         System.out.println("database is: " + db_url);
 
-        /*
-         * Properties prop = new Properties(); String config = "backend.properties"; try
-         * { InputStream input = App.class.getClassLoader().getResourceAsStream(config);
-         * prop.load(input); } catch (IOException ex) { ex.printStackTrace(); } String
-         * db_url = prop.getProperty("DATABASE_URL");
-         */
+
+        //Properties prop = new Properties();
+        //String config = "backend.properties";
+        //try {
+        //    InputStream input = App.class.getClassLoader().getResourceAsStream(config);
+        //    prop.load(input);
+        //} catch (IOException ex) {
+        //    ex.printStackTrace();
+        //}
+        //String db_url = prop.getProperty("DATABASE_URL");
+
 
         // String db_url =
         // "postgres://azexrkxulzlqss:b12fcddc21a71c8cc0b04de34d8ab4bc99a726bdb0b2e455b63865e0cdbb3442@ec2-3-234-109-123.compute-1.amazonaws.com:5432/d9aki869as2d5b";
@@ -134,10 +237,11 @@ public class App {
                 return v;
             }*/
             // ensure status 200 OK, with a MIME type of JSON
-            
+            System.out.println("request.attributes when GET");
+            System.out.println(request.attributes());
+
             response.status(200);
             response.type("application/json");
-            int likes = db.getTotalLikes(idx);
             Database.RowData data = db.selectOne(idx);
             if (data == null) {
                 return gson.toJson(new StructuredResponse("error", idx + " not found", null));
@@ -155,6 +259,9 @@ public class App {
         Spark.post("/messages", (request, response) -> {
             String jwt = request.queryParams("jwt");
             String uid = request.queryParams("uid");
+
+            System.out.println("request.attributes when POST");
+            System.out.println(request.attributes());
             /*String v = gson.toJson(verify(uid, jwt));
             if(v.contains("error")) {
                 return v;
@@ -168,6 +275,7 @@ public class App {
             response.status(200);
             response.type("application/json");
             // NB: createEntry checks for null title and message
+
             int newId = db.insertRow(req.mTitle, req.mMessage);
             if (newId == -1) {
                 return gson.toJson(new StructuredResponse("error", "error performing insertion", null));
@@ -220,9 +328,12 @@ public class App {
             // NB: we won't concern ourselves too much with the quality of the
             // message sent on a successful delete
             int result = db.deleteRow(idx);
+            int likeRes = db.removeMessageLikes(idx);
             if (result == -1) {
                 return gson.toJson(new StructuredResponse("error", "unable to delete row " + idx, null));
-            } else {
+            } else if(likeRes == -1) {
+                return gson.toJson(new StructuredResponse("error", "unable to delete likes for message_id " + idx, null));
+            }else {
                 return gson.toJson(new StructuredResponse("ok", null, null));
             }
         });
@@ -250,9 +361,57 @@ public class App {
              * StructuredResponse("error", "unable to parse body: " + req.mMessage, null));
              * }
              */
-            int result = db.updateLikes(idx);
+            int result = db.insertOneLike(uid, idx);
             if (result == -1) {
-                return gson.toJson(new StructuredResponse("error", "unable to update row " + idx, null));
+                return gson.toJson(new StructuredResponse("error", "unable to update likes for message_id " + idx, null));
+            } else if (result == -2) {
+                return gson.toJson(new StructuredResponse("warning", "User with id " + uid + " already liked message_id " + idx, null));
+            } else {
+                return gson.toJson(new StructuredResponse("ok", null, result));
+            }
+        });
+
+        Spark.delete("/likes/:id", (request, response) -> {
+            String jwt = request.queryParams("jwt");
+            String uid = request.queryParams("uid");
+            /*String v = gson.toJson(verify(uid, jwt));
+            if(v.contains("error")) {
+                return v;
+            }*/
+            // If we can't get an ID or can't parse the JSON, Spark will send
+            // a status 500
+            int idx = Integer.parseInt(request.params("id"));
+            // ensure status 200 OK, with a MIME type of JSON
+            response.status(200);
+            response.type("application/json");
+            System.out.println("idx is: " + idx);
+
+            int result = db.deleteLike(uid);
+            if (result == -1) {
+                return gson.toJson(new StructuredResponse("error", "unable to update likes for message_id " + idx, null));
+            } else {
+                return gson.toJson(new StructuredResponse("ok", null, result));
+            }
+        });
+
+        Spark.post("/likes/:id", (request, response) -> {
+            String jwt = request.queryParams("jwt");
+            String uid = request.queryParams("uid");
+            /*String v = gson.toJson(verify(uid, jwt));
+            if(v.contains("error")) {
+                return v;
+            }*/
+            // If we can't get an ID or can't parse the JSON, Spark will send
+            // a status 500
+            int idx = Integer.parseInt(request.params("id"));
+            // ensure status 200 OK, with a MIME type of JSON
+            response.status(200);
+            response.type("application/json");
+            System.out.println("idx is: " + idx);
+            int likes = 0; //placeholder
+            int result = db.updateOneLike(uid, likes);
+            if (result == -1) {
+                return gson.toJson(new StructuredResponse("error", "unable to update likes for message_id " + idx, null));
             } else {
                 return gson.toJson(new StructuredResponse("ok", null, result));
             }
@@ -264,7 +423,7 @@ public class App {
             String uid = "";
             String secret = "";
             String bio = "";
-            boolean success = db.registerUser(email, name, uid, bio);
+            boolean success = false;//db.registerUser(email, name, uid, bio);
             if (success) {
                 return gson.toJson(new StructuredResponse("ok", "User " + name + " was registered", uid));
             } else {
@@ -276,60 +435,36 @@ public class App {
         Spark.post("/users/login", (request, response) -> {
             response.status(200);
             response.type("application/json");
-            String cid = request.queryParams("client_id");
+            String cid = env.get("CLIENT_ID");
+            String cis = env.get("CLIENT_SECRET");
             String idToken = request.queryParams("idToken");
-            StringBuilder oauthUrl = new StringBuilder().append("https://accounts.google.com/o/oauth2/auth")
-                    .append("?client_id=").append(cid) // the client id from the api console
-                                                       // registration
-                    .append("&idToken=" + idToken).append("&response_type=code")
-                    .append("&scope=https://www.googleapis.com/auth/userinfo.profile") // scope is the api permissions
-                                                                                       // we are requesting
-                    .append("&redirect_uri=" + Util.SITE + "/users/login/callback") // the servlet that google redirects
-                                                                                    // to after
-                    // authorization
-                    // .append("&state=this_can_be_anything_to_help_correlate_the_response%3Dlike_session_id")
-                    .append("&access_type=offline") // here we are asking to access to user's data while they are not
-                                                    // signed
-                                                    // in
-                    .append("&approval_prompt=force"); // this requires them to verify which account to use, if they are
-                                                       // already signed in
-            response.redirect(oauthUrl.toString());
-            return gson.toJson(response.body());
-        });
 
-        Spark.get("/users/login", (request, response) -> {
-            response.status(200);
-            response.type("application/json");
-            return request.queryParams("client_id");
-        });
-
-        // callback for login route
-        Spark.post("/users/login/callback", (request, response) -> {
-            response.status(200);
-            response.type("application/json");
             if (request.queryParams("error") != null) {
                 return gson.toJson(new StructuredResponse("error", "User had invalid credentials", null));
             }
 
-            String code = request.params("code");
+            String code = request.queryParams("code");
+            if (code == null) {
+                return gson.toJson(new StructuredResponse("error", "Code was null", null));
+            }
             // get the access token by post to Google
-            String body = post("https://accounts.google.com/o/oauth2/token",
-                    ImmutableMap.<String, String>builder().put("code", code).put("client_id", Util.getClientId())
-                            .put("client_secret", Util.getClientSecret())
-                            .put("redirect_uri", Util.SITE + "/users/login/callback")
+            String body = post("https://oauth2.googleapis.com/token",
+                    ImmutableMap.<String, String>builder().put("code", code).put("client_id", cid)
+                            .put("client_secret", cis)
+                            .put("redirect_uri", Util.SITE + "/messages")
                             .put("grant_type", "authorization_code").build());
 
             // get the access token from json and request info from Google
             JsonObject jsonObject = gson.fromJson(body, JsonObject.class);
 
-            // 
             String accessToken = jsonObject.get("access_token").getAsString();
-            JsonObject json = gson
-                    .fromJson((new StringBuilder("https://www.googleapis.com/auth/userinfo.profile?access_token=")
-                            .append(accessToken).toString()), JsonObject.class);
+            String jsonString = get((new StringBuilder("https://www.googleapis.com/oauth2/v3/userinfo?access_token=")
+                            .append(accessToken).toString()));
+            System.out.println("jsonString is " + jsonString);
+            JsonObject json = gson.fromJson(jsonString, JsonObject.class);
             String nickname = json.get("name").getAsString();
             String email = json.get("email").getAsString();
-            String uid = json.get("id").getAsString();
+            final String uid = json.get("sub").getAsString();
             String bio = "";
 
             if (!email.contains("lehigh.edu")) {
@@ -337,13 +472,18 @@ public class App {
             }
 
             User u = new User(email, nickname, uid, bio);
-            String jwt = accessToken + " " + db.produceJWTKey(u);
-
+            
             if (db.setUserActive(u)) {
-                return gson.toJson(new StructuredResponse("ok", "User " + nickname + " was logged in", jwt));
+                return gson.toJson(new AuthResponse(db.produceJWTKey(u), uid));
             } else {
                 return gson.toJson(new StructuredResponse("error", "User " + nickname + " was already logged in", null));
             }
+        });
+
+        Spark.get("/users/login", (request, response) -> {
+            response.status(200);
+            response.type("application/json");
+            return request.queryParams("client_id");
         });
 
         Spark.delete("/users/logoff", (request, response) -> {
@@ -430,6 +570,106 @@ public class App {
             }
             return gson.toJson(new StructuredResponse("ok", null, db.selectAllActiveUsers()));
         });
+
+        /**
+         * POST route to upload files to drive
+         */
+        Spark.post("/upload", (request, response) -> {
+            response.status(200);
+            response.type("application/json");
+            StructuredResponse sResponse = new StructuredResponse(response);
+                try {
+                    String time = "" + java.lang.System.currentTimeMillis();
+                    java.io.File upload = new java.io.File(time);
+                    if (!upload.exists() && !upload.mkdirs()) {
+                        throw new RuntimeException("Failed to create directory " + upload.getAbsolutePath());
+                    }
+
+                    // apache commons-fileupload to handle file upload
+                    DiskFileItemFactory factory = new DiskFileItemFactory();
+                    factory.setRepository(upload);
+                    ServletFileUpload fileUpload = new ServletFileUpload(factory);
+                    List<FileItem> items = fileUpload.parseRequest(request.raw());
+
+                    Iterator<FileItem> iter = items.iterator();
+
+                    java.io.File uploadedFile = null;
+                    String mime = "unknown";
+                    boolean hasMime = false;
+                    boolean hasFile = false;
+                    boolean hasWritten = false;
+                    String ret = "null";
+
+
+
+                    while (iter.hasNext()) {
+                        FileItem item = iter.next();
+                        if (item.getFieldName().equals("upload_file")) {
+                            uploadedFile = new java.io.File("uploads/" + upload.getName());
+                            item.write(uploadedFile);
+                            hasFile = true;
+                        } else if (item.getFieldName().equals("mime")) {
+                            mime = item.getString();
+                            hasMime = true;
+                        }
+
+                        if (!hasWritten && hasMime && hasFile) {
+                            hasWritten = true;
+                            ret = uploadFile(uploadedFile, time, mime);
+                        }
+
+                    }
+
+                    if (!ret.equals("null")) {
+                        sResponse.mData = ret;
+                        sResponse.setSuccessful("file uploaded!!!");
+                        sResponse.setStringData(ret);
+                    } else {
+                        sResponse.setError("upload in google drive failed");
+                    }
+
+                } catch (RuntimeException e) {
+                    response.status(200);
+                    e.printStackTrace();
+                    sResponse.setError(e);
+                }
+            return App.getGson().toJson(sResponse);
+        });
+
+
+        /**
+         * GET route for downloading files using their specific file id
+         */
+        Spark.get("/file/:fileId", (request, response) -> {
+                String fileId = request.params("fileId");
+                String mime = getMimeType(fileId);
+                ByteArrayOutputStream os = downloadFromDrive(fileId);
+                response.status(200);
+                response.raw().setContentType(mime);
+                response.raw().setHeader("Content-Disposition", "attachment; mime=" + mime);
+                OutputStream toConn = response.raw().getOutputStream();
+                toConn.write(os.toByteArray());
+                toConn.flush();
+                return response;
+        });
+
+        /**
+         * GET route to get back all the file ids for all the files that have been uploaded so far
+         */
+        Spark.get("/files", (request, response) -> {
+            response.status(200);
+            response.type("application/json");
+            if (db == null) {
+                System.out.println("error with DB!!!!!!!!!!!!!!!!!!");
+            } else {
+                System.out.println("db is NOT null");
+            }
+            return gson.toJson(new StructuredResponse("ok", null, db.selectAllFiles()));
+        });
+    }
+
+    static Gson getGson() {
+        return gson;
     }
 
     /**

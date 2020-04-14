@@ -1,10 +1,14 @@
 import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.IOException;
-
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.Map; //java.util.Map interface represents a mapping between a key and a value
 import java.util.ArrayList;
+
 import java.util.Properties;
+import java.io.InputStreamReader;
+import java.io.InputStream;
 
 /**
  * App is our basic admin app.  For now, it is a demonstration of the six key
@@ -39,7 +43,11 @@ public class App {
         System.out.println("  [v] Update a user in UserData");
         System.out.println("  [w] Update a like vote in tblData");
         System.out.println("  [x] Update a nickname in UserData");
+        System.out.println("  [y] Create google files table");
+        System.out.println("  [z] drop google files table");
         System.out.println("  [q] Quit Program");
+        System.out.println("  [1] Query for row in files table by fileId");
+        System.out.println("  [1] delete file in files table by fileId");
         System.out.println("  [?] Help (this message)");
     }
 
@@ -52,7 +60,7 @@ public class App {
      */
     static char prompt(BufferedReader in) {
         // The valid actions:
-        String actions = "abcdefghijklmnopqrstuvwx?";
+        String actions = "abcdefghijklmnopqrstuvwxyzq?12";
 
         // We repeat until a valid single-character option is selected
         while (true) {
@@ -154,12 +162,16 @@ public class App {
                 db.createUser();
             } else if (action == 'c') {
                 db.createLikes();
+            } else if (action == 'y') {
+                db.createFiles();
             } else if (action == 'e') {
                 db.dropTable();
             } else if (action == 'f') {
                 db.dropUser();
             } else if (action == 'd') {
                 db.dropLikes();
+            } else if (action == 'z') {
+                db.dropFiles();
             } else if (action == 'g') {
                 ArrayList<Database.Table> table = db.showTable();
                 if (table == null)
@@ -178,6 +190,17 @@ public class App {
                     System.out.println("  [" + res.mId + "] " + res.mSubject);
                     System.out.println("--> [message] " + res.mMessage);
                     System.out.println("--> [userID] " + res.mUserId);
+                }
+            } else if (action == '1') {
+                int id = getInt(in, "Enter row ID");
+                if (id == -1) 
+                    continue;
+                Database.GoogleDriveContent res = db.selectOneFile(id);
+                if (res != null) {
+                    System.out.println("--> [fileId] " + res.mFileId);
+                    System.out.println("--> [messageId] " + res.mMessageId);
+                    System.out.println("--> [fileSize] " + res.mFileSize);
+                    System.out.println("--> [url] " + res.mURL);
                 }
             } else if (action == 'i') {
                 int id = getInt(in, "Enter the row ID");
@@ -200,6 +223,14 @@ public class App {
                 if (res == -1)
                     continue;
                 System.out.println("  " + res + " rows deleted");
+            } else if (action == '2') {
+                int id = getInt(in, "Enter the fileID");
+                if (id == -1) 
+                    continue;
+                int res = db.deleteFile(id);
+                if (res == -1)
+                    continue;
+                System.out.println(" " + res + " rows deleted");
             } else if (action == 't') {
                 int id = getInt(in, "Enter the row ID");
                 if (id == -1) {

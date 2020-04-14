@@ -21,6 +21,7 @@ const ProfilePage = (props: any): JSX.Element | null => {
       console.log("Profile Page");
       console.log(props.idToken);
       const url = 'https://cors-anywhere.herokuapp.com/https://limitless-ocean-62391.herokuapp.com/user/login/?idToken=['+props.idToken+']';
+      //const url = 'http://localhost:4567/user/login/?idToken=['+props.idToken+']';
       await fetch(url, {
         method: 'POST',
         mode: 'cors',
@@ -50,7 +51,8 @@ const ProfilePage = (props: any): JSX.Element | null => {
      */
     async function fetchBio() {
       const url = 'https://cors-anywhere.herokuapp.com/https://limitless-ocean-62391.herokuapp.com/users/['+props.idToken+']/bio';
-      await fetch(url , { 
+      //const url = 'http://localhost:4567/users/['+props.idToken+']/bio';
+      await fetch(url , {
         method: 'GET',
         mode: 'cors',
         cache: 'no-cache',
@@ -84,7 +86,8 @@ const ProfilePage = (props: any): JSX.Element | null => {
    */
   async function updateBio(newBioToPost: string) {
     const url = 'https://cors-anywhere.herokuapp.com/https://limitless-ocean-62391.herokuapp.com/users/['+props.idToken+']/bio';
-      await fetch(url , {
+    //const url = 'http://localhost:4567/users/['+props.idToken+']/bio';
+    await fetch(url , {
       method: 'POST',
       mode: 'cors',
       cache: 'no-cache',

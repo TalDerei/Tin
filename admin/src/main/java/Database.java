@@ -1,3 +1,9 @@
+/** 
+ * First part of our program is the Database object, which encapsulates all of the interaction 
+ * with the database and hides the details behind a straightforward set of methods.
+ * Our database should be able to: create a table, delete a table get all the data
+ * get data by ID, insert data, remove data, and update data.
+ */
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -109,9 +115,25 @@ public class Database {
     */
     private PreparedStatement mUpdateOneLike;
     /**
-     * A prepared statement statement for updating likes
+     * A prepared statement for updating likes
      */
     private PreparedStatement mLikesNuetral;
+    /**
+     * A prepared statement for creating files table
+     */
+    private PreparedStatement mCreateGoogleDriveContent;
+    /**
+     * A prepared statement for deleting files table
+     */
+    private PreparedStatement mDropeGoogleDriveContent;
+    /**
+     * A prepared statement for selecting one file
+     */
+    private PreparedStatement mSelectOneFile;
+    /**
+     * A prepared statement for deleting one file
+     */
+    private PreparedStatement mDeleteOneFile;
     /**
      * boolean for our database membership test: 
      * if mHasUserData == true, then drop UserData table first before dropping tblData
@@ -228,6 +250,21 @@ public class Database {
         }
     }
 
+    public static class GoogleDriveContent {
+        String mFileId;
+        int mMessageId;
+        String mURL;
+        int mFileSize;
+        String mDiskQuota;
+        public GoogleDriveContent(String fileId, int messageId, int fileSize, String url) {
+            mFileId = fileId;
+            mMessageId = messageId;
+            mFileSize = fileSize;
+            mURL = url;
+        }
+
+    }
+
     /**
     * The Database constructor is private: we only create Database objects
     * through the getDatabase() method.
@@ -341,7 +378,14 @@ public class Database {
                 "INNER JOIN UserData ON tblData.user_id = UserData.id WHERE email = ?");
             db.mDeleteOneByUser = db.mConnection.prepareStatement("DELETE FROM tblData USING UserData WHERE tblData.user_id = UserData.id AND email = ?");
 
-            // 5. prepared statement to list all tables
+            // 5. Google Drive and Files
+            db.mCreateGoogleDriveContent = db.mConnection.prepareStatement("CREATE TABLE files (fileId VARCHAR, messageId INT, fileSize INT, url VARCHAR, " +
+            "PRIMARY KEY(fileId), FOREIGN KEY(messageId) REFERENCES tbldata)");
+            db.mDropeGoogleDriveContent = db.mConnection.prepareStatement("DROP TABLE files");
+            db.mSelectOneFile = db.mConnection.prepareStatement("SELECT * FROM files WHERE fileId = ?");
+            db.mDeleteOneFile = db.mConnection.prepareStatement("DELETE FROM files WHERE fileId = ?");
+
+            // 6. prepared statement to list all tables
             db.mShowTable = db.mConnection.prepareStatement("SELECT * FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema' ");
  
         /**
@@ -759,7 +803,7 @@ public class Database {
     }
 
     /**
-     * Create likes table.  If it already exists, this will print an error.
+     * Create likes table. If it already exists, this will print an error.
      */
     void createLikes() {
         try {
@@ -782,5 +826,57 @@ public class Database {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Create Files table. If it already exists, this will print an error.
+     */
+    void createFiles() {
+        try {
+            System.out.println("Create Files Table...");
+            mCreateGoogleDriveContent.execute();
+            mHasUserData = true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Remove Files table from the database. If it does not exist, this will print an error.
+     */
+    void dropFiles() {
+        try {
+            System.out.println("Delete Files Table...");
+            mDropeGoogleDriveContent.execute();
+            mHasUserData = true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    GoogleDriveContent selectOneFile(int fileId) {
+        GoogleDriveContent res = null;
+        try {
+            mSelectOneFile.setInt(1, fileId);
+            ResultSet rs = mSelectOneFile.executeQuery();
+            if (rs.next()) {
+                res = new GoogleDriveContent(rs.getString("fileId"), rs.getInt("messageId"), rs.getInt("fileSize"),
+                    rs.getString("url"));
+            }
+         } catch (SQLException e) {
+                e.printStackTrace();
+         }
+            return res;
+    }
+
+    int deleteFile(int fileId) {
+        int res = - 1;
+        try {
+            mDeleteOneFile.setInt(1, fileId);
+            res = mDeleteOneFile.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
     }
 }
