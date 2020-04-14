@@ -553,6 +553,9 @@ public class Database {
         }
     }
 
+    /**
+     * method to insert a single row to the files table in database
+     */
     int insertFileRow(String fileid, long filesize, String url) {
         int res = -1;
         try{
@@ -567,6 +570,9 @@ public class Database {
         return res;
     }
 
+    /**
+     * method to retrieve all the entries to the files table
+     */
     ArrayList<FileUploaded> selectAllFiles() {
         System.out.println("Selecting All Files");
         ArrayList<FileUploaded> res = new ArrayList<FileUploaded>();

@@ -571,6 +571,9 @@ public class App {
             return gson.toJson(new StructuredResponse("ok", null, db.selectAllActiveUsers()));
         });
 
+        /**
+         * POST route to upload files to drive
+         */
         Spark.post("/upload", (request, response) -> {
             response.status(200);
             response.type("application/json");
@@ -648,6 +651,10 @@ public class App {
             return App.getGson().toJson(sResponse);
         });
 
+
+        /**
+         * GET route for downloading files using their specific file id
+         */
         Spark.get("/file/:fileId", (request, response) -> {
             // if (request.attributes().contains("authorized")) {
                 String fileId = request.params("fileId");
@@ -676,6 +683,9 @@ public class App {
             // }
         });
 
+        /**
+         * GET route to get back all the file ids for all the files that have been uploaded so far
+         */
         Spark.get("/files", (request, response) -> {
             response.status(200);
             response.type("application/json");
