@@ -15,6 +15,7 @@ const MessagePage = (props: any): JSX.Element | null => {
   const [enteredFileBase64, setEnteredFileBase64] = useState("");
   const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);// state for checking if the message had been posted
   const [responseMessages, setResponseMessages] = useState<Object[]>([]);// state for updating the messages collected so far
+  const [responseFiles, setResponseFiles] = useState<Object[]>([]);// state for updating the messages collected so far
   const herokuUrl = "https://cors-anywhere.herokuapp.com/https://limitless-ocean-62391.herokuapp.com/";
   //const herokuUrl = "http://localhost:4567/";
 
@@ -137,6 +138,7 @@ const MessagePage = (props: any): JSX.Element | null => {
       })
       .then((myResponse) => {
          console.log(myResponse);
+        setResponseFiles(myResponse.mData);// update the state data from the posts parsed from response data
       })
       .catch((error) => {
         console.error(error);//log error
@@ -168,6 +170,7 @@ const MessagePage = (props: any): JSX.Element | null => {
     }
     ReactDOM.render(<DisplayPosts//render the posts here
       messagePost={responseMessages}
+      filePost={responseFiles}
     />
       , document.getElementById('post'));//in this id
     setEnteredMessage({ value: '' });//empty the input text box
@@ -188,7 +191,7 @@ const MessagePage = (props: any): JSX.Element | null => {
             <input type="submit" value="Post" />
             <label>
               <br></br>
-            <input type="text" name="link" value={enteredLink.value} onChange={handleLinkInputChange} placeholder="Do you want to add optional link?" id="input-link" width={30} />
+            <input type="text" name="link" value={enteredLink.value} onChange={handleLinkInputChange} placeholder="optional link?" id="input-link" width={40} />
             </label>
             <label>
               <br></br>
