@@ -28,6 +28,20 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.PublicKey;
 
+import net.rubyeye.xmemcached.MemcachedClient;
+import net.rubyeye.xmemcached.MemcachedClientBuilder;
+import net.rubyeye.xmemcached.XMemcachedClientBuilder;
+import net.rubyeye.xmemcached.auth.AuthInfo;
+import net.rubyeye.xmemcached.command.BinaryCommandFactory;
+import net.rubyeye.xmemcached.exception.MemcachedException;
+import net.rubyeye.xmemcached.utils.AddrUtil;
+
+import java.lang.InterruptedException;
+import java.net.InetSocketAddress;
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.TimeoutException;
+
 public class Database {
     /**
      * The connection to the database. When there is no connection, it should be
@@ -84,9 +98,13 @@ public class Database {
     
     private PreparedStatement mSelectAllUser;
 
+    private PreparedStatement mRemoveLike;
+
     private PreparedStatement mDeleteLike;
 
     private PreparedStatement mInsertOneLike;
+
+    private PreparedStatement mGetLikeUser;
 
     private PreparedStatement mUpdateOneLike;
 
@@ -94,11 +112,14 @@ public class Database {
 
     private PreparedStatement mIsRegistered;
 
-    Set<User> activeUsers;
-    HashMap<String, PublicKey> jwtPubKeys;
-    HashMap<String, String> jwtKeys;
+    private PreparedStatement mInsertFile;
 
-    
+    private PreparedStatement mSelectAllFiles;
+
+
+    Set<User> activeUsers;
+    MemcachedClient jwtPubKeys;
+    MemcachedClient jwtKeys;
 
     /**
      * RowData is like a struct in C: we use it to hold data, and we allow direct
@@ -126,14 +147,17 @@ public class Database {
 
         String mUser_id;
 
+        int mLikes;
+
         /**
          * Construct a RowData object by providing values for its fields
          */
-        public RowData(int id, String subject, String message, String uid) {
+        public RowData(int id, String subject, String message, String uid, int likes) {
             mId = id;
             mSubject = subject;
             mMessage = message;
             mUser_id = uid;
+            this.mLikes = likes;
         }
     }
 
@@ -143,8 +167,42 @@ public class Database {
      */
     private Database() {
         activeUsers = new HashSet<User>();
-        jwtPubKeys = new HashMap<String, PublicKey>();
-        jwtKeys = new HashMap<String, String>();
+        jwtPubKeys = buildMemcached();
+        jwtKeys = buildMemcached();
+    }
+
+    public static MemcachedClient buildMemcached(){
+        List<InetSocketAddress> servers =
+      AddrUtil.getAddresses("mc4.dev.ec2.memcachier.com:11211".replace(",", " "));
+    AuthInfo authInfo =
+      AuthInfo.plain("4A3703","85B292273D2D7A730CEE5962438DDDFB");
+
+    MemcachedClientBuilder builder = new XMemcachedClientBuilder(servers);
+
+    // Configure SASL auth for each server
+    for(InetSocketAddress server : servers) {
+      builder.addAuthInfo(server, authInfo);
+    }
+
+    // Use binary protocol
+    builder.setCommandFactory(new BinaryCommandFactory());
+    // Connection timeout in milliseconds (default: )
+    builder.setConnectTimeout(1000);
+    // Reconnect to servers (default: true)
+    builder.setEnableHealSession(true);
+    // Delay until reconnect attempt in milliseconds (default: 2000)
+    builder.setHealSessionInterval(2000);
+    MemcachedClient mc = null;
+
+    try {
+      mc = builder.build();
+    } catch (IOException ioe) {
+      System.err.println("Couldn't create a connection to MemCachier: " + ioe.getMessage());
+    }
+        if(mc == null) {
+            System.out.println("Something went horribly wrong while making MemcachedClient! Fix it first!");
+        }
+    return mc;
     }
 
     /**
@@ -219,10 +277,16 @@ public class Database {
             db.mSelectAllUser = db.mConnection.prepareStatement("SELECT id, email, nickname, biography FROM UserData");
 
             // likes table:
+            db.mRemoveLike = db.mConnection.prepareStatement("DELETE FROM likes WHERE message_id = ?");
             db.mDeleteLike = db.mConnection.prepareStatement("DELETE FROM likes WHERE user_id = ?");
+            db.mGetLikeUser = db.mConnection.prepareStatement("SELECT FROM likes WHERE user_id = ? AND message_id = ?");
             db.mLikesNeutral = db.mConnection.prepareStatement("SELECT SUM(likes.likes) AS total FROM likes WHERE likes.message_id = ?");
             db.mInsertOneLike = db.mConnection.prepareStatement("INSERT INTO likes VALUES (?, ?, ?)");
             db.mUpdateOneLike = db.mConnection.prepareStatement("UPDATE likes SET likes = ? WHERE user_id = ?");
+
+            // files table
+            db.mInsertFile = db.mConnection.prepareStatement("INSERT INTO files (fileid, messageid, filesize, url) VALUES (?,?,?,?)");
+            db.mSelectAllFiles = db.mConnection.prepareStatement("SELECT * FROM files");
 
         } catch (SQLException e) {
             System.err.println("Error creating prepared statement");
@@ -278,6 +342,18 @@ public class Database {
         return count;
     }
 
+    int getUserMessageLikes(String uid, int messageId) {
+        int res = -1;
+        try {
+            mGetLikeUser.setString(1, uid);
+            mGetLikeUser.setInt(2, messageId);
+            res = mGetLikeUser.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
     int updateLikes(int id) {
         int res = -1;
         try {
@@ -301,7 +377,8 @@ public class Database {
         try {
             ResultSet rs = mSelectAll.executeQuery();
             while (rs.next()) { 
-                res.add(new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"), rs.getString("user_id")));
+                res.add(new RowData(rs.getInt("id"), rs.getString("subject"),
+                    rs.getString("message"), rs.getString("user_id"), getTotalLikes(rs.getInt("id"))));
             }
             rs.close();
             return res;
@@ -326,7 +403,8 @@ public class Database {
             mSelectOne.setInt(1, id);
             ResultSet rs = mSelectOne.executeQuery();
             if (rs.next()) {
-                res = new RowData(rs.getInt("id"), rs.getString("subject"), rs.getString("message"), rs.getString("user_id"));
+                res = new RowData(rs.getInt("id"), rs.getString("subject"),
+                    rs.getString("message"), rs.getString("user_id"), getTotalLikes(id));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -407,11 +485,11 @@ public class Database {
      * Add a new user to Registered Users
      * 
      */
-    boolean registerUser(String email, String nickname, String uid, String bio) {
+    /**boolean registerUser(String email, String nickname, String uid, String bio) {
         // session_id random string for user is created and passed to front end
         User u = new User(email, nickname, uid, bio);
         return false;
-    }
+    }*/
 
     boolean isRegistered(User u) {
         int res = 0;
@@ -466,6 +544,42 @@ public class Database {
             ResultSet rs = mSelectAllUser.executeQuery();
             while (rs.next()) { 
                 res.add(new User(rs.getString("email"), rs.getString("nickname"), rs.getString("id"), rs.getString("biography")));
+            }
+            rs.close();
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * method to insert a single row to the files table in database
+     */
+    int insertFileRow(String fileid, long filesize, String url) {
+        int res = -1;
+        try{
+            mInsertFile.setString(1,fileid);
+            mInsertFile.setInt(2, 1);
+            mInsertFile.setLong(3, filesize);
+            mInsertFile.setString(4, url);
+            res = mInsertFile.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    /**
+     * method to retrieve all the entries to the files table
+     */
+    ArrayList<FileUploaded> selectAllFiles() {
+        System.out.println("Selecting All Files");
+        ArrayList<FileUploaded> res = new ArrayList<FileUploaded>();
+        try{
+            ResultSet rs = mSelectAllFiles.executeQuery();
+            while (rs.next()) { 
+                res.add(new FileUploaded(rs.getString("fileid"), rs.getInt("messageid"), rs.getLong("filesize"), rs.getString("url")));
             }
             rs.close();
             return res;
@@ -533,12 +647,27 @@ public class Database {
         return res;
     }
 
+    int removeMessageLikes(int messageId) {
+        int res = -1;
+        try {
+            mRemoveLike.setInt(1, messageId);
+            res = mRemoveLike.executeUpdate();
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return res;
+        }
+    }
+
     int insertOneLike(String uid, int messageId) {
         int res = -1;
+        if(getUserMessageLikes(uid, messageId) > 0) {
+            return -2;
+        }
         try {
             mInsertOneLike.setString(1, uid);
             mInsertOneLike.setInt(2, messageId);
-            mInsertOneLike.setInt(3, 0);
+            mInsertOneLike.setInt(3, 1);
             res = mInsertOneLike.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -583,12 +712,12 @@ public class Database {
         return res;
     }
 
-    String produceJWTKey(User u) throws JoseException{
+    String produceJWTKey(User u) throws JoseException, TimeoutException,InterruptedException,MemcachedException{
         // Generate an RSA key pair, which will be used for signing and verification of the JWT, wrapped in a JWK
         RsaJsonWebKey rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
         
         // Give the JWK a Key ID (kid), which is just the polite thing to do
-        rsaJsonWebKey.setKeyId("k" + jwtPubKeys.size());
+        rsaJsonWebKey.setKeyId("k" + rsaJsonWebKey);
         JwtClaims claims = new JwtClaims();
         claims.setIssuer("BuzzServer");
         claims.setAudience(u.getEmail());
@@ -597,7 +726,7 @@ public class Database {
         claims.setClaim("email", u.getEmail());
         claims.setClaim("name", "name");
         claims.setClaim("biography", u.getBio());
-        claims.setClaim("userID", u.getUserID());
+        //claims.setClaim("userID", u.getUserID());
 
         JsonWebSignature jws = new JsonWebSignature();
 
@@ -610,8 +739,7 @@ public class Database {
         // Set the signature algorithm
         jws.setAlgorithmHeaderValue(AlgorithmIdentifiers.RSA_USING_SHA256);
         
-        String uid = u.getUserID();
-        jwtPubKeys.put(uid, rsaJsonWebKey.getPublicKey());
+        jwtPubKeys.set(u.getUserID(), 0, rsaJsonWebKey.getPublicKey());
 
         return jws.getCompactSerialization();
     }
@@ -649,11 +777,20 @@ public class Database {
         return res;
     }
 
-    PublicKey getPublicKey(String uid){
-        return jwtPubKeys.get(uid);
-    }
-
-    boolean addJWT(String jwt){
-        return false;
+    PublicKey getPublicKey(String uid) {
+        PublicKey toReturn = null;
+        try{
+           toReturn = jwtPubKeys.get(uid);
+        }catch (TimeoutException te) {
+            System.err.println("Timeout during set or get: " +
+                               te.getMessage());
+        } catch (InterruptedException ie) {
+            System.err.println("Interrupt during set or get: " +
+                               ie.getMessage());
+        } catch (MemcachedException me) {
+            System.err.println("Memcached error during get or set: " +
+                               me.getMessage());
+        }
+        return toReturn;
     }
 }
