@@ -112,6 +112,8 @@ public class Database {
 
     private PreparedStatement mIsRegistered;
 
+    private PreparedStatement mInsertFile;
+
     Set<User> activeUsers;
     MemcachedClient jwtPubKeys;
     MemcachedClient jwtKeys;
@@ -278,6 +280,9 @@ public class Database {
             db.mLikesNeutral = db.mConnection.prepareStatement("SELECT SUM(likes.likes) AS total FROM likes WHERE likes.message_id = ?");
             db.mInsertOneLike = db.mConnection.prepareStatement("INSERT INTO likes VALUES (?, ?, ?)");
             db.mUpdateOneLike = db.mConnection.prepareStatement("UPDATE likes SET likes = ? WHERE user_id = ?");
+
+            // files table
+            db.mInsertFile = db.mConnection.prepareStatement("INSERT INTO files (fileid, messageid, filesize, url) VALUES (?,?,?,?)");
 
         } catch (SQLException e) {
             System.err.println("Error creating prepared statement");
@@ -542,6 +547,20 @@ public class Database {
             e.printStackTrace();
             return null;
         }
+    }
+
+    int insertFileRow(String fileid, int messageid, long filesize, String url) {
+        int res = -1;
+        try{
+            mInsertFile.setString(1,fileid);
+            mInsertFile.setInt(2, messageid);
+            mInsertFile.setLong(3, filesize);
+            mInsertFile.setString(4, url);
+            res = mInsertFile.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
     }
 
     /**

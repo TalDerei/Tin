@@ -43,10 +43,11 @@ import org.jose4j.lang.JoseException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.StringReader;
 import java.security.PublicKey;
 import java.util.*;
 import java.security.GeneralSecurityException;
+
+
 /**
  * For now, our app creates an HTTP server that can only get and add data.
  */
@@ -60,7 +61,7 @@ public class App {
     public static final List<String> SCOPES = Collections.singletonList(DriveScopes.DRIVE);
     public static final String APPLICATION_NAME = "Naked Mole Rat backend";
 
-    public static String uploadFile(java.io.File UPLOAD_FILE, String name, String mime) throws IOException, GeneralSecurityException {
+    public static String uploadFile(java.io.File UPLOAD_FILE, String name, String mime, int messageid) throws IOException, GeneralSecurityException {
         // boolean useDirectUpload = true;
         String ret = null;
 
@@ -82,6 +83,10 @@ public class App {
         try {
             File file = setup().files().create(fmeta, mediaContent).setFields("id, parents").execute();
             System.out.println("File ID executed: " + file.getId());
+            int dbReturned = db.insertFileRow(file.getId(), messageid, file.getSize(), name);
+            if(dbReturned == -1) {
+                System.out.println("Error when inserting file information in database!");
+            }
             return file.getId();
         } catch (Exception e) {
             e.printStackTrace();
@@ -140,12 +145,17 @@ public class App {
         String db_url = env.get("DATABASE_URL");
         System.out.println("database is: " + db_url);
 
-        /*
-         * Properties prop = new Properties(); String config = "backend.properties"; try
-         * { InputStream input = App.class.getClassLoader().getResourceAsStream(config);
-         * prop.load(input); } catch (IOException ex) { ex.printStackTrace(); } String
-         * db_url = prop.getProperty("DATABASE_URL");
-         */
+
+        //Properties prop = new Properties();
+        //String config = "backend.properties";
+        //try {
+        //    InputStream input = App.class.getClassLoader().getResourceAsStream(config);
+        //    prop.load(input);
+        //} catch (IOException ex) {
+        //    ex.printStackTrace();
+        //}
+        //String db_url = prop.getProperty("DATABASE_URL");
+
 
         // String db_url =
         // "postgres://azexrkxulzlqss:b12fcddc21a71c8cc0b04de34d8ab4bc99a726bdb0b2e455b63865e0cdbb3442@ec2-3-234-109-123.compute-1.amazonaws.com:5432/d9aki869as2d5b";
@@ -227,7 +237,9 @@ public class App {
                 return v;
             }*/
             // ensure status 200 OK, with a MIME type of JSON
-            
+            System.out.println("request.attributes when GET");
+            System.out.println(request.attributes());
+
             response.status(200);
             response.type("application/json");
             Database.RowData data = db.selectOne(idx);
@@ -247,6 +259,9 @@ public class App {
         Spark.post("/messages", (request, response) -> {
             String jwt = request.queryParams("jwt");
             String uid = request.queryParams("uid");
+
+            System.out.println("request.attributes when POST");
+            System.out.println(request.attributes());
             /*String v = gson.toJson(verify(uid, jwt));
             if(v.contains("error")) {
                 return v;
@@ -444,7 +459,7 @@ public class App {
             String accessToken = jsonObject.get("access_token").getAsString();
             String jsonString = get((new StringBuilder("https://www.googleapis.com/oauth2/v3/userinfo?access_token=")
                             .append(accessToken).toString()));
-            //System.out.println(jsonString);
+            System.out.println("jsonString is " + jsonString);
             JsonObject json = gson.fromJson(jsonString, JsonObject.class);
             String nickname = json.get("name").getAsString();
             String email = json.get("email").getAsString();
@@ -556,9 +571,12 @@ public class App {
         });
 
         Spark.post("/upload", (request, response) -> {
+            int idx = Integer.parseInt(request.params("id"));
             StructuredResponse sResponse = new StructuredResponse(response);
             // FileRequest freq = App.getGson().fromJson(request.body(),FileRequest.class);
-            if (request.attributes().contains("authorized")) {
+            System.out.println("come to /upload!");
+            System.out.println(request.attributes());
+            //if (request.attributes().contains("authorized")) {
                 try {
                     String time = "" + java.lang.System.currentTimeMillis();
                     java.io.File upload = new java.io.File(time);
@@ -571,6 +589,8 @@ public class App {
                     factory.setRepository(upload);
                     ServletFileUpload fileUpload = new ServletFileUpload(factory);
                     List<FileItem> items = fileUpload.parseRequest(request.raw());
+                    System.out.println("raw");
+                    System.out.println(request.raw());
 
                     Iterator<FileItem> iter = items.iterator();
 
@@ -581,9 +601,19 @@ public class App {
                     boolean hasWritten = false;
                     String ret = "null";
 
+
+
                     while (iter.hasNext()) {
                         FileItem item = iter.next();
-                        if (item.getFieldName().equals("uploaded_file")) {
+                        System.out.println("item");
+                        System.out.println(item);
+                        System.out.println("upload");
+                        System.out.println(upload.getAbsolutePath());
+                        System.out.println(upload.getName());
+                        //if (item.getFieldName().equals("uploaded_file")) {
+                        if (item.getFieldName().equals("upload_file")) {
+                            System.out.println("item.getContentType(): ");
+                            System.out.println(item.getContentType());
                             uploadedFile = new java.io.File("uploads/" + upload.getName());
                             item.write(uploadedFile);
                             hasFile = true;
@@ -594,7 +624,7 @@ public class App {
 
                         if (!hasWritten && hasMime && hasFile) {
                             hasWritten = true;
-                            ret = uploadFile(uploadedFile, time, mime);
+                            ret = uploadFile(uploadedFile, time, mime, idx);
                         }
 
                     }
@@ -612,7 +642,7 @@ public class App {
                     e.printStackTrace();
                     sResponse.setError(e);
                 }
-            }
+            //}
             return App.getGson().toJson(sResponse);
         });
 
