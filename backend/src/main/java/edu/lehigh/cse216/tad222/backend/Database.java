@@ -114,6 +114,9 @@ public class Database {
 
     private PreparedStatement mInsertFile;
 
+    private PreparedStatement mSelectAllFiles;
+
+
     Set<User> activeUsers;
     MemcachedClient jwtPubKeys;
     MemcachedClient jwtKeys;
@@ -283,6 +286,7 @@ public class Database {
 
             // files table
             db.mInsertFile = db.mConnection.prepareStatement("INSERT INTO files (fileid, messageid, filesize, url) VALUES (?,?,?,?)");
+            db.mSelectAllFiles = db.mConnection.prepareStatement("SELECT * FROM files");
 
         } catch (SQLException e) {
             System.err.println("Error creating prepared statement");
@@ -561,6 +565,22 @@ public class Database {
             e.printStackTrace();
         }
         return res;
+    }
+
+    ArrayList<FileUploaded> selectAllFiles() {
+        System.out.println("Selecting All Files");
+        ArrayList<FileUploaded> res = new ArrayList<FileUploaded>();
+        try{
+            ResultSet rs = mSelectAllFiles.executeQuery();
+            while (rs.next()) { 
+                res.add(new FileUploaded(rs.getString("fileid"), rs.getInt("messageid"), rs.getLong("filesize"), rs.getString("url")));
+            }
+            rs.close();
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     /**
