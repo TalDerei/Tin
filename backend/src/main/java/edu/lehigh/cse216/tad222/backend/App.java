@@ -578,10 +578,6 @@ public class App {
             response.status(200);
             response.type("application/json");
             StructuredResponse sResponse = new StructuredResponse(response);
-            // FileRequest freq = App.getGson().fromJson(request.body(),FileRequest.class);
-            System.out.println("come to /upload!");
-            System.out.println(request.attributes());
-            //if (request.attributes().contains("authorized")) {
                 try {
                     String time = "" + java.lang.System.currentTimeMillis();
                     java.io.File upload = new java.io.File(time);
@@ -594,8 +590,6 @@ public class App {
                     factory.setRepository(upload);
                     ServletFileUpload fileUpload = new ServletFileUpload(factory);
                     List<FileItem> items = fileUpload.parseRequest(request.raw());
-                    System.out.println("raw");
-                    System.out.println(request.raw());
 
                     Iterator<FileItem> iter = items.iterator();
 
@@ -610,15 +604,7 @@ public class App {
 
                     while (iter.hasNext()) {
                         FileItem item = iter.next();
-                        System.out.println("item");
-                        System.out.println(item);
-                        System.out.println("upload");
-                        System.out.println(upload.getAbsolutePath());
-                        System.out.println(upload.getName());
-                        //if (item.getFieldName().equals("uploaded_file")) {
                         if (item.getFieldName().equals("upload_file")) {
-                            System.out.println("item.getContentType(): ");
-                            System.out.println(item.getContentType());
                             uploadedFile = new java.io.File("uploads/" + upload.getName());
                             item.write(uploadedFile);
                             hasFile = true;
@@ -647,7 +633,6 @@ public class App {
                     e.printStackTrace();
                     sResponse.setError(e);
                 }
-            //}
             return App.getGson().toJson(sResponse);
         });
 
@@ -656,31 +641,16 @@ public class App {
          * GET route for downloading files using their specific file id
          */
         Spark.get("/file/:fileId", (request, response) -> {
-            // if (request.attributes().contains("authorized")) {
                 String fileId = request.params("fileId");
                 String mime = getMimeType(fileId);
                 ByteArrayOutputStream os = downloadFromDrive(fileId);
                 response.status(200);
-                // response.raw().setContentType("application/octet-stream");
                 response.raw().setContentType(mime);
                 response.raw().setHeader("Content-Disposition", "attachment; mime=" + mime);
                 OutputStream toConn = response.raw().getOutputStream();
                 toConn.write(os.toByteArray());
                 toConn.flush();
                 return response;
-            // } else {
-            //     // response.raw().setContentType("application/octet-stream");
-            //     response.raw().setContentType("text/plain");
-            //     response.raw().setHeader("Content-Disposition", "attachment; mime=string");
-            //     String failed = "not authorized";
-            //     // BinaryOutputStream os = new BinaryOutputStream();
-            //     byte[] b = failed.getBytes(java.nio.charset.Charset.forName("UTF-8"));
-            //     // os.write(b,0,b.length);
-            //     OutputStream toConn = response.raw().getOutputStream();
-            //     toConn.write(b);
-            //     toConn.flush();
-            //     return response;
-            // }
         });
 
         /**
