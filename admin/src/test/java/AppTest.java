@@ -63,6 +63,15 @@ public class AppTest extends TestCase {
         assertTrue(table.get(1).mName.equals("tbldata"));
         assertTrue(table.get(1).mOwner.equals("jriwkmrrgglzdu"));
 
+        /** 
+         * test for google file
+         */
+        db.createFiles();
+        table = db.showTable();
+        assertTrue(table.get(2).mSchema.equals("public"));
+        assertTrue(table.get(2).mName.equals("filedata"));
+        assertTrue(table.get(2).mOwner.equals("jriwkmrrgglzdu"));
+
         /**
          * test for inserting a message
          */

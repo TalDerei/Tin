@@ -7,6 +7,8 @@ import Display from './Display.jpg';
  * @param props properties passed in from MessagePage Component
  */
 const DisplayPosts = (props: any): JSX.Element => {
+  const herokuUrl = "https://cors-anywhere.herokuapp.com/https://limitless-ocean-62391.herokuapp.com/";
+  //const herokuUrl = "http://localhost:4567/";
   const arraysOfMessages: Object[] = props.messagePost;// arrays of the messages to display
   let arraytoReturn: JSX.Element[] = [];// same as above but this one will be returned
   /**
@@ -20,7 +22,34 @@ const DisplayPosts = (props: any): JSX.Element => {
     document.getElementById(event.target.name)!.innerHTML = newNumber.toString();//display that number in the DOM
   }
 
-  arraysOfMessages.forEach((input: any) => {//for each posts in the database so far
+    async function downloadFile(event: any) {
+        event.preventDefault();//prevent default event
+        let fileId: string = event.target.value;
+        let url: string = herokuUrl + "file/" + fileId;
+        await fetch(url, {
+            method: 'GET',
+            mode: 'cors',
+            cache: 'no-cache',
+            credentials: 'same-origin', // include, *same-origin, omit
+        })
+            .then((response) => {
+                //return response.json();// parse json from response
+                console.log(response);
+                // TODO: decoding byteArray into a file
+                //createAndDownloadBlobFile(filename, )
+                return true;
+            })
+            .then((myResponse) => {
+                console.log(myResponse);
+                //setResponseMessages(myResponse.mData);// update the state data from the posts parsed from response data
+            })
+            .catch((error) => {
+                console.error(error);//log error
+            });
+    }
+
+
+    arraysOfMessages.forEach((input: any) => {//for each posts in the database so far
     arraytoReturn.push(//push it to the array to be displayed eventually
       <div key={input.mId} className="individual-message">
         <div className="profile" key={input.mId}>
@@ -53,6 +82,13 @@ const DisplayPosts = (props: any): JSX.Element => {
         >
           0
         </text>
+        <button
+          onClick={downloadFile}
+          value={"1tlF1YkVXpANufTM6ROA4WKwPWEjusu0e"}
+          name={`file${input.mId}`}
+          >
+              Download File
+        </button>
       </div>
     )
   });
