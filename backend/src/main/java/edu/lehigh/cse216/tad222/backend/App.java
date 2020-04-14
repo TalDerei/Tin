@@ -57,7 +57,7 @@ public class App {
     private static final Gson gson = new Gson();
     public static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
     public static final JsonFactory JSON_FACTORY = new JacksonFactory();
-    private static final String SERVICE_ACCOUNT_PKCS12_FILE_PATH = "./target/ServiceAccountKeyP12.p12";
+    private static final String SERVICE_ACCOUNT_PKCS12_FILE_PATH = "./ServiceAccountKeyP12.p12";
     public static final List<String> SCOPES = Collections.singletonList(DriveScopes.DRIVE);
     public static final String APPLICATION_NAME = "Naked Mole Rat backend";
 
