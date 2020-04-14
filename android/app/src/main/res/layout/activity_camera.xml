@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF"
+    android:clickable="false"
+    android:visibility="visible"
+    tools:context=".CameraActivity">
+
+    <include layout="@layout/content_camera" />
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:theme="@style/AppTheme.AppBarOverlay">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            app:popupTheme="@style/AppTheme.PopupOverlay" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <FrameLayout
+        android:id="@+id/camera_frame_layout"
+        android:layout_width="match_parent"
+        android:layout_height="681dp"
+        android:translationY="51dp"
+        android:visibility="visible">
+
+        <SurfaceView
+            android:id="@+id/surface_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleX="1"
+            android:scaleY="1"
+            android:translationX="0dp"
+            android:translationY="05dp"
+            android:visibility="visible"
+            tools:visibility="visible" />
+    </FrameLayout>
+
+    <Button
+        android:id="@+id/takePicture"
+        android:layout_width="132dp"
+        android:layout_height="61dp"
+        android:layout_gravity="bottom|center"
+        android:layout_marginBottom="15dp"
+        android:background="#655F5F"
+        android:text="@string/take_picture"
+        android:visibility="visible"
+        app:layout_insetEdge="none"
+        tools:visibility="visible" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

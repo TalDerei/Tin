@@ -1,6 +1,11 @@
 package edu.lehigh.cse216.teamtin;
 
+import android.os.Environment;
+
 import org.junit.Test;
+
+import java.io.File;
+import java.io.FilenameFilter;
 
 import static org.junit.Assert.*;
 
@@ -22,5 +27,25 @@ public class ExampleUnitTest {
         assertEquals(d.mText, "hello world");
     }
 
+    @Test
+    public void PictureData_constructor_and_methods_for_null() throws Exception {
+        File dir = new File("/storage/emulated/0/TheBuzz");
+        PictureData pd = new PictureData(dir);
+        assertEquals(false, pd.mPic.isDirectory());
+        assertEquals(null, pd.mBitmap);
+        assertEquals(null, pd.asBitmap());
+        if (dir.list() != null && dir.list().length > 0) {
+            File pic = new File(dir.list(new FilenameFilter() {
+                @Override
+                public boolean accept(File dir, String name) {
+                    return dir.getAbsolutePath().contains(".jpg");
+                }
+            })[0]);
+            pd = new PictureData(pic);
+            assertEquals(pic, pd.mPic);
+            assertEquals(pd.mBitmap, pd.asBitmap());
+
+        }
+    }
 }
 

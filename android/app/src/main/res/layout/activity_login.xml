@@ -24,15 +24,16 @@
 
     <com.google.android.gms.common.SignInButton
         android:id="@+id/sign_in_button"
-        android:layout_width="125dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
+
     <Button
         android:id="@+id/button_sign_out"
-        android:text="SIGN OUT"
         android:layout_width="125dp"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="50dp"
+        android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:layout_alignParentBottom="true" />
+        android:layout_marginBottom="50dp"
+        android:text="SIGN OUT" />
 
 </LinearLayout>

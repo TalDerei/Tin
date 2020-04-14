@@ -3,10 +3,16 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="edu.lehigh.cse216.teamtin.MainActivity">
     <item
+        android:id="@+id/action_gallery"
+        android:title="@string/action_gallery" />
+    <item
         android:id="@+id/action_home"
         android:orderInCategory="100"
-        android:title="Message Board (Home)"
-        app:showAsAction="never" />
+        android:title="@string/message_home_button"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/action_camera"
+        android:title="@string/action_camera" />
 
 
 </menu>

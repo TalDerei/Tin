@@ -1,17 +1,24 @@
 package edu.lehigh.cse216.teamtin;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import android.os.Environment;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.util.ArrayList;
 
 public class voteActivity extends AppCompatActivity {
 
@@ -19,6 +26,7 @@ public class voteActivity extends AppCompatActivity {
     ImageButton DislikeButton;
     TextView messageTextView;
     TextView userTextView;
+    ArrayList<String> files;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +51,15 @@ public class voteActivity extends AppCompatActivity {
             }
         });*/
 
+        Button bAddFile = findViewById(R.id.fetchFile);
+        bAddFile.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent i = new Intent(getApplicationContext(), GalleryActivity.class);
+                startActivityForResult(i,791);
+            }
+        });
+
         addListenerOnButton();
     }
 
@@ -57,12 +74,13 @@ public class voteActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
+        // as you specify a parent activity in Android;Manifest.xml.
         int id = item.getItemId();
 
         if (id == R.id.action_post) {
             Intent i = new Intent(getApplicationContext(), PostActivity.class);
             i.putExtra("label_contents", "Type a message to post:");
+            i.putStringArrayListExtra("files", files);
             startActivityForResult(i, 789); // 789 is the number that will come back to us
             return true;
         } else if (id == R.id.action_home) {

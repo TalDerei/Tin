@@ -10,6 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import com.android.volley.Header;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -25,8 +26,18 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.SignInButton;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.JsonObjectParser;
+import com.google.api.client.json.JsonParser;
+import com.google.api.client.json.jackson2.JacksonFactory;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
 
 
 public class LoginActivity extends AppCompatActivity implements GoogleApiClient.OnConnectionFailedListener{
@@ -53,11 +64,14 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        clientId = getString(R.string.server_client_id);
+        clientId = "98587864938-h28665jsmboh5bb04qi153d2n2n3nd28.apps.googleusercontent.com";
         GoogleSignInOptions gso = new GoogleSignInOptions
                 .Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(clientId)
+                .requestIdToken(getString(R.string.server_client_id))
+                .requestServerAuthCode(getString(R.string.server_client_id), false)
                 .requestEmail()
+                .requestScopes(new Scope("https://www.googleapis.com/auth/userinfo.profile"),
+                        new Scope("https://www.googleapis.com/auth/drive"))
                 .build();
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .enableAutoManage(this, this)
@@ -90,8 +104,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         });
     }
 
-
-    private void onLoggedIn(GoogleSignInAccount googleSignInAccount) {
+    private void onLoggedIn(GoogleSignInAccount googleSignInAccount, String JWTjson) {
         Intent intent = new Intent(this, MainActivity.class);
         Log.d("email", email);
         Log.d("familyName", familyName);
@@ -99,6 +112,18 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         intent.putExtra("email", email);
         intent.putExtra("familyName", familyName);
         intent.putExtra("givenName", givenName);
+        try {
+            //Log.d("jwtTest", JWTjson);
+            JSONObject jo = new JSONObject(JWTjson);
+            //Log.d("jwtTest", "user_id: " + jo.getString("mUser_id"));
+            //Log.d("jwtTest", "jwt: " + jo.getString("mJWT"));
+            intent.putExtra("login", true);
+            intent.putExtra("user_id", jo.getString("mUser_id"));
+            intent.putExtra("jwt", jo.getString("mJWT"));
+        } catch(JSONException e) {
+            Log.e("error", "Problem with JSON", e);
+        }
+
         startActivity(intent);
         finish();
     }
@@ -107,23 +132,27 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        Log.d("hag322", "entered onActivityResult with requestCode:" + requestCode);
 
         if (requestCode == 101) {
             try {
+                Log.d("onActivityResult", "before getSignedInAccountFromIntent");
                 Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
-                GoogleSignInAccount account = task.getResult(ApiException.class);
+                Log.d("onActivityResult", "after getSignedInAccountFromIntent");
+                final GoogleSignInAccount account = task.getResult(ApiException.class);
+                Log.d("onActivityResult", "after get GoogleSignInAccount");
 
                 email = account.getEmail();
                 familyName = account.getFamilyName();
                 givenName = account.getGivenName();
                 idToken = account.getIdToken();
+                String code = account.getServerAuthCode();
+                Log.d("onActivityResult", code);
                 Log.d("onActivityResult", "email is " + email);
                 Log.d("onActivityResult", "ID Token is " + idToken);
 
-                //TODO: send an ID token to backend server
                 RequestQueue queue = Volley.newRequestQueue(this);
-
-                String targetUrl = url + "/users/login?idToken=" + idToken + "&clientid=" + clientId;
+                String targetUrl = url + "/users/login?idToken=" + idToken + "&code=" + code;
                 Log.d("POST URL", targetUrl);
 
                 StringRequest stringRequest = new StringRequest(Request.Method.POST,
@@ -131,19 +160,19 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                         new Response.Listener<String>() {
                             @Override
                             public void onResponse(String response) {
-                                Log.d("onResponse", "JWT is " + response);
+                                Log.d("onResponse", "JWT recieved");
+                                onLoggedIn(account, response);
+
                             }
                         }, new Response.ErrorListener() {
                     @Override
                     public void onErrorResponse(VolleyError error) {
-                        Log.d("Error", "Error in response!");
+                        String ret = error.getMessage();
+                        Log.e("Error", ret != null ? ret : "no error message given", error);
                     }
                 });
                 // Add the request to the RequestQueue.
                 queue.add(stringRequest);
-
-                onLoggedIn(account);
-
             } catch (ApiException e) {
                 Log.w("Error", "signInResult:failed code=" + e.getStatusCode());
             }

@@ -6,6 +6,30 @@
     android:layout_height="match_parent"
     tools:context=".voteActivity">
 
+    <EditText
+        android:id="@+id/fileList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:autoText="true"
+        android:ems="10"
+        android:gravity="start|top"
+        android:hint="@string/list_selected_files"
+        android:inputType="textMultiLine"
+        android:maxHeight="200dp"
+        android:minHeight="25dp"
+        android:shadowColor="#FFFFFF"
+        android:text="@string/list_selected_files"
+        android:translationY="250dp" />
+
+    <Button
+        android:id="@+id/fetchFile"
+        android:layout_width="match_parent"
+        android:layout_height="65dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_weight="4"
+        android:text="@string/action_fetch_file"
+        android:translationY="175dp" />
+
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -17,7 +41,6 @@
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
             app:popupTheme="@style/AppTheme.PopupOverlay" />
-
 
 
     </com.google.android.material.appbar.AppBarLayout>
