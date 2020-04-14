@@ -493,4 +493,37 @@ public class MainActivity extends AppCompatActivity {
         // search for file in the device
         // pull files from the web
     }
+
+    private void getFileFromId(String fileId) {
+        RequestQueue queue = Volley.newRequestQueue(this);
+        StringRequest stringRequest = new StringRequest(Request.Method.GET,
+                fileDownloadUrl + "/" + fileId + "?user_id=" + uid + "&jwt=" + jwt,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        Log.d("GET", "response received");
+                        generateFile(response);
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.e("hag322", "That didn't work!");
+            }
+        });
+
+        stringRequest.setRetryPolicy(new DefaultRetryPolicy(10000, 0,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
+        // Add the request to the RequestQueue.
+        queue.add(stringRequest);
+    }
+
+    void generateFile(String encodedFile) {
+        String outputFileName = "/storage/emulated/0/TheBuzz/" + 1000 * Math.random();
+        byte[] decodedBytes = Base64.decode(encodedFile, Base64.DEFAULT);
+        try {
+            FileUtils.writeByteArrayToFile(new File(outputFileName), decodedBytes);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
