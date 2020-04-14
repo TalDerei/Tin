@@ -553,11 +553,11 @@ public class Database {
         }
     }
 
-    int insertFileRow(String fileid, int messageid, long filesize, String url) {
+    int insertFileRow(String fileid, long filesize, String url) {
         int res = -1;
         try{
             mInsertFile.setString(1,fileid);
-            mInsertFile.setInt(2, messageid);
+            mInsertFile.setInt(2, 1);
             mInsertFile.setLong(3, filesize);
             mInsertFile.setString(4, url);
             res = mInsertFile.executeUpdate();

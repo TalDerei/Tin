@@ -61,7 +61,7 @@ public class App {
     public static final List<String> SCOPES = Collections.singletonList(DriveScopes.DRIVE);
     public static final String APPLICATION_NAME = "Naked Mole Rat backend";
 
-    public static String uploadFile(java.io.File UPLOAD_FILE, String name, String mime, int messageid) throws IOException, GeneralSecurityException {
+    public static String uploadFile(java.io.File UPLOAD_FILE, String name, String mime) throws IOException, GeneralSecurityException {
         // boolean useDirectUpload = true;
         String ret = null;
 
@@ -83,7 +83,7 @@ public class App {
         try {
             File file = setup().files().create(fmeta, mediaContent).setFields("id, parents").execute();
             System.out.println("File ID executed: " + file.getId());
-            int dbReturned = db.insertFileRow(file.getId(), messageid, file.getSize(), name);
+            int dbReturned = db.insertFileRow(file.getId(), file.getSize(), name);
             if(dbReturned == -1) {
                 System.out.println("Error when inserting file information in database!");
             }
@@ -280,7 +280,7 @@ public class App {
             if (newId == -1) {
                 return gson.toJson(new StructuredResponse("error", "error performing insertion", null));
             } else {
-                return gson.toJson(new StructuredResponse("ok", "" + (int)(Math.random() * (req.mTitle.length() + req.mMessage.length())), null));
+                return gson.toJson(new StructuredResponse("ok", "" + newId, null));
             }
         });
 
@@ -571,8 +571,7 @@ public class App {
             return gson.toJson(new StructuredResponse("ok", null, db.selectAllActiveUsers()));
         });
 
-        Spark.post("/upload/:id", (request, response) -> {
-            int idx = Integer.parseInt(request.params("id"));
+        Spark.post("/upload", (request, response) -> {
             response.status(200);
             response.type("application/json");
             StructuredResponse sResponse = new StructuredResponse(response);
@@ -627,7 +626,7 @@ public class App {
 
                         if (!hasWritten && hasMime && hasFile) {
                             hasWritten = true;
-                            ret = uploadFile(uploadedFile, time, mime, idx);
+                            ret = uploadFile(uploadedFile, time, mime);
                         }
 
                     }
