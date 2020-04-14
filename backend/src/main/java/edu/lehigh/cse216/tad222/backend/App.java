@@ -573,6 +573,8 @@ public class App {
 
         Spark.post("/upload/:id", (request, response) -> {
             int idx = Integer.parseInt(request.params("id"));
+            response.status(200);
+            response.type("application/json");
             StructuredResponse sResponse = new StructuredResponse(response);
             // FileRequest freq = App.getGson().fromJson(request.body(),FileRequest.class);
             System.out.println("come to /upload!");
@@ -652,6 +654,7 @@ public class App {
                 String fileId = request.params("fileId");
                 String mime = getMimeType(fileId);
                 ByteArrayOutputStream os = downloadFromDrive(fileId);
+                response.status(200);
                 // response.raw().setContentType("application/octet-stream");
                 response.raw().setContentType(mime);
                 response.raw().setHeader("Content-Disposition", "attachment; mime=" + mime);
