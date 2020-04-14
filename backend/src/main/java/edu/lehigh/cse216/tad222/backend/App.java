@@ -674,7 +674,14 @@ public class App {
         });
 
         Spark.get("/files", (request, response) -> {
-            
+            response.status(200);
+            response.type("application/json");
+            if (db == null) {
+                System.out.println("error with DB!!!!!!!!!!!!!!!!!!");
+            } else {
+                System.out.println("db is NOT null");
+            }
+            return gson.toJson(new StructuredResponse("ok", null, db.selectAllFiles()));
         });
     }
 
