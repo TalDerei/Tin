@@ -49,6 +49,12 @@ import java.util.Scanner;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import okhttp3.Headers;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
+import okio.Buffer;
+
 public class MainActivity extends AppCompatActivity {
     /**
      * mData holds the data we get from Volley
@@ -222,12 +228,7 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public byte[] getBody() throws AuthFailureError {
-                        try {
-                            return encodedString == null ? null : encodedString.getBytes("utf-8");
-                        } catch (UnsupportedEncodingException uee) {
-                            VolleyLog.wtf("Unsupported Encoding while trying to get the bytes of %s using %s", encodedString, "utf-8");
-                            return null;
-                        }
+                        return createFileRequestBody(f.getName(), encodedString);
                     }
                 };
             } catch (IOException e) {
@@ -257,6 +258,8 @@ public class MainActivity extends AppCompatActivity {
                 final String encodedString = Base64.encodeToString(content, Base64.DEFAULT);
 
                 // Only works for one file right now
+                // This is intended as an implementation of StringRequest that works for the
+                // multipart/form-data body
                 stringRequest = new StringRequest(Request.Method.POST,
                         pictureUrl + "?user_id=" + uid + "&jwt=" + jwt,
                         new Response.Listener<String>() {
@@ -284,12 +287,7 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public byte[] getBody() throws AuthFailureError {
-                        try {
-                            return encodedString == null ? null : encodedString.getBytes("utf-8");
-                        } catch (UnsupportedEncodingException uee) {
-                            VolleyLog.wtf("Unsupported Encoding while trying to get the bytes of %s using %s", encodedString, "utf-8");
-                            return null;
-                        }
+                        return createFileRequestBody(f.getName(), encodedString);
                     }
                 };
             }
@@ -468,7 +466,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private File getFileForMessage(String placeholder) {
+    private File getFileForMessage(String fileId) {
         try {
             HttpResponseCache responseCache = HttpResponseCache.getInstalled();
             HttpsURLConnection huc = (HttpsURLConnection) new URL("https://limitless-ocean-62391.herokuapp.com/").openConnection();
@@ -494,6 +492,9 @@ public class MainActivity extends AppCompatActivity {
         // pull files from the web
     }
 
+    /**
+     * Downloads a file from the server using a fileId
+     */
     private void getFileFromId(String fileId) {
         RequestQueue queue = Volley.newRequestQueue(this);
         StringRequest stringRequest = new StringRequest(Request.Method.GET,
@@ -502,7 +503,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onResponse(String response) {
                         Log.d("GET", "response received");
-                        generateFile(response);
+                        generateFile(fileId, response);
                     }
                 }, new Response.ErrorListener() {
             @Override
@@ -517,13 +518,37 @@ public class MainActivity extends AppCompatActivity {
         queue.add(stringRequest);
     }
 
-    void generateFile(String encodedFile) {
+    /**
+     * Decode File downloaded from serever
+     */
+    void generateFile(String fileId, String encodedFile) {
         String outputFileName = "/storage/emulated/0/TheBuzz/" + 1000 * Math.random();
         byte[] decodedBytes = Base64.decode(encodedFile, Base64.DEFAULT);
+        File f = new File(outputFileName);
         try {
-            FileUtils.writeByteArrayToFile(new File(outputFileName), decodedBytes);
+            FileUtils.writeByteArrayToFile(f, decodedBytes);
         } catch (IOException e) {
             e.printStackTrace();
         }
+        mFilesId.put(fileId, f);
+    }
+
+    /**
+     * Uses okhttp to create a multipart request body for the server
+     */
+    byte[] createFileRequestBody(String fileName, String encodedFile) {
+        RequestBody rb = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addPart(
+                        Headers.of("Content-Disposition", "form-data; name=\"" + fileName +"\""),
+                        RequestBody.create(MediaType.parse("image/jpg"), encodedFile))
+                .build();
+        Buffer buf = new Buffer();
+        try {
+            rb.writeTo(buf);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return buf.readByteArray();
     }
 }

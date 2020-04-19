@@ -5,6 +5,9 @@ import android.graphics.BitmapFactory;
 
 import java.io.File;
 
+/**
+ * A class that holds a Picture and its Bitmap
+ */
 public class PictureData {
     String mPath;
     File mPic;

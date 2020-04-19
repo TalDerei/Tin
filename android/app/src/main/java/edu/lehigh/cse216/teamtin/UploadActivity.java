@@ -43,6 +43,7 @@ public class UploadActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 if(files != null && !files.isEmpty()) {
+                    // returns to main activity to upload file
                     TextView t = findViewById(R.id.file_view);
                     Intent i = new Intent();
                     i.putExtra("file", t.getText().toString());
@@ -78,6 +79,7 @@ public class UploadActivity extends AppCompatActivity {
                 finish();
                 return true;
             case R.id.action_gallery:
+                // Select a picture from the gallery
                 i = new Intent(getApplicationContext(), GalleryActivity.class);
                 startActivityForResult(i, 791);
                 return true;
