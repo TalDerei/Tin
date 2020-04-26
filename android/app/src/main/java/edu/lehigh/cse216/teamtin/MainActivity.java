@@ -205,8 +205,8 @@ public class MainActivity extends AppCompatActivity {
                 byte[] content = FileUtils.readFileToByteArray(f);
                 String encodedString = Base64.encodeToString(content, Base64.DEFAULT);
                 // Only works for one file right now
-                stringRequest = new StringRequest(Request.Method.POST,
-                        pictureUrl + "?user_id=" + uid + "&jwt=" + jwt,
+                stringRequest = new MultiPartStringFileRequest(Request.Method.POST,
+                        pictureUrl + "?user_id=" + uid + "&jwt=" + jwt, f,
                         new Response.Listener<String>() {
                             @Override
                             public void onResponse(String response) {
@@ -224,17 +224,7 @@ public class MainActivity extends AppCompatActivity {
                     public void onErrorResponse(VolleyError error) {
                         Log.e("onErrorResponse", error.toString());
                     }
-                }) {
-                    @Override
-                    public String getBodyContentType() {
-                        return "multipart/form-data";
-                    }
-
-                    @Override
-                    public byte[] getBody() throws AuthFailureError {
-                        return createFileRequestBody(f.getName(), encodedString);
-                    }
-                };
+                });
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -264,8 +254,8 @@ public class MainActivity extends AppCompatActivity {
                 // Only works for one file right now
                 // This is intended as an implementation of StringRequest that works for the
                 // multipart/form-data body
-                stringRequest = new StringRequest(Request.Method.POST,
-                        pictureUrl + "?user_id=" + uid + "&jwt=" + jwt,
+                stringRequest = new MultiPartStringFileRequest(Request.Method.POST,
+                        pictureUrl + "?user_id=" + uid + "&jwt=" + jwt, f,
                         new Response.Listener<String>() {
                             @Override
                             public void onResponse(String response) {
@@ -283,17 +273,7 @@ public class MainActivity extends AppCompatActivity {
                     public void onErrorResponse(VolleyError error) {
                         Log.e("onErrorResponse", error.toString());
                     }
-                }) {
-                    @Override
-                    public String getBodyContentType() {
-                        return "multipart/form-data";
-                    }
-
-                    @Override
-                    public byte[] getBody() throws AuthFailureError {
-                        return createFileRequestBody(f.getName(), encodedString);
-                    }
-                };
+                });
             }
             //input your API parameters
             object.put("mTitle", profileName);
@@ -542,24 +522,5 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         mFilesId.put(fileId, f);
-    }
-
-    /**
-     * Uses okhttp to create a multipart request body for the server
-     */
-    byte[] createFileRequestBody(String fileName, String encodedFile) {
-        RequestBody rb = new MultipartBody.Builder()
-                .setType(MultipartBody.FORM)
-                .addPart(
-                        Headers.of("Content-Disposition", "form-data; name=\"" + fileName +"\""),
-                        RequestBody.create(MediaType.parse("image/jpg"), encodedFile))
-                .build();
-        Buffer buf = new Buffer();
-        try {
-            rb.writeTo(buf);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return buf.readByteArray();
     }
 }
