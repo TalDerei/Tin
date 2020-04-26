@@ -344,7 +344,7 @@ public class Database {
         try {
             // 1. prepared statements associated with tbldata table
             db.mCreateTable = db.mConnection.prepareStatement("CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) NOT NULL, " + "message VARCHAR(500) NOT NULL, " +
-                "user_id INTEGER REFERENCES UserData(id) ON DELETE SET NULL)");
+                "user_id INTEGER REFERENCES UserData(id) ON DELETE SET NULL), isFlagged BOOLEAN DEFAULT false");
             db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData");
             db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
             db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject FROM tblData");
