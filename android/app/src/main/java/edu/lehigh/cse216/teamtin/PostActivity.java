@@ -90,6 +90,7 @@ public class PostActivity extends AppCompatActivity {
             if (requestCode == 791) {
                 String path = data.getStringExtra("image");
                 if(path != null) {
+                    // handle the selected image
                     files.add(path);
                     Log.d("PostActivity", "inserting file name into field");
                     EditText fileList = findViewById(R.id.fileList2);

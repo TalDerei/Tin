@@ -189,6 +189,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Post a file to the backend using a multipart/form-data
+     * @param file file to post
+     */
     public void postJsonFileRequestBackend(String file) {
         RequestQueue queue = Volley.newRequestQueue(this);
         JSONObject pic = new JSONObject();
@@ -242,7 +246,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     *  Post a message with JSONObject
+     *  Post a message with JSONObject with a picture if applicable
      */
     public void postJsonRequestBackend(String result, String[] files) {
         RequestQueue queue = Volley.newRequestQueue(this);
@@ -419,6 +423,7 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == Activity.RESULT_OK) {
             if (requestCode == 789) {
+                //post a message
                 String result = data.getStringExtra("result");
                 String[] files = data.getStringArrayExtra("files");
                 Log.d("onActivityResult", result);
@@ -427,6 +432,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, "Message Posted!", Toast.LENGTH_LONG).show();
                 getRequestBackend();
             } else if (requestCode == 792) {
+                //upload a file
                 String file = data.getStringExtra("file");
                 postJsonFileRequestBackend(file);
             }
@@ -466,6 +472,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Get a file from cache or download it from a server
+     * @param fileId
+     * @return
+     */
     private File getFileForMessage(String fileId) {
         try {
             HttpResponseCache responseCache = HttpResponseCache.getInstalled();

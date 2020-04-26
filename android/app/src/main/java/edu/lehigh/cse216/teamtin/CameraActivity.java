@@ -77,17 +77,7 @@ public class CameraActivity extends AppCompatActivity {
 
             @Override
             public void onClick(View v) {
-                cm.takePicture(new Camera.ShutterCallback() {
-                    @Override
-                    public void onShutter() {
-                        Log.d("Camera", "shutterCallback");
-                    }
-                }, new Camera.PictureCallback() {
-                    @Override
-                    public void onPictureTaken(byte[] data, Camera camera) {
-                        Log.d("Camera", "RawPicture callback");
-                    }
-                }, new Camera.PictureCallback() {
+                cm.takePicture(null, null, new Camera.PictureCallback() {
                     @Override
                     public void onPictureTaken(byte[] data, Camera camera) {
                         Log.d("Camera", "A picture would be saved here");
@@ -126,10 +116,6 @@ public class CameraActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
-        private void refreshGallery(File file) {
-
-        }
-
     private void releaseCameraAndPreview() {
         preview.setCamera(null);
         if (cm != null) {
@@ -160,6 +146,7 @@ public class CameraActivity extends AppCompatActivity {
                 finish();
                 return true;
             case R.id.action_gallery:
+                //Look at the photos
                 i = new Intent(getApplicationContext(), GalleryActivity.class);
                 startActivity(i);
                 return true;

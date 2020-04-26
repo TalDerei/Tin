@@ -61,6 +61,10 @@ public class GalleryActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Gets all of the pictures from a directroy and display it
+     * @param dir Directory to look in
+     */
     private void populateFromGallery(File dir) {
         data.clear();
         Log.d("File", dir.getAbsolutePath());
@@ -71,6 +75,7 @@ public class GalleryActivity extends AppCompatActivity {
 
         final ArrayList<File> directories = new ArrayList<>();
         directories.add(dir);
+        // Get all subdirectories
         for (File f : directories) {
             //Log.d("File search", f.getName());
             // add in sub directories for future iteration
@@ -94,6 +99,7 @@ public class GalleryActivity extends AppCompatActivity {
             }
         }
 
+        // Put all of the pictures into the GridLayout with the PictureListAdapter
         RecyclerView rv = findViewById(R.id.picture_list_view);
         GridLayoutManager glm = new GridLayoutManager(this, 5);
         glm.setUsingSpansToEstimateScrollbarDimensions(true);

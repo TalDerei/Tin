@@ -42,15 +42,6 @@ public class voteActivity extends AppCompatActivity {
         userTextView = findViewById(R.id.messageHeading);
         userTextView.setText(user);
 
-        /*FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });*/
-
         Button bAddFile = findViewById(R.id.fetchFile);
         bAddFile.setOnClickListener(new View.OnClickListener() {
             @Override
