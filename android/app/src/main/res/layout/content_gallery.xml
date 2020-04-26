@@ -5,14 +5,20 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:alpha="100"
+    android:maxHeight="750dp"
+    android:minHeight="50dp"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:context=".GalleryActivity"
+    tools:layout_editor_absoluteY="56dp"
     tools:showIn="@layout/activity_gallery">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/picture_list_view"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="#00FFFFFF" />
+        android:background="#00FFFFFF"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

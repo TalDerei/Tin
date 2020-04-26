@@ -102,7 +102,7 @@ public class GalleryActivity extends AppCompatActivity {
         // Put all of the pictures into the GridLayout with the PictureListAdapter
         RecyclerView rv = findViewById(R.id.picture_list_view);
         GridLayoutManager glm = new GridLayoutManager(this, 5);
-        glm.setUsingSpansToEstimateScrollbarDimensions(true);
+        glm.generateLayoutParams(new GridLayoutManager.LayoutParams(5, 5));
         rv.setLayoutManager(glm);
         PictureListAdapter adapter = new PictureListAdapter(this, data);
         rv.setAdapter(adapter);
