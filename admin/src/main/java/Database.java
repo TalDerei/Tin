@@ -360,20 +360,20 @@ public class Database {
         try { 
             // 1. prepared statements associated with tbldata table
             db.mCreateTable = db.mConnection.prepareStatement("CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) NOT NULL, " + "message VARCHAR(500) NOT NULL, " +
-                "user_id INTEGER REFERENCES UserData(id) ON DELETE SET NULL), isFlagged BOOLEAN DEFAULT false");
+                "user_id INTEGER REFERENCES UserData(id) ON DELETE SET NULL), link VARCHAR(500), flag BOOLEAN DEFAULT false");
             db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData");
             db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
             db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject FROM tblData");
-            db.mDeleteFlagged = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ? AND isFlagged = true");
-            db.mSelectAllFlagged = db.mConnection.prepareStatement("SELECT * FROM tblData WHERE isFlagged = true");
-            db.mSetFlag = db.mConnection.prepareStatement("UPDATE tblData SET isFlagged = ? WHERE id = ?:w");
+            db.mDeleteFlagged = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ? AND flag = true");
+            db.mSelectAllFlagged = db.mConnection.prepareStatement("SELECT * FROM tblData WHERE flag = true");
+            db.mSetFlag = db.mConnection.prepareStatement("UPDATE tblData SET flag = ? WHERE id = ?:w");
             db.mSelectOne = db.mConnection.prepareStatement("SELECT * FROM tblData WHERE id = ?");
             db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?)");
             db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
             /*SUM(likes.likes) AS likes FROM tblData LEFT JOIN likes ON likes.message_id = tblData.id GROUP BY tblData.id*/
 
             // 2. prepared statements associated with user table
-            db.mCreateUsers = db.mConnection.prepareStatement("CREATE TABLE UserData (id SERIAL PRIMARY KEY, email VARCHAR(50) NOT NULL, nickname VARCHAR(50) NOT NULL, biography VARCHAR(50) NOT NULL)");
+            db.mCreateUsers = db.mConnection.prepareStatement("CREATE TABLE UserData (id SERIAL PRIMARY KEY, email VARCHAR(50) NOT NULL, nickname VARCHAR(50) NOT NULL, userID VARCHAR(50) NOT NULL, picture VARCHAR(200) NOT NULL, biography VARCHAR(50) NOT NULL)");
             db.mDropUsers = db.mConnection.prepareStatement("DROP TABLE UserData");
             db.mDeleteUser = db.mConnection.prepareStatement("DELETE FROM UserData WHERE id = ?");
             db.mUpdateUser = db.mConnection.prepareStatement("UPDATE tblData SET user_id = ? WHERE id = ?");
@@ -398,8 +398,8 @@ public class Database {
             db.mDeleteOneByUser = db.mConnection.prepareStatement("DELETE FROM tblData USING UserData WHERE tblData.user_id = UserData.id AND email = ?");
 
             // 5. Google Drive and Files
-            db.mCreateGoogleDriveContent = db.mConnection.prepareStatement("CREATE TABLE files (fileId VARCHAR, messageId INT, fileSize INT, url VARCHAR, " +
-            "PRIMARY KEY(fileId), FOREIGN KEY(messageId) REFERENCES tbldata)");
+            db.mCreateGoogleDriveContent = db.mConnection.prepareStatement("CREATE TABLE files (fileId VARCHAR, messageId INT, mime VARCHAR, url VARCHAR, " +
+            "PRIMARY KEY(fileId), FOREIGN KEY(messageId) REFERENCES tbldata, fname VARCHAR, size BIGINT)");
             db.mDropeGoogleDriveContent = db.mConnection.prepareStatement("DROP TABLE files");
             db.mSelectOneFile = db.mConnection.prepareStatement("SELECT * FROM files WHERE fileId = ?");
             db.mDeleteOneFile = db.mConnection.prepareStatement("DELETE FROM files WHERE fileId = ?");
@@ -526,7 +526,7 @@ public class Database {
             ResultSet rs = mSelectAll.executeQuery();
             while (rs.next()) {
                 res.add(new RowData(rs.getInt("id"), rs.getString("subject"),
-                        null, -1, rs.getBoolean("isFlagged")));
+                        null, -1, rs.getBoolean("flag")));
             }
             rs.close();
             return res;
@@ -542,7 +542,7 @@ public class Database {
             ResultSet rs = mSelectAllFlagged.executeQuery();
             while (rs.next()) {
                 res.add(new RowData(rs.getInt("id"), rs.getString("subject"),
-                        null, -1, rs.getBoolean("isFlagged")));
+                        null, -1, rs.getBoolean("flag")));
             }
             rs.close();
             return res;
@@ -585,7 +585,7 @@ public class Database {
             ResultSet rs = mSelectAllByUser.executeQuery();
             while (rs.next()) {
                 RowData rowData = new RowData(rs.getInt("id"), rs.getString("subject"),
-                        rs.getString("message"), -1, rs.getBoolean("isFlagged"));
+                        rs.getString("message"), -1, rs.getBoolean("flag"));
                 rowData.setEmail(email);
                 rowData.setNickname(rs.getString("nickname"));
                 res.add(rowData);
@@ -612,7 +612,7 @@ public class Database {
             ResultSet rs = mSelectOne.executeQuery();
             if (rs.next()) {
                 res = new RowData(rs.getInt("id"), rs.getString("subject"),
-                        rs.getString("message"), rs.getInt("user_id"), rs.getBoolean("isFlagged"));
+                        rs.getString("message"), rs.getInt("user_id"), rs.getBoolean("flag"));
             }
         } catch (SQLException e) {
             e.printStackTrace();

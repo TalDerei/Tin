@@ -372,6 +372,8 @@ public class App {
                 if (res == -1)
                     continue;
                 System.out.println("  " + res + " row deleted");
+            } else {
+                System.out.println("Unrecognized Command");
             }
         }
         // Always remember to disconnect from the database when the program exits
