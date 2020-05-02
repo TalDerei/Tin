@@ -31,6 +31,18 @@ public class Database {
     */
     private PreparedStatement mSelectAll;
     /**
+    * A prepared statement for getting all of the flagged messages in the database
+    */
+    private PreparedStatement mSelectAllFlagged;
+    /**
+    * A prepared statement for setting a message's flag
+    */
+    private PreparedStatement mSetFlag;
+    /**
+    * A prepared statement for removing a flagged message in the database
+    */
+    private PreparedStatement mDeleteFlagged;
+    /**
     * A prepared statement for getting one row from the database
     */
     private PreparedStatement mSelectOne;
@@ -175,7 +187,7 @@ public class Database {
         /**
         * Construct a RowData object by providing values for its fields
         */
-        public RowData(int id, String subject, String message, int user_id) {
+        public RowData(int id, String subject, String message, int user_id, boolean isFlagged) {
             mId = id;
             mSubject = subject;
             mMessage = message;
@@ -338,16 +350,19 @@ public class Database {
     }
 
     static void setPrepareStatement(Database db) {
-        /**
-         * Attempt to create all of our prepared statements (CRUD OPERATIONS). If any of thes fail, the whole getDatabase() call should fail
+        /** 
+        * Attempt to create all of our prepared statements (CRUD OPERATIONS). If any of thes fail, the whole getDatabase() call should fail
         */
-        try {
+        try { 
             // 1. prepared statements associated with tbldata table
             db.mCreateTable = db.mConnection.prepareStatement("CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) NOT NULL, " + "message VARCHAR(500) NOT NULL, " +
                 "user_id INTEGER REFERENCES UserData(id) ON DELETE SET NULL), isFlagged BOOLEAN DEFAULT false");
             db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData");
             db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
             db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject FROM tblData");
+            db.mDeleteFlagged = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ? AND isFlagged = true");
+            db.mSelectAllFlagged = db.mConnection.prepareStatement("SELECT * FROM tblData WHERE isFlagged = true");
+            db.mSetFlag = db.mConnection.prepareStatement("UPDATE tblData SET isFlagged = ? WHERE id = ?:w");
             db.mSelectOne = db.mConnection.prepareStatement("SELECT * FROM tblData WHERE id = ?");
             db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?)");
             db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
@@ -503,7 +518,23 @@ public class Database {
             ResultSet rs = mSelectAll.executeQuery();
             while (rs.next()) {
                 res.add(new RowData(rs.getInt("id"), rs.getString("subject"),
-                        null, -1));
+                        null, -1, rs.getBoolean("isFlagged")));
+            }
+            rs.close();
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    ArrayList<RowData> selectAllFlaggedMessages() {
+        ArrayList<RowData> res = new ArrayList<RowData>();
+        try {
+            ResultSet rs = mSelectAllFlagged.executeQuery();
+            while (rs.next()) {
+                res.add(new RowData(rs.getInt("id"), rs.getString("subject"),
+                        null, -1, rs.getBoolean("isFlagged")));
             }
             rs.close();
             return res;
@@ -546,7 +577,7 @@ public class Database {
             ResultSet rs = mSelectAllByUser.executeQuery();
             while (rs.next()) {
                 RowData rowData = new RowData(rs.getInt("id"), rs.getString("subject"),
-                        rs.getString("message"), -1);
+                        rs.getString("message"), -1, rs.getBoolean("isFlagged"));
                 rowData.setEmail(email);
                 rowData.setNickname(rs.getString("nickname"));
                 res.add(rowData);
@@ -573,7 +604,7 @@ public class Database {
             ResultSet rs = mSelectOne.executeQuery();
             if (rs.next()) {
                 res = new RowData(rs.getInt("id"), rs.getString("subject"),
-                        rs.getString("message"), rs.getInt("user_id"));
+                        rs.getString("message"), rs.getInt("user_id"), rs.getBoolean("isFlagged"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -616,6 +647,24 @@ public class Database {
         try {
             mDeleteOne.setInt(1, id);
             res = mDeleteOne.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    /**
+     * Delete a flagged message row by ID
+     *
+     * @param id The id of the message row to delete
+     *
+     * @return The number of rows that were deleted. -1 indicates an error. 0 for row not found or not flagged
+     */
+    int deleteFlaggedMessage(int id) {
+        int res = -1;
+        try {
+            mDeleteFlagged.setInt(1, id);
+            res = mDeleteFlagged.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -691,6 +740,26 @@ public class Database {
 
     /**
      * Update the message for a row in the database
+     *
+     * @param id The id of the row to update
+     * @param flag The message flag
+     *
+     * @return The number of rows that were updated.  -1 indicates an error.
+     */
+    int setMessageFlag(int id, boolean flag) {
+        int res = -1;
+        try {
+            mSetFlag.setBoolean(1, flag);
+            mSetFlag.setInt(2, id);
+            res = mSetFlag.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    /**
+     * Update the like for a row in the database
      *
      * @param id The id of the row to update
      * @param likes vote
