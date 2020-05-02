@@ -147,6 +147,10 @@ public class Database {
      */
     private PreparedStatement mDeleteOneFile;
     /**
+     * A prepared statement for creating the blocked users table table
+     */
+    private PreparedStatement mCreateBlockedTable;
+    /**
      * boolean for our database membership test: 
      * if mHasUserData == true, then drop UserData table first before dropping tblData
      */
@@ -402,6 +406,10 @@ public class Database {
 
             // 6. prepared statement to list all tables
             db.mShowTable = db.mConnection.prepareStatement("SELECT * FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema' ");
+
+            // 7. prepared statements for blocking users
+            db.mCreateBlockedTable = 
+                db.mConnection.prepareStatement("CREATE TABLE blockedData(user_id SERIAL PRIMARY KEY, blockedUsers text[])");
  
         /**
          * catch SQL exception, print stack trace, and close database connection if error is thrown
