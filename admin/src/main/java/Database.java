@@ -66,6 +66,7 @@ public class Database {
     * A prepared statement for dropping the table (tbldata) in our database
     */
     private PreparedStatement mDropTable;
+    private PreparedStatement mDropTblCascade;
     /**
      * A prepared statement for listing the table (tbldata) in our database
      */
@@ -78,6 +79,7 @@ public class Database {
      * A prepared statement for dropping the users table (userdata) in our database
      */
     private PreparedStatement mDropUsers;
+    private PreparedStatement mDropUsersCascade;
     /**
      * A prepared statement for insert a new user into userdata
      */
@@ -359,8 +361,8 @@ public class Database {
         */
         try { 
             // 1. prepared statements associated with tbldata table
-            db.mCreateTable = db.mConnection.prepareStatement("CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) NOT NULL, " + "message VARCHAR(500) NOT NULL, " +
-                "user_id INTEGER REFERENCES UserData(id) ON DELETE SET NULL), link VARCHAR(500), flag BOOLEAN DEFAULT false");
+            db.mCreateTable = db.mConnection.prepareStatement("CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) NOT NULL, message VARCHAR(500) NOT NULL, " +
+                "user_id INTEGER REFERENCES UserData(id) ON DELETE SET NULL, link VARCHAR(500), flag BOOLEAN DEFAULT false)");
             db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData");
             db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
             db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject FROM tblData");
@@ -372,12 +374,12 @@ public class Database {
             db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
             /*SUM(likes.likes) AS likes FROM tblData LEFT JOIN likes ON likes.message_id = tblData.id GROUP BY tblData.id*/
 
-            // 2. prepared statements associated with user table
-            db.mCreateUsers = db.mConnection.prepareStatement("CREATE TABLE UserData (id SERIAL PRIMARY KEY, email VARCHAR(50) NOT NULL, nickname VARCHAR(50) NOT NULL, userID VARCHAR(50) NOT NULL, picture VARCHAR(200) NOT NULL, biography VARCHAR(50) NOT NULL)");
+            // 2. prepared statements associated with user table 
+            db.mCreateUsers = db.mConnection.prepareStatement("CREATE TABLE UserData(id SERIAL PRIMARY KEY, email VARCHAR(50) NOT NULL, nickname VARCHAR(50) NOT NULL, userID VARCHAR(50) NOT NULL, picture VARCHAR(200) NOT NULL, biography VARCHAR(50) NOT NULL)");
             db.mDropUsers = db.mConnection.prepareStatement("DROP TABLE UserData");
             db.mDeleteUser = db.mConnection.prepareStatement("DELETE FROM UserData WHERE id = ?");
             db.mUpdateUser = db.mConnection.prepareStatement("UPDATE tblData SET user_id = ? WHERE id = ?");
-            db.mInsertUser = db.mConnection.prepareStatement("INSERT INTO UserData VALUES (default, ?, ?, ?)");
+            db.mInsertUser = db.mConnection.prepareStatement("INSERT INTO UserData(id, email, nickname, userid, picture, biography) VALUES (?, ?, ?, ?, ?, ?)");
             db.mUpdateNickname = db.mConnection.prepareStatement("UPDATE UserData SET nickname = ? WHERE id = ?");
             db.mSelectAllUser = db.mConnection.prepareStatement("SELECT id, email, nickname, biography FROM UserData");
 
@@ -398,8 +400,8 @@ public class Database {
             db.mDeleteOneByUser = db.mConnection.prepareStatement("DELETE FROM tblData USING UserData WHERE tblData.user_id = UserData.id AND email = ?");
 
             // 5. Google Drive and Files
-            db.mCreateGoogleDriveContent = db.mConnection.prepareStatement("CREATE TABLE files (fileId VARCHAR, messageId INT, mime VARCHAR, url VARCHAR, " +
-            "PRIMARY KEY(fileId), FOREIGN KEY(messageId) REFERENCES tbldata, fname VARCHAR, size BIGINT)");
+            db.mCreateGoogleDriveContent = db.mConnection.prepareStatement("CREATE TABLE files (fileId VARCHAR, messageId INT, mime VARCHAR, url VARCHAR, fname VARCHAR, size BIGINT, " +
+            "PRIMARY KEY(fileId), FOREIGN KEY(messageId) REFERENCES tbldata)");
             db.mDropeGoogleDriveContent = db.mConnection.prepareStatement("DROP TABLE files");
             db.mSelectOneFile = db.mConnection.prepareStatement("SELECT * FROM files WHERE fileId = ?");
             db.mDeleteOneFile = db.mConnection.prepareStatement("DELETE FROM files WHERE fileId = ?");
@@ -411,6 +413,8 @@ public class Database {
             db.mCreateBlockedTable = 
                 db.mConnection.prepareStatement("CREATE TABLE blockedData(user_id SERIAL PRIMARY KEY, blockedUsers text[])");
  
+            db.mDropUsersCascade = db.mConnection.prepareStatement("DROP TABLE UserData CASCADE");
+            db.mDropTblCascade = db.mConnection.prepareStatement("DROP TABLE tblData CASCADE");
         /**
          * catch SQL exception, print stack trace, and close database connection if error is thrown
          */
@@ -502,16 +506,20 @@ public class Database {
      *
      * @return The number of rows that were inserted
      */
-    int insertUser(String email, String nickname, String biography) {
+    int insertUser(String id, String email, String nickname, String uid, String picture, String biography) {
         int count = 0;
         try {
-            mInsertUser.setString(1, email);
-            mInsertUser.setString(2, nickname);
-            mInsertUser.setString(3, biography);
+            mInsertUser.setInt(1, Integer.parseInt(id));
+            mInsertUser.setString(2, email);
+            mInsertUser.setString(3, nickname);
+            mInsertUser.setString(4, uid);
+            mInsertUser.setString(5, picture);
+            mInsertUser.setString(6, biography);
             count += mInsertUser.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        System.out.println("nUser: " + count);
         return count;
     }
 
@@ -857,9 +865,21 @@ public class Database {
     /**
      * Remove tblData from the database.  If it does not exist, this will print an error.
      */
-    void dropTable() {
+    void dropTableCascade() {
         try {
             System.out.println("Delete Table...");
+            mDropTblCascade.execute();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Remove tblData from the database and dependents.  If it does not exist, this will print an error.
+     */
+    void dropTable() {
+        try {
+            System.out.println("Delete Table and Dependents...");
             mDropTable.execute();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -873,6 +893,16 @@ public class Database {
         try {
             System.out.println("Delete Users Table...");
             mDropUsers.execute();
+            mHasUserData = false;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    void dropUserCascade() {
+        try {
+            System.out.println("Delete Users Table and Dependencies...");
+            mDropUsersCascade.execute();
             mHasUserData = false;
         } catch (SQLException e) {
             e.printStackTrace();

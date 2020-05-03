@@ -51,6 +51,8 @@ public class App {
         System.out.println("  [3] Query for all flagged messages");
         System.out.println("  [4] delete a flagged message");
         System.out.println("  [5] Set the flag of a message");
+        System.out.println("  [6] Drop userdata table and dependencies");
+        System.out.println("  [7] Drop userdata table and dependencies");
         System.out.println("  [?] Help (this message)");
     }
 
@@ -63,7 +65,7 @@ public class App {
      */
     static char prompt(BufferedReader in) {
         // The valid actions:
-        String actions = "abcdefghijklmnopqrstuvwxyzq?1234";
+        String actions = "abcdefghijklmnopqrstuvwxyzq?1234567";
 
         // We repeat until a valid single-character option is selected
         while (true) {
@@ -258,6 +260,10 @@ public class App {
                 if (res == -1)
                     continue;
                 System.out.println("  " + res + " rows updated");  
+            } else if(action == '6') {
+                db.dropUserCascade();
+            } else if(action == '7') {
+                db.dropTableCascade();
             } else if (action == 'p') {
                 int id = getInt(in, "Enter the row ID");
                 if (id == -1)
@@ -308,11 +314,13 @@ public class App {
                     continue;
                 System.out.println("  " + res + " rows updated");
             } else if (action == 'n') {
+                String id = getString(in, "Enter your uid");
                 String email = getString(in, "Enter the email");
                 String nickname = getString(in, "Enter the nickname");
+                String picture = getString(in, "Enter the picture");
                 String biography = getString(in, "Enter your biography");
                 if (email.equals("") || nickname.equals("")) continue;
-                int res = db.insertUser(email, nickname, biography);
+                int res = db.insertUser(id, email, nickname, id, picture, biography);
                 System.out.println(res + " rows added");
             } else if (action == 'v') {
                 int id = getInt(in, "Enter the row ID :> ");
