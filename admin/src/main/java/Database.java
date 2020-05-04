@@ -152,6 +152,13 @@ public class Database {
      * boolean for our database membership test: 
      * if mHasUserData == true, then drop UserData table first before dropping tblData
      */
+
+     //Prepared statements related to blocking users
+     private PreparedStatement mAddBlockedUser;
+     private PreparedStatement mDeleteBlockedUser;
+     private PreparedStatement mGetBlockedUsers;
+     private PreparedStatement mIsUserBlocked;
+
     private boolean mHasUserData = false;
 
 
@@ -371,11 +378,11 @@ public class Database {
             /*SUM(likes.likes) AS likes FROM tblData LEFT JOIN likes ON likes.message_id = tblData.id GROUP BY tblData.id*/
 
             // 2. prepared statements associated with user table 
-            db.mCreateUsers = db.mConnection.prepareStatement("CREATE TABLE UserData(id SERIAL PRIMARY KEY, email VARCHAR(50) NOT NULL, nickname VARCHAR(50) NOT NULL, userID VARCHAR(50) NOT NULL, picture VARCHAR(200) NOT NULL, biography VARCHAR(50) NOT NULL)");
+            db.mCreateUsers = db.mConnection.prepareStatement("CREATE TABLE UserData(id SERIAL PRIMARY KEY, email VARCHAR(50) NOT NULL, nickname VARCHAR(50) NOT NULL, userID VARCHAR(50) NOT NULL, picture VARCHAR(200) NOT NULL, biography VARCHAR(50) NOT NULL, blockedUsers integer[])");
             db.mDropUsers = db.mConnection.prepareStatement("DROP TABLE UserData");
             db.mDeleteUser = db.mConnection.prepareStatement("DELETE FROM UserData WHERE id = ?");
             db.mUpdateUser = db.mConnection.prepareStatement("UPDATE tblData SET user_id = ? WHERE id = ?");
-            db.mInsertUser = db.mConnection.prepareStatement("INSERT INTO UserData(id, email, nickname, userid, picture, biography) VALUES (?, ?, ?, ?, ?, ?)");
+            db.mInsertUser = db.mConnection.prepareStatement("INSERT INTO UserData(id, email, nickname, userid, picture, biography, blockedUsers) VALUES (?, ?, ?, ?, ?, ?, ?)");
             db.mUpdateNickname = db.mConnection.prepareStatement("UPDATE UserData SET nickname = ? WHERE id = ?");
             db.mSelectAllUser = db.mConnection.prepareStatement("SELECT id, email, nickname, biography FROM UserData");
 
@@ -406,7 +413,11 @@ public class Database {
             db.mShowTable = db.mConnection.prepareStatement("SELECT * FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema' ");
 
             // 7. prepared statements for blocking users
-           /* db.mCreateBlockedTable = 
+            db.mAddBlockedUser = db.mConnection.prepareStatement("UPDATE UserData SET blockedUsers = array_append(blockedUser, ?) WHERE id = ?");
+            db.mGetBlockedUsers = db.mConnection.prepareStatement("SELECT blockedUsers FROM UserData WHERE id = ?");
+            db.mDeleteBlockedUser = db.mConnection.prepareStatement("Update UserData SET blockedUsers = array_remove(blockedUsers, ?)");
+            db.mIsUserBlocked = db.mConnection.prepareStatement("SELECT * FROM UserData WHERE id = ? AND ? = ANY(blockedUser)");
+            /* db.mCreateBlockedTable = 
                 db.mConnection.prepareStatement("CREATE TABLE blockedData(user_id SERIAL PRIMARY KEY, blockedUsers text[])");
             */
 
