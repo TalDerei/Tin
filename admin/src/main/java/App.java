@@ -1,9 +1,5 @@
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.Map; //java.util.Map interface represents a mapping between a key and a value
 import java.util.ArrayList;
 
 import java.util.Properties;
@@ -52,7 +48,7 @@ public class App {
         System.out.println("  [4] delete a flagged message");
         System.out.println("  [5] Set the flag of a message");
         System.out.println("  [6] Drop userdata table and dependencies");
-        System.out.println("  [7] Drop userdata table and dependencies");
+        System.out.println("  [7] Drop tblData table and dependencies");
         System.out.println("  [?] Help (this message)");
     }
 
@@ -188,6 +184,10 @@ public class App {
                 db.dropLikes();
             } else if (action == 'z') {
                 db.dropFiles();
+            } else if(action == '6') {
+                db.dropUserCascade();
+            } else if(action == '7') {
+                db.dropTableCascade();
             } else if (action == 'g') {
                 ArrayList<Database.Table> table = db.showTable();
                 if (table == null)
@@ -260,10 +260,6 @@ public class App {
                 if (res == -1)
                     continue;
                 System.out.println("  " + res + " rows updated");  
-            } else if(action == '6') {
-                db.dropUserCascade();
-            } else if(action == '7') {
-                db.dropTableCascade();
             } else if (action == 'p') {
                 int id = getInt(in, "Enter the row ID");
                 if (id == -1)

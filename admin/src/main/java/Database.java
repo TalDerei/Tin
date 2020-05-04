@@ -149,10 +149,6 @@ public class Database {
      */
     private PreparedStatement mDeleteOneFile;
     /**
-     * A prepared statement for creating the blocked users table table
-     */
-    private PreparedStatement mCreateBlockedTable;
-    /**
      * boolean for our database membership test: 
      * if mHasUserData == true, then drop UserData table first before dropping tblData
      */
@@ -410,9 +406,11 @@ public class Database {
             db.mShowTable = db.mConnection.prepareStatement("SELECT * FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema' ");
 
             // 7. prepared statements for blocking users
-            db.mCreateBlockedTable = 
+           /* db.mCreateBlockedTable = 
                 db.mConnection.prepareStatement("CREATE TABLE blockedData(user_id SERIAL PRIMARY KEY, blockedUsers text[])");
- 
+            */
+
+            // 8.
             db.mDropUsersCascade = db.mConnection.prepareStatement("DROP TABLE UserData CASCADE");
             db.mDropTblCascade = db.mConnection.prepareStatement("DROP TABLE tblData CASCADE");
         /**
@@ -425,6 +423,11 @@ public class Database {
         }
     }
 
+    /**
+     * Return the total number of likes a message has
+     * @param message The message
+     * @return The number of likes for the given message
+     */
     int getLikeTotal(int message) {
         try {
         mLikesNuetral.setInt(1, message);
@@ -484,6 +487,12 @@ public class Database {
         return count;
     }
 
+    /**
+     * Insert a like made by a user for a message
+     * @param userID The user who liked the message
+     * @param messageID The message the user liked
+     * @return rows updated
+     */
     int insertOneLike(int userID, int messageID) {
         int count = 0;
         int likes = 0; // like vote start with 0;
@@ -543,7 +552,11 @@ public class Database {
             return null;
         }
     }
-
+    /**
+     * Query the database for all flagged messages
+     * 
+     * @return All flagged messages as an Arraylist
+     */
     ArrayList<RowData> selectAllFlaggedMessages() {
         ArrayList<RowData> res = new ArrayList<RowData>();
         try {
@@ -656,7 +669,7 @@ public class Database {
      *
      * @param id The id of the row to delete
      *
-     * @return The number of rows that were deleted.  -1 indicates an error.
+     * @return The number of rows that were deleted. -1 indicates an error.
      */
     int deleteRow(int id) {
         int res = -1;
@@ -692,7 +705,7 @@ public class Database {
      *
      * @param id The id of the row to delete
      *
-     * @return The number of rows that were deleted.  -1 indicates an error.
+     * @return The number of rows that were deleted. -1 indicates an error.
      */
     int deleteUser(int id) {
         int res = -1;
@@ -704,6 +717,12 @@ public class Database {
         }
         return res;
     }
+
+    /**
+     * Delete a like from a message with the id 'id'
+     * @param id the row id
+     * @return The number of rows that were deleted. -1 indicates an error.
+     */
 
     int deleteLike(int id) {
         int res = -1;
@@ -760,7 +779,7 @@ public class Database {
      * @param id The id of the row to update
      * @param flag The message flag
      *
-     * @return The number of rows that were updated.  -1 indicates an error.
+     * @return The number of rows that were updated. -1 indicates an error.
      */
     int setMessageFlag(int id, boolean flag) {
         int res = -1;
@@ -793,9 +812,6 @@ public class Database {
         }
         return res;
     }
-
-
-
 
     /**
      * Update the message for a row in the database
@@ -899,6 +915,9 @@ public class Database {
         }
     }
 
+    /**
+     * Remove UserData from the database and anything that depends on it. If it does not exist, this will print an error.
+     */
     void dropUserCascade() {
         try {
             System.out.println("Delete Users Table and Dependencies...");
@@ -961,6 +980,11 @@ public class Database {
         }
     }
 
+    /**
+     * Get a file from GoogleDrive using the fileId
+     * @param fileId
+     * @return File info compiled into a class
+     */
     GoogleDriveContent selectOneFile(int fileId) {
         GoogleDriveContent res = null;
         try {
@@ -976,6 +1000,11 @@ public class Database {
             return res;
     }
 
+    /**
+     * Delete a file from GoogleDrive using the fileId
+     * @param fileId
+     * @return number of files deleted
+     */
     int deleteFile(int fileId) {
         int res = - 1;
         try {
