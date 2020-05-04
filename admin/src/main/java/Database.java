@@ -415,8 +415,8 @@ public class Database {
             // 7. prepared statements for blocking users
             db.mAddBlockedUser = db.mConnection.prepareStatement("UPDATE UserData SET blockedUsers = array_append(blockedUser, ?) WHERE id = ?");
             db.mGetBlockedUsers = db.mConnection.prepareStatement("SELECT blockedUsers FROM UserData WHERE id = ?");
-            db.mDeleteBlockedUser = db.mConnection.prepareStatement("Update UserData SET blockedUsers = array_remove(blockedUsers, ?)");
-            db.mIsUserBlocked = db.mConnection.prepareStatement("SELECT * FROM UserData WHERE id = ? AND ? = ANY(blockedUser)");
+            db.mDeleteBlockedUser = db.mConnection.prepareStatement("Update UserData SET blockedUsers = array_remove(blockedUsers, ?) WHERE id = ?");
+            //db.mIsUserBlocked = db.mConnection.prepareStatement("SELECT * FROM UserData WHERE id = ? AND ? = ANY(blockedUser)");
             /* db.mCreateBlockedTable = 
                 db.mConnection.prepareStatement("CREATE TABLE blockedData(user_id SERIAL PRIMARY KEY, blockedUsers text[])");
             */
@@ -1021,6 +1021,55 @@ public class Database {
         try {
             mDeleteOneFile.setInt(1, fileId);
             res = mDeleteOneFile.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    //Blocked User Functions
+
+    int addBlockedUser(int uid, int blockedUser) {
+        int res = -1;
+        try {
+            mAddBlockedUser.setInt(1, blockedUser);
+            mAddBlockedUser.setInt(2, uid);
+            res = mAddBlockedUser.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    ArrayList<Integer> mGetBlockedUsers(int uid) {
+        ArrayList<Integer> res = new ArrayList<>();
+        try {
+            mGetBlockedUsers.setInt(1, uid);
+            ResultSet rs = mGetBlockedUsers.executeQuery();
+            while (rs.next()) {
+                String str = rs.getString("blockedUsers");
+                String[] starry = str.substring(1, str.length() -2).split(",");
+                for(int i = 0; i < starry.length; i++) {
+                    res.add(Integer.parseInt(starry[i].strip()));
+                }
+            }
+            rs.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    boolean isUserBlocked(int uid, int blockedUser) {
+        return mGetBlockedUsers(uid).contains(blockedUser);
+    }
+
+    int unblockUser(int uid, int blockedUser) {
+        int res = -1;
+        try {
+            mDeleteBlockedUser.setInt(1, blockedUser);
+            mDeleteBlockedUser.setInt(1, uid);
+            res = mDeleteBlockedUser.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
