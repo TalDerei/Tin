@@ -409,7 +409,7 @@ public class Database {
 
             // 5. Google Drive and Files
             db.mCreateGoogleDriveContent = db.mConnection.prepareStatement("CREATE TABLE files (fileId VARCHAR, messageId INT, mime VARCHAR, url VARCHAR, fname VARCHAR, size BIGINT, " +
-            "PRIMARY KEY(fileId), FOREIGN KEY(messageId) REFERENCES tbldata)");
+            "PRIMARY KEY(fileId), FOREIGN KEY(messageId) REFERENCES tbldata ON DELETE CASCADE)");
             db.mDropeGoogleDriveContent = db.mConnection.prepareStatement("DROP TABLE files CASCADE");
             db.mSelectOneFile = db.mConnection.prepareStatement("SELECT * FROM files WHERE fileId = ?");
             db.mDeleteOneFile = db.mConnection.prepareStatement("DELETE FROM files WHERE fileId = ?");
