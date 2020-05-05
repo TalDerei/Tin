@@ -12,9 +12,7 @@ Admin controls the Postgres database hosted on Heroku for persisting user data. 
 - [c] Create likes table
 - [d] Drop likes table
 - [e] Drop tbldata table
-- [7] Drop tblData table and dependencies
 - [f] Drop userdata table
-- [6] Drop userdata table and dependencies
 - [g] Query for all tables
 
 - * table creation and deletion order matters: 
