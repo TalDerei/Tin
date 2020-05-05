@@ -130,14 +130,14 @@ public class AppTest extends TestCase {
         /**
          * test for Dropping RowData table in Database
          */
-        db.dropTableCascade();
+        db.dropTable();
         table = db.showTable();
         assertTrue(table.size() == 1);
 
         /**
          * test for Dropping User table in Database
          */
-        db.dropUserCascade();
+        db.dropUser();
         table = db.showTable();
         assertTrue(table.size() == 0);
 

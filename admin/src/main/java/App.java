@@ -47,8 +47,8 @@ public class App {
         System.out.println("  [3] Query for all flagged messages");
         System.out.println("  [4] delete a flagged message");
         System.out.println("  [5] Set the flag of a message");
-        System.out.println("  [6] Drop userdata table and dependencies");
-        System.out.println("  [7] Drop tblData table and dependencies");
+        System.out.println("  [6] ");
+        System.out.println("  [7] ");
         System.out.println("  [?] Help (this message)");
     }
 
@@ -185,9 +185,9 @@ public class App {
             } else if (action == 'z') {
                 db.dropFiles();
             } else if(action == '6') {
-                db.dropUserCascade();
+                
             } else if(action == '7') {
-                db.dropTableCascade();
+                
             } else if (action == 'g') {
                 ArrayList<Database.Table> table = db.showTable();
                 if (table == null)
