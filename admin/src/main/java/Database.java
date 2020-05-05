@@ -365,7 +365,7 @@ public class Database {
             db.mCreateTable = db.mConnection.prepareStatement("CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) NOT NULL, message VARCHAR(500) NOT NULL, " +
                 "user_id INTEGER REFERENCES UserData(id) ON DELETE SET NULL, link VARCHAR(500), flag BOOLEAN DEFAULT false)");
             db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData CASCADE");
-            db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
+            db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData USING files WHERE tblData.id = ? AND files.messageId");
             db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject FROM tblData");
             db.mDeleteFlagged = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ? AND flag = true");
             db.mSelectAllFlagged = db.mConnection.prepareStatement("SELECT * FROM tblData WHERE flag = true");
@@ -403,7 +403,7 @@ public class Database {
             // 5. Google Drive and Files
             db.mCreateGoogleDriveContent = db.mConnection.prepareStatement("CREATE TABLE files (fileId VARCHAR, messageId INT, mime VARCHAR, url VARCHAR, fname VARCHAR, size BIGINT, " +
             "PRIMARY KEY(fileId), FOREIGN KEY(messageId) REFERENCES tbldata)");
-            db.mDropeGoogleDriveContent = db.mConnection.prepareStatement("DROP TABLE files");
+            db.mDropeGoogleDriveContent = db.mConnection.prepareStatement("DROP TABLE files CASCADE");
             db.mSelectOneFile = db.mConnection.prepareStatement("SELECT * FROM files WHERE fileId = ?");
             db.mDeleteOneFile = db.mConnection.prepareStatement("DELETE FROM files WHERE fileId = ?");
 
