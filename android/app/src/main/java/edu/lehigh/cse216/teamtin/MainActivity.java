@@ -247,7 +247,7 @@ public class MainActivity extends AppCompatActivity {
      *  Post a message with JSONObject
      */
     public void postJsonRequestBackend(String result, String[] files) {
-        String[] censored = {"frick", "heck", "satan"}; // censored words
+        String[] censored = {"frick", "heck", "satan", "haxor", "broseph", "crap"}; // censored words
         Set<String> messageSet = new HashSet<String>(Arrays.asList(result.split(" ")));// convert words array to a hashSet
         RequestQueue queue = Volley.newRequestQueue(this);
         JSONObject object = new JSONObject();
