@@ -1,9 +1,5 @@
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.Map; //java.util.Map interface represents a mapping between a key and a value
 import java.util.ArrayList;
 
 import java.util.Properties;
@@ -47,7 +43,10 @@ public class App {
         System.out.println("  [z] drop google files table");
         System.out.println("  [q] Quit Program");
         System.out.println("  [1] Query for row in files table by fileId");
-        System.out.println("  [1] delete file in files table by fileId");
+        System.out.println("  [2] delete file in files table by fileId");
+        System.out.println("  [3] Query for all flagged messages");
+        System.out.println("  [4] delete a flagged message");
+        System.out.println("  [5] Set the flag of a message");
         System.out.println("  [?] Help (this message)");
     }
 
@@ -60,7 +59,7 @@ public class App {
      */
     static char prompt(BufferedReader in) {
         // The valid actions:
-        String actions = "abcdefghijklmnopqrstuvwxyzq?12";
+        String actions = "abcdefghijklmnopqrstuvwxyzq?12345";
 
         // We repeat until a valid single-character option is selected
         while (true) {
@@ -122,6 +121,17 @@ public class App {
         return i;
     }
 
+    static boolean getBoolean(BufferedReader in, String message) {
+        boolean flag = false;
+        try {
+            System.out.print(message + " :> ");
+            flag = Boolean.parseBoolean(in.readLine());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return flag;
+    }
+
     /**
      * The main routine runs a loop that gets a request from the user and
      * processes it
@@ -172,6 +182,10 @@ public class App {
                 db.dropLikes();
             } else if (action == 'z') {
                 db.dropFiles();
+            } else if(action == '6') {
+                
+            } else if(action == '7') {
+                
             } else if (action == 'g') {
                 ArrayList<Database.Table> table = db.showTable();
                 if (table == null)
@@ -215,6 +229,35 @@ public class App {
                 for (Database.RowData rd : res) {
                     System.out.println("  [" + rd.mId + "] " + rd.mSubject);
                 }
+            } else if(action == '3') {
+                ArrayList<Database.RowData> res = db.selectAllFlaggedMessages();
+                if (res == null)
+                    continue;
+                System.out.println("     Flagged Messages     ");
+                System.out.println(" -------------------------");
+                for (Database.RowData rd : res) {
+                    System.out.println("  [" + rd.mId + "] " + rd.mSubject);
+                }
+            } else if(action == '4') {
+                int id = getInt(in, "Enter the row ID");
+                if (id == -1)
+                    continue;
+                int res = db.deleteFlaggedMessage(id);
+                if (res == -1) {
+                    continue;
+                } else if(res == 0) {
+                    System.out.println(" " + id + " was not flagged");
+                }
+                System.out.println("  " + res + " rows deleted");
+            } else if(action == '5') {
+                int id = getInt(in, "Enter the row ID");
+                if (id == -1)
+                    continue;
+                boolean newFlag = getBoolean(in, "Set message flag");
+                int res = db.setMessageFlag(id, newFlag);
+                if (res == -1)
+                    continue;
+                System.out.println("  " + res + " rows updated");  
             } else if (action == 'p') {
                 int id = getInt(in, "Enter the row ID");
                 if (id == -1)
@@ -265,11 +308,13 @@ public class App {
                     continue;
                 System.out.println("  " + res + " rows updated");
             } else if (action == 'n') {
+                String id = getString(in, "Enter your uid");
                 String email = getString(in, "Enter the email");
                 String nickname = getString(in, "Enter the nickname");
+                String picture = getString(in, "Enter the picture");
                 String biography = getString(in, "Enter your biography");
                 if (email.equals("") || nickname.equals("")) continue;
-                int res = db.insertUser(email, nickname, biography);
+                int res = db.insertUser(id, email, nickname, id, picture, biography);
                 System.out.println(res + " rows added");
             } else if (action == 'v') {
                 int id = getInt(in, "Enter the row ID :> ");
@@ -329,6 +374,8 @@ public class App {
                 if (res == -1)
                     continue;
                 System.out.println("  " + res + " row deleted");
+            } else {
+                System.out.println("Unrecognized Command");
             }
         }
         // Always remember to disconnect from the database when the program exits

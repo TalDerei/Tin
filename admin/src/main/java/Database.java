@@ -31,6 +31,18 @@ public class Database {
     */
     private PreparedStatement mSelectAll;
     /**
+    * A prepared statement for getting all of the flagged messages in the database
+    */
+    private PreparedStatement mSelectAllFlagged;
+    /**
+    * A prepared statement for setting a message's flag
+    */
+    private PreparedStatement mSetFlag;
+    /**
+    * A prepared statement for removing a flagged message in the database
+    */
+    private PreparedStatement mDeleteFlagged;
+    /**
     * A prepared statement for getting one row from the database
     */
     private PreparedStatement mSelectOne;
@@ -138,6 +150,13 @@ public class Database {
      * boolean for our database membership test: 
      * if mHasUserData == true, then drop UserData table first before dropping tblData
      */
+
+     //Prepared statements related to blocking users
+     private PreparedStatement mAddBlockedUser;
+     private PreparedStatement mDeleteBlockedUser;
+     private PreparedStatement mGetBlockedUsers;
+     private PreparedStatement mIsUserBlocked;
+
     private boolean mHasUserData = false;
 
 
@@ -165,6 +184,8 @@ public class Database {
         String mEmail;
         String mNickname;
 
+        boolean isFlagged;
+
         public void setEmail(String email) {
             mEmail = email;
         }
@@ -175,11 +196,12 @@ public class Database {
         /**
         * Construct a RowData object by providing values for its fields
         */
-        public RowData(int id, String subject, String message, int user_id) {
+        public RowData(int id, String subject, String message, int user_id, boolean isFlagged) {
             mId = id;
             mSubject = subject;
             mMessage = message;
             mUserId = user_id;
+            this.isFlagged = isFlagged;
         }
     }
 
@@ -338,27 +360,34 @@ public class Database {
     }
 
     static void setPrepareStatement(Database db) {
-        /**
-         * Attempt to create all of our prepared statements (CRUD OPERATIONS). If any of thes fail, the whole getDatabase() call should fail
+        /** 
+        * Attempt to create all of our prepared statements (CRUD OPERATIONS). If any of thes fail, the whole getDatabase() call should fail
         */
-        try {
+        try { 
             // 1. prepared statements associated with tbldata table
-            db.mCreateTable = db.mConnection.prepareStatement("CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) NOT NULL, " + "message VARCHAR(500) NOT NULL, " +
-                "user_id INTEGER REFERENCES UserData(id) ON DELETE SET NULL)");
-            db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData");
-            db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
-            db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject FROM tblData");
+            db.mCreateTable = db.mConnection.prepareStatement("CREATE TABLE tblData (id SERIAL PRIMARY KEY, subject VARCHAR(50) NOT NULL, message VARCHAR(500) NOT NULL, " +
+                "user_id INTEGER REFERENCES UserData(id) ON DELETE SET NULL, link VARCHAR(500), flag BOOLEAN DEFAULT false)");
+            db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData CASCADE");
+            db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData USING files WHERE tblData.id = ? AND files.messageId");
+            db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject, flag FROM tblData");
+            db.mDeleteFlagged = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ? AND flag = true");
+            db.mSelectAllFlagged = db.mConnection.prepareStatement("SELECT * FROM tblData WHERE flag = true");
+            db.mSetFlag = db.mConnection.prepareStatement("UPDATE tblData SET flag = ? WHERE id = ?");
             db.mSelectOne = db.mConnection.prepareStatement("SELECT * FROM tblData WHERE id = ?");
             db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?)");
             db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
             /*SUM(likes.likes) AS likes FROM tblData LEFT JOIN likes ON likes.message_id = tblData.id GROUP BY tblData.id*/
 
-            // 2. prepared statements associated with user table
-            db.mCreateUsers = db.mConnection.prepareStatement("CREATE TABLE UserData (id SERIAL PRIMARY KEY, email VARCHAR(50) NOT NULL, nickname VARCHAR(50) NOT NULL, biography VARCHAR(50) NOT NULL)");
-            db.mDropUsers = db.mConnection.prepareStatement("DROP TABLE UserData");
+            // 2. prepared statements associated with user table 
+            //blocked users
+            //db.mCreateUsers = db.mConnection.prepareStatement("CREATE TABLE UserData(id SERIAL PRIMARY KEY, email VARCHAR(50) NOT NULL, nickname VARCHAR(50) NOT NULL, userID VARCHAR(50) NOT NULL, picture VARCHAR(200) NOT NULL, biography VARCHAR(50) NOT NULL, blockedUsers integer[])");
+            
+            //no blocked users
+            db.mCreateUsers = db.mConnection.prepareStatement("CREATE TABLE UserData(id SERIAL PRIMARY KEY, email VARCHAR(50) NOT NULL, nickname VARCHAR(50) NOT NULL, userID VARCHAR(50) NOT NULL, picture VARCHAR(200) NOT NULL, biography VARCHAR(50) NOT NULL");
+            db.mDropUsers = db.mConnection.prepareStatement("DROP TABLE UserData CASCADE");
             db.mDeleteUser = db.mConnection.prepareStatement("DELETE FROM UserData WHERE id = ?");
             db.mUpdateUser = db.mConnection.prepareStatement("UPDATE tblData SET user_id = ? WHERE id = ?");
-            db.mInsertUser = db.mConnection.prepareStatement("INSERT INTO UserData VALUES (default, ?, ?, ?)");
+            db.mInsertUser = db.mConnection.prepareStatement("INSERT INTO UserData(id, email, nickname, userid, picture, biography, blockedUsers) VALUES (?, ?, ?, ?, ?, ?, ?)");
             db.mUpdateNickname = db.mConnection.prepareStatement("UPDATE UserData SET nickname = ? WHERE id = ?");
             db.mSelectAllUser = db.mConnection.prepareStatement("SELECT id, email, nickname, biography FROM UserData");
 
@@ -379,15 +408,23 @@ public class Database {
             db.mDeleteOneByUser = db.mConnection.prepareStatement("DELETE FROM tblData USING UserData WHERE tblData.user_id = UserData.id AND email = ?");
 
             // 5. Google Drive and Files
-            db.mCreateGoogleDriveContent = db.mConnection.prepareStatement("CREATE TABLE files (fileId VARCHAR, messageId INT, fileSize INT, url VARCHAR, " +
-            "PRIMARY KEY(fileId), FOREIGN KEY(messageId) REFERENCES tbldata)");
-            db.mDropeGoogleDriveContent = db.mConnection.prepareStatement("DROP TABLE files");
+            db.mCreateGoogleDriveContent = db.mConnection.prepareStatement("CREATE TABLE files (fileId VARCHAR, messageId INT, mime VARCHAR, url VARCHAR, fname VARCHAR, size BIGINT, " +
+            "PRIMARY KEY(fileId), FOREIGN KEY(messageId) REFERENCES tbldata ON DELETE CASCADE)");
+            db.mDropeGoogleDriveContent = db.mConnection.prepareStatement("DROP TABLE files CASCADE");
             db.mSelectOneFile = db.mConnection.prepareStatement("SELECT * FROM files WHERE fileId = ?");
             db.mDeleteOneFile = db.mConnection.prepareStatement("DELETE FROM files WHERE fileId = ?");
 
             // 6. prepared statement to list all tables
             db.mShowTable = db.mConnection.prepareStatement("SELECT * FROM pg_catalog.pg_tables WHERE schemaname != 'pg_catalog' AND schemaname != 'information_schema' ");
- 
+
+            // 7. prepared statements for blocking users
+            db.mAddBlockedUser = db.mConnection.prepareStatement("UPDATE UserData SET blockedUsers = array_append(blockedUser, ?) WHERE id = ?");
+            db.mGetBlockedUsers = db.mConnection.prepareStatement("SELECT blockedUsers FROM UserData WHERE id = ?");
+            db.mDeleteBlockedUser = db.mConnection.prepareStatement("Update UserData SET blockedUsers = array_remove(blockedUsers, ?) WHERE id = ?");
+            //db.mIsUserBlocked = db.mConnection.prepareStatement("SELECT * FROM UserData WHERE id = ? AND ? = ANY(blockedUser)");
+            /* db.mCreateBlockedTable = 
+                db.mConnection.prepareStatement("CREATE TABLE blockedData(user_id SERIAL PRIMARY KEY, blockedUsers text[])");
+            */
         /**
          * catch SQL exception, print stack trace, and close database connection if error is thrown
          */
@@ -398,6 +435,11 @@ public class Database {
         }
     }
 
+    /**
+     * Return the total number of likes a message has
+     * @param message The message
+     * @return The number of likes for the given message
+     */
     int getLikeTotal(int message) {
         try {
         mLikesNuetral.setInt(1, message);
@@ -457,6 +499,12 @@ public class Database {
         return count;
     }
 
+    /**
+     * Insert a like made by a user for a message
+     * @param userID The user who liked the message
+     * @param messageID The message the user liked
+     * @return rows updated
+     */
     int insertOneLike(int userID, int messageID) {
         int count = 0;
         int likes = 0; // like vote start with 0;
@@ -479,16 +527,20 @@ public class Database {
      *
      * @return The number of rows that were inserted
      */
-    int insertUser(String email, String nickname, String biography) {
+    int insertUser(String id, String email, String nickname, String uid, String picture, String biography) {
         int count = 0;
         try {
-            mInsertUser.setString(1, email);
-            mInsertUser.setString(2, nickname);
-            mInsertUser.setString(3, biography);
+            mInsertUser.setInt(1, Integer.parseInt(id));
+            mInsertUser.setString(2, email);
+            mInsertUser.setString(3, nickname);
+            mInsertUser.setString(4, uid);
+            mInsertUser.setString(5, picture);
+            mInsertUser.setString(6, biography);
             count += mInsertUser.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        System.out.println("nUser: " + count);
         return count;
     }
 
@@ -503,7 +555,27 @@ public class Database {
             ResultSet rs = mSelectAll.executeQuery();
             while (rs.next()) {
                 res.add(new RowData(rs.getInt("id"), rs.getString("subject"),
-                        null, -1));
+                        null, -1, rs.getBoolean("flag")));
+            }
+            rs.close();
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    /**
+     * Query the database for all flagged messages
+     * 
+     * @return All flagged messages as an Arraylist
+     */
+    ArrayList<RowData> selectAllFlaggedMessages() {
+        ArrayList<RowData> res = new ArrayList<RowData>();
+        try {
+            ResultSet rs = mSelectAllFlagged.executeQuery();
+            while (rs.next()) {
+                res.add(new RowData(rs.getInt("id"), rs.getString("subject"),
+                        null, -1, rs.getBoolean("flag")));
             }
             rs.close();
             return res;
@@ -546,7 +618,7 @@ public class Database {
             ResultSet rs = mSelectAllByUser.executeQuery();
             while (rs.next()) {
                 RowData rowData = new RowData(rs.getInt("id"), rs.getString("subject"),
-                        rs.getString("message"), -1);
+                        rs.getString("message"), -1, rs.getBoolean("flag"));
                 rowData.setEmail(email);
                 rowData.setNickname(rs.getString("nickname"));
                 res.add(rowData);
@@ -573,7 +645,7 @@ public class Database {
             ResultSet rs = mSelectOne.executeQuery();
             if (rs.next()) {
                 res = new RowData(rs.getInt("id"), rs.getString("subject"),
-                        rs.getString("message"), rs.getInt("user_id"));
+                        rs.getString("message"), rs.getInt("user_id"), rs.getBoolean("flag"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -609,7 +681,7 @@ public class Database {
      *
      * @param id The id of the row to delete
      *
-     * @return The number of rows that were deleted.  -1 indicates an error.
+     * @return The number of rows that were deleted. -1 indicates an error.
      */
     int deleteRow(int id) {
         int res = -1;
@@ -623,11 +695,29 @@ public class Database {
     }
 
     /**
+     * Delete a flagged message row by ID
+     *
+     * @param id The id of the message row to delete
+     *
+     * @return The number of rows that were deleted. -1 indicates an error. 0 for row not found or not flagged
+     */
+    int deleteFlaggedMessage(int id) {
+        int res = -1;
+        try {
+            mDeleteFlagged.setInt(1, id);
+            res = mDeleteFlagged.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    /**
      * Delete a row by ID
      *
      * @param id The id of the row to delete
      *
-     * @return The number of rows that were deleted.  -1 indicates an error.
+     * @return The number of rows that were deleted. -1 indicates an error.
      */
     int deleteUser(int id) {
         int res = -1;
@@ -639,6 +729,12 @@ public class Database {
         }
         return res;
     }
+
+    /**
+     * Delete a like from a message with the id 'id'
+     * @param id the row id
+     * @return The number of rows that were deleted. -1 indicates an error.
+     */
 
     int deleteLike(int id) {
         int res = -1;
@@ -693,6 +789,26 @@ public class Database {
      * Update the message for a row in the database
      *
      * @param id The id of the row to update
+     * @param flag The message flag
+     *
+     * @return The number of rows that were updated. -1 indicates an error.
+     */
+    int setMessageFlag(int id, boolean flag) {
+        int res = -1;
+        try {
+            mSetFlag.setBoolean(1, flag);
+            mSetFlag.setInt(2, id);
+            res = mSetFlag.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    /**
+     * Update the like for a row in the database
+     *
+     * @param id The id of the row to update
      * @param likes vote
      *
      * @return The number of rows that were updated.  -1 indicates an error.
@@ -708,9 +824,6 @@ public class Database {
         }
         return res;
     }
-
-
-
 
     /**
      * Update the message for a row in the database
@@ -778,11 +891,11 @@ public class Database {
     }
 
     /**
-     * Remove tblData from the database.  If it does not exist, this will print an error.
+     * Remove tblData from the database and dependents.  If it does not exist, this will print an error.
      */
     void dropTable() {
         try {
-            System.out.println("Delete Table...");
+            System.out.println("Delete Table and Dependents...");
             mDropTable.execute();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -854,6 +967,11 @@ public class Database {
         }
     }
 
+    /**
+     * Get a file from GoogleDrive using the fileId
+     * @param fileId
+     * @return File info compiled into a class
+     */
     GoogleDriveContent selectOneFile(int fileId) {
         GoogleDriveContent res = null;
         try {
@@ -869,11 +987,65 @@ public class Database {
             return res;
     }
 
+    /**
+     * Delete a file from GoogleDrive using the fileId
+     * @param fileId
+     * @return number of files deleted
+     */
     int deleteFile(int fileId) {
         int res = - 1;
         try {
             mDeleteOneFile.setInt(1, fileId);
             res = mDeleteOneFile.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    //Blocked User Functions
+
+    int addBlockedUser(int uid, int blockedUser) {
+        int res = -1;
+        try {
+            mAddBlockedUser.setInt(1, blockedUser);
+            mAddBlockedUser.setInt(2, uid);
+            res = mAddBlockedUser.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    ArrayList<Integer> mGetBlockedUsers(int uid) {
+        ArrayList<Integer> res = new ArrayList<>();
+        try {
+            mGetBlockedUsers.setInt(1, uid);
+            ResultSet rs = mGetBlockedUsers.executeQuery();
+            while (rs.next()) {
+                String str = rs.getString("blockedUsers");
+                String[] starry = str.substring(1, str.length() -2).split(",");
+                for(int i = 0; i < starry.length; i++) {
+                    res.add(Integer.parseInt(starry[i].strip()));
+                }
+            }
+            rs.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    boolean isUserBlocked(int uid, int blockedUser) {
+        return mGetBlockedUsers(uid).contains(blockedUser);
+    }
+
+    int unblockUser(int uid, int blockedUser) {
+        int res = -1;
+        try {
+            mDeleteBlockedUser.setInt(1, blockedUser);
+            mDeleteBlockedUser.setInt(1, uid);
+            res = mDeleteBlockedUser.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }

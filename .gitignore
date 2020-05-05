@@ -4,3 +4,4 @@ android/.settings/*
 android/.project
 .gradle
 backend/.settings/*
+.vscode/*

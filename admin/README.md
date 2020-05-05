@@ -12,7 +12,9 @@ Admin controls the Postgres database hosted on Heroku for persisting user data. 
 - [c] Create likes table
 - [d] Drop likes table
 - [e] Drop tbldata table
+- [7] Drop tblData table and dependencies
 - [f] Drop userdata table
+- [6] Drop userdata table and dependencies
 - [g] Query for all tables
 
 - * table creation and deletion order matters: 
@@ -21,9 +23,12 @@ Admin controls the Postgres database hosted on Heroku for persisting user data. 
 ### get, insert, update, delete tblData (message) [id(integer), subject(string), message(string), user_id(foreign key)]
 - [m] Insert a new row into tblData
 - [k] Query for all rows from tblData
+- [3] Query for all flagged messages
 - [j] Query for row from tblData by id
 - [p] Delete a row in tblData
+- [4] delete a flagged message (row)
 - [u] Update a message in tblData
+- [5] Set the flag of a message"
 
 ### get, insert, update, delete userData (user profile) [id(integer), email(string), nickname(string), biography(string)]
 - [h] Query for all Users
