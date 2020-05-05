@@ -47,8 +47,6 @@ public class App {
         System.out.println("  [3] Query for all flagged messages");
         System.out.println("  [4] delete a flagged message");
         System.out.println("  [5] Set the flag of a message");
-        System.out.println("  [6] ");
-        System.out.println("  [7] ");
         System.out.println("  [?] Help (this message)");
     }
 
@@ -61,7 +59,7 @@ public class App {
      */
     static char prompt(BufferedReader in) {
         // The valid actions:
-        String actions = "abcdefghijklmnopqrstuvwxyzq?1234567";
+        String actions = "abcdefghijklmnopqrstuvwxyzq?12345";
 
         // We repeat until a valid single-character option is selected
         while (true) {

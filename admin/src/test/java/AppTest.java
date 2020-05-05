@@ -85,6 +85,14 @@ public class AppTest extends TestCase {
         assertTrue(rowData.mId == 1);
         assertTrue(rowData.mSubject.equals("CSE216"));
         assertTrue(rowData.mMessage.equals("Software Engineering!"));
+        assertTrue(!rowData.isFlagged);
+
+        /**
+         * Test for setting flag
+         */
+        db.setMessageFlag(id, true);
+        rowData = db.selectOne(id);
+        assertTrue(rowData.isFlagged);
 
         /**
          * test for inserting a user into UserData table

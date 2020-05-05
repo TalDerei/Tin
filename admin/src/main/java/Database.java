@@ -184,6 +184,8 @@ public class Database {
         String mEmail;
         String mNickname;
 
+        boolean isFlagged;
+
         public void setEmail(String email) {
             mEmail = email;
         }
@@ -199,6 +201,7 @@ public class Database {
             mSubject = subject;
             mMessage = message;
             mUserId = user_id;
+            this.isFlagged = isFlagged;
         }
     }
 
@@ -366,7 +369,7 @@ public class Database {
                 "user_id INTEGER REFERENCES UserData(id) ON DELETE SET NULL, link VARCHAR(500), flag BOOLEAN DEFAULT false)");
             db.mDropTable = db.mConnection.prepareStatement("DROP TABLE tblData CASCADE");
             db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData USING files WHERE tblData.id = ? AND files.messageId");
-            db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject FROM tblData");
+            db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject, flag FROM tblData");
             db.mDeleteFlagged = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ? AND flag = true");
             db.mSelectAllFlagged = db.mConnection.prepareStatement("SELECT * FROM tblData WHERE flag = true");
             db.mSetFlag = db.mConnection.prepareStatement("UPDATE tblData SET flag = ? WHERE id = ?:w");
@@ -376,7 +379,11 @@ public class Database {
             /*SUM(likes.likes) AS likes FROM tblData LEFT JOIN likes ON likes.message_id = tblData.id GROUP BY tblData.id*/
 
             // 2. prepared statements associated with user table 
-            db.mCreateUsers = db.mConnection.prepareStatement("CREATE TABLE UserData(id SERIAL PRIMARY KEY, email VARCHAR(50) NOT NULL, nickname VARCHAR(50) NOT NULL, userID VARCHAR(50) NOT NULL, picture VARCHAR(200) NOT NULL, biography VARCHAR(50) NOT NULL, blockedUsers integer[])");
+            //blocked users
+            //db.mCreateUsers = db.mConnection.prepareStatement("CREATE TABLE UserData(id SERIAL PRIMARY KEY, email VARCHAR(50) NOT NULL, nickname VARCHAR(50) NOT NULL, userID VARCHAR(50) NOT NULL, picture VARCHAR(200) NOT NULL, biography VARCHAR(50) NOT NULL, blockedUsers integer[])");
+            
+            //no blocked users
+            db.mCreateUsers = db.mConnection.prepareStatement("CREATE TABLE UserData(id SERIAL PRIMARY KEY, email VARCHAR(50) NOT NULL, nickname VARCHAR(50) NOT NULL, userID VARCHAR(50) NOT NULL, picture VARCHAR(200) NOT NULL, biography VARCHAR(50) NOT NULL");
             db.mDropUsers = db.mConnection.prepareStatement("DROP TABLE UserData CASCADE");
             db.mDeleteUser = db.mConnection.prepareStatement("DELETE FROM UserData WHERE id = ?");
             db.mUpdateUser = db.mConnection.prepareStatement("UPDATE tblData SET user_id = ? WHERE id = ?");
