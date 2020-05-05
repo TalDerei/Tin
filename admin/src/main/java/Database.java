@@ -372,7 +372,7 @@ public class Database {
             db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject, flag FROM tblData");
             db.mDeleteFlagged = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ? AND flag = true");
             db.mSelectAllFlagged = db.mConnection.prepareStatement("SELECT * FROM tblData WHERE flag = true");
-            db.mSetFlag = db.mConnection.prepareStatement("UPDATE tblData SET flag = ? WHERE id = ?:w");
+            db.mSetFlag = db.mConnection.prepareStatement("UPDATE tblData SET flag = ? WHERE id = ?");
             db.mSelectOne = db.mConnection.prepareStatement("SELECT * FROM tblData WHERE id = ?");
             db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?)");
             db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");

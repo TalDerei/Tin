@@ -250,10 +250,10 @@ public class App {
                 }
                 System.out.println("  " + res + " rows deleted");
             } else if(action == '5') {
-                int id = getInt(in, "Enter the row ID :> ");
+                int id = getInt(in, "Enter the row ID");
                 if (id == -1)
                     continue;
-                boolean newFlag = getBoolean(in, "Set message flag :> ");
+                boolean newFlag = getBoolean(in, "Set message flag");
                 int res = db.setMessageFlag(id, newFlag);
                 if (res == -1)
                     continue;
