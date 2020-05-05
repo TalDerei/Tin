@@ -27,6 +27,7 @@ const App = () => {
     const email = response.profileObj.email;
     const tokenId = response.tokenId;
     const accessToken = response.accessToken;
+    const googleId = response.googleId;
     setUserName(user); // set the user name
     setUserEmail(email);
     setIdToken(tokenId);
@@ -68,8 +69,9 @@ const App = () => {
         <div id="login-button">
           <GoogleLogin
             className="googleLoginButton"
-            clientId="372884561524-22jfggk3pefbnanh83o92mqqlmkbvvd9.apps.googleusercontent.com" // localhost
-            // clientId="131496045117-k91913gk3j5li0i9k4ov52vg187j56hu.apps.googleusercontent.com" // for heroku
+            clientId="131496045117-k91913gk3j5li0i9k4ov52vg187j56hu.apps.googleusercontent.com" // temporary
+            // clientId="372884561524-22jfggk3pefbnanh83o92mqqlmkbvvd9.apps.googleusercontent.com" // for localhost
+            // clientId="98587864938-kjbvh78jj6ln49k0j2s8poc8ehng9cqm.apps.googleusercontent.com" // for heroku
             buttonText="Login"
             onSuccess={responseGoogle}
             onFailure={responseGoogle}
@@ -81,6 +83,7 @@ const App = () => {
             signedIn={signedIn}
             userName={userName}
             accessToken={accessToken}
+            idToken={idToken}
           />
         </div>
         <div id="profilePage" >

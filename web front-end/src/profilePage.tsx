@@ -85,7 +85,7 @@ const ProfilePage = (props: any): JSX.Element | null => {
    * @param newBioToPost The message to be posted into the database
    */
   async function updateBio(newBioToPost: string) {
-    const url = 'https://cors-anywhere.herokuapp.com/https://limitless-ocean-62391.herokuapp.com/users/['+props.idToken+']/bio';
+    const url = 'https://cors-anywhere.herokuapp.com/https://limitless-ocean-62391.herokuapp.com/users/['+props.idToken+']/users';
     //const url = 'http://localhost:4567/users/['+props.idToken+']/bio';
     await fetch(url , {
       method: 'POST',

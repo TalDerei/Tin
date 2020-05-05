@@ -114,6 +114,34 @@ const MessagePage = (props: any): JSX.Element | null => {
         });
   }
 
+  async function makeRegistration(messageToPost: string) {
+    await fetch(herokuUrl + `/usrs/login`, {
+      method: 'POST',
+      mode: 'cors',
+      cache: 'no-cache',
+      credentials: 'same-origin', // include, *same-origin, omit
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      redirect: 'follow', // manual, *follow, error
+      referrerPolicy: 'no-referrer', // no-referrer, *client
+      body: JSON.stringify({ // the JSON body to be posted through to the backend
+        mTitle: (props.userName as string).trim(),
+        mMessage: messageToPost,
+        idToken: idToken
+      }) // body data type must match "Content-Type" header
+    })
+        .then((response) => {
+          return response.json();//parse the json from response
+        })
+        .then((myResponse) => {
+          // console.log(myResponse);
+        })
+        .catch((error) => {
+          console.error(error);//log error
+        });
+  }
+
   /**
    * This function makes a 'POST' request to the backend with the name of the user and the posted message as the JSON body passed through
    * @param messageToPost The message to be posted into the database
