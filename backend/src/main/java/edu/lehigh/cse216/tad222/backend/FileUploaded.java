@@ -4,14 +4,18 @@ public class FileUploaded{
 
     private String fileid;
     private int messageid;
-    private long filesize;
+    private String mime;
     private String url;
+    private String fname;
+    private long size;
 
-    public FileUploaded(String fileid, int messageid, long filesize, String url){
+    public FileUploaded(String fileid, int messageid, String mime,  String url, String fname, long size){
         this.fileid = fileid;
         this.messageid = messageid;
-        this.filesize = filesize;
+        this.mime = mime;
         this.url = url;
+        this.fname = fname;
+        this.size = size;
     }
 
     public String getFileid(){
@@ -23,7 +27,7 @@ public class FileUploaded{
     }
 
     public long getFilesize(){
-        return this.filesize;
+        return this.size;
     }
 
     public String getUrl(){

@@ -9,13 +9,19 @@ import com.google.api.client.util.Preconditions;
 
 class Util {
 
-    static final String SITE = "https://limitless-ocean-62391.herokuappp.com";
-    private static final String cid = "http://131496045117-k91913gk3j5li0i9k4ov52vg187j56hu.apps.googleusercontent.com/";
+    //static final String SITE = "https://limitless-ocean-62391.herokuappp.com";
+    static final String SITE = "http://localhost:4567";
+    private static final String cid = "http://372884561524-22jfggk3pefbnanh83o92mqqlmkbvvd9.apps.googleusercontent.com/";
+    private static final String cidAndroid = "http://131496045117-k91913gk3j5li0i9k4ov52vg187j56hu.apps.googleusercontent.com/";
     private static final String cls = "";
     private static GoogleClientSecrets gcSecrets = null;
 
     static String getClientId() {
         return cid;
+    }
+
+    static String getClientIdAndroid() {
+        return cidAndroid;
     }
 
     static String getClientSecret() {

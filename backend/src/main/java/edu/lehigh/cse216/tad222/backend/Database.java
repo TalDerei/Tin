@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
 import java.util.ArrayList;
@@ -55,6 +56,11 @@ public class Database {
     private PreparedStatement mSelectAll;
 
     /**
+     * A prepared statement for getting all data in the database
+     */
+    private PreparedStatement mSelectMessagesByUser;
+
+    /**
      * A prepared statement for getting one row from the database
      */
     private PreparedStatement mSelectOne;
@@ -95,7 +101,9 @@ public class Database {
     private PreparedStatement mUpdateNickname;
     
     private PreparedStatement mSelectOneUser;
-    
+
+    private PreparedStatement mSelectOneUserById;
+
     private PreparedStatement mSelectAllUser;
 
     private PreparedStatement mRemoveLike;
@@ -105,6 +113,8 @@ public class Database {
     private PreparedStatement mInsertOneLike;
 
     private PreparedStatement mGetLikeUser;
+
+    private PreparedStatement mGetLikeMessage;
 
     private PreparedStatement mUpdateOneLike;
 
@@ -116,10 +126,13 @@ public class Database {
 
     private PreparedStatement mSelectAllFiles;
 
+    private PreparedStatement mSelectAllJoin;
+
 
     Set<User> activeUsers;
     MemcachedClient jwtPubKeys;
     MemcachedClient jwtKeys;
+
 
     /**
      * RowData is like a struct in C: we use it to hold data, and we allow direct
@@ -145,14 +158,37 @@ public class Database {
          */
         String mMessage;
 
-        String mUser_id;
-
         int mLikes;
+
+        String mLink;
+        boolean flag;
+
+        /**
+         * primary key to connect UserData table
+         */
+        int mUser_id;
+
+        /**
+         * other attributes of UserData
+         */
+        String username; // specific user name
+        String picture; // user picture url
+        String userID; // user picture url
+
+        /**
+         * Foreign key to connect FileData
+         */
+        String fileId; // primary key in files table
+        /**
+         * other attributes of FileData
+         */
+        String fname; // filename
+        long size; //  filesize
 
         /**
          * Construct a RowData object by providing values for its fields
          */
-        public RowData(int id, String subject, String message, String uid, int likes) {
+        public RowData(int id, String subject, String message, int uid, int likes) {
             mId = id;
             mSubject = subject;
             mMessage = message;
@@ -160,6 +196,7 @@ public class Database {
             this.mLikes = likes;
         }
     }
+
 
     /**
      * The Database constructor is private: we only create Database objects through
@@ -208,11 +245,8 @@ public class Database {
     /**
      * Get a fully-configured connection to the database
      * 
-     * @param ip   The IP address of the database server
-     * @param port The port on the database server to which connection requests
-     *             should be sent
-     * @param user The user ID to use when connecting
-     * @param pass The password to use when connecting
+
+     * @param db_url Heroku db URL
      * 
      * @return A Database object, or null if we cannot connect properly
      */
@@ -229,18 +263,30 @@ public class Database {
          * println("Error: DriverManager.getConnection() threw a SQLException");
          * e.printStackTrace(); return null; }
          */
+        boolean connect_to_local = false;
 
         // Give the Database object a connection, fail if we cannot get one
         try {
             System.out.println("entered getDatabase!!!!!!!!!!!!!!");
+            System.out.println(db_url);
             Class.forName("org.postgresql.Driver");
+            if (connect_to_local) db_url = "jdbc:postgresql://localhost:5432/cse216";
             URI dbUri = new URI(db_url);
             System.out.println("dbURI is!!!!!!!!!!: " + dbUri.toString());
-            String username = dbUri.getUserInfo().split(":")[0];
-            String password = dbUri.getUserInfo().split(":")[1];
+
+
+            String username = "postgres";
+            String password = "";
+            if (connect_to_local == false) {
+                username = dbUri.getUserInfo().split(":")[0];
+                password = dbUri.getUserInfo().split(":")[1];
+            }
+
             String dbUrl = "jdbc:postgresql://" + dbUri.getHost() + ':' + dbUri.getPort() + dbUri.getPath()
                     + "?sslmode=require";
+            if (connect_to_local) dbUrl = "jdbc:postgresql://localhost:5432/cse216";
             Connection conn = DriverManager.getConnection(dbUrl, username, password);
+            // success: localhost:4567/messages
             if (conn == null) {
                 System.err.println("Error: DriverManager.getConnection() returned a null object");
                 return null;
@@ -263,29 +309,36 @@ public class Database {
         try {
             // tblData table:
             db.mDeleteOne = db.mConnection.prepareStatement("DELETE FROM tblData WHERE id = ?");
-            db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?)");
-            db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject, message, user_id FROM tblData"); 
+            db.mInsertOne = db.mConnection.prepareStatement("INSERT INTO tblData VALUES (default, ?, ?, ?, ?, ?) RETURNING id");
+            db.mSelectAll = db.mConnection.prepareStatement("SELECT id, subject, message, user_id FROM tblData");
             db.mSelectOne = db.mConnection.prepareStatement("SELECT id, subject, message, user_id from tblData WHERE id = ?");
             db.mUpdateOne = db.mConnection.prepareStatement("UPDATE tblData SET message = ? WHERE id = ?");
+            db.mSelectMessagesByUser = db.mConnection.prepareStatement("SELECT id, subject, message, user_id FROM tblData WHERE user_id = ?");
+            db.mSelectAllJoin = db.mConnection.prepareStatement("SELECT tblData.id, subject, message, tblData.user_id, link, flag, " +
+                    "UserData.nickname, UserData.picture, UserData.userid, files.fileId, files.fname, files.size FROM tblData " +
+                    "LEFT JOIN UserData ON tblData.user_id = UserData.id " +
+                    "LEFT JOIN files ON tblData.id = files.messageId ORDER BY tblData.id");
 
             // UserData table:
             db.mDeleteUser = db.mConnection.prepareStatement("DELETE FROM UserData WHERE id = ?");
             db.mUpdateUser = db.mConnection.prepareStatement("UPDATE tblData SET user_id = ? WHERE id = ?");
-            db.mInsertUser = db.mConnection.prepareStatement("INSERT INTO UserData VALUES (default, ?, ?, ?)");
+            db.mInsertUser = db.mConnection.prepareStatement("INSERT INTO UserData VALUES (default, ?, ?, ?, ?, ?)");
             db.mUpdateNickname = db.mConnection.prepareStatement("UPDATE UserData SET nickname = ? WHERE id = ?");
-            db.mSelectOneUser = db.mConnection.prepareStatement("SELECT id, email, nickname, biography FROM UserData WHERE id = ?");
+            db.mSelectOneUser = db.mConnection.prepareStatement("SELECT id, email, userID, nickname, picture, biography FROM UserData WHERE userID = ?");
+            db.mSelectOneUserById = db.mConnection.prepareStatement("SELECT id, email, userID, nickname, picture, biography FROM UserData WHERE id = ?");
             db.mSelectAllUser = db.mConnection.prepareStatement("SELECT id, email, nickname, biography FROM UserData");
 
             // likes table:
             db.mRemoveLike = db.mConnection.prepareStatement("DELETE FROM likes WHERE message_id = ?");
-            db.mDeleteLike = db.mConnection.prepareStatement("DELETE FROM likes WHERE user_id = ?");
-            db.mGetLikeUser = db.mConnection.prepareStatement("SELECT FROM likes WHERE user_id = ? AND message_id = ?");
+            db.mDeleteLike = db.mConnection.prepareStatement("DELETE FROM likes WHERE user_id = ? AND message_id = ?");
+            db.mGetLikeUser = db.mConnection.prepareStatement("SELECT user_id, message_id FROM likes WHERE user_id = ? AND message_id = ?");
+            db.mGetLikeMessage = db.mConnection.prepareStatement("SELECT likes FROM likes WHERE message_id = ?");
             db.mLikesNeutral = db.mConnection.prepareStatement("SELECT SUM(likes.likes) AS total FROM likes WHERE likes.message_id = ?");
             db.mInsertOneLike = db.mConnection.prepareStatement("INSERT INTO likes VALUES (?, ?, ?)");
             db.mUpdateOneLike = db.mConnection.prepareStatement("UPDATE likes SET likes = ? WHERE user_id = ?");
 
             // files table
-            db.mInsertFile = db.mConnection.prepareStatement("INSERT INTO files (fileid, messageid, filesize, url) VALUES (?,?,?,?)");
+            db.mInsertFile = db.mConnection.prepareStatement("INSERT INTO files (fileid, messageid, mime, url, fname, size) VALUES (?,?,?,?,?,?)");
             db.mSelectAllFiles = db.mConnection.prepareStatement("SELECT * FROM files");
 
         } catch (SQLException e) {
@@ -325,30 +378,76 @@ public class Database {
     /**
      * Insert a row into the database
      * 
-     * @param uid The subject for this new row
-     * @param email The message body for this new rowz
+     * @param subject The subject for this new row
+     * @param message The message body for this new row
      * 
      * @return The number of rows that were inserted
      */
-    int insertRow(String subject, String message) {
-        int count = 0;
+    int insertRow(String subject, String message, int user_id, String link, boolean flag) {
+        int res = 0;
         try {
             mInsertOne.setString(1, subject);
             mInsertOne.setString(2, message);
-            count += mInsertOne.executeUpdate();
+            mInsertOne.setInt(3, user_id);
+            mInsertOne.setString(4, link);
+            mInsertOne.setBoolean(5, flag);
+            //mInsertOne.executeUpdate();
+            ResultSet rs = mInsertOne.executeQuery();
+            if (rs.next()) {
+                res = rs.getInt("id");
+            }
+        } catch (SQLException e) {
+            res = -1;
+            e.printStackTrace();
+        }
+        return res;
+    }
+
+    int getUserMessageLikes(int uid, int messageId) {
+        int res = -1;
+        try {
+            mGetLikeUser.setInt(1, uid);
+            mGetLikeUser.setInt(2, messageId);
+            ResultSet rs = mGetLikeUser.executeQuery();
+            if (rs.next()) {
+                System.out.println("uid");
+                System.out.println(rs.getInt("user_id"));
+                System.out.println("mid");
+                System.out.println(rs.getInt("message_id"));
+                res = 1;
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return count;
+        return res;
     }
 
-    int getUserMessageLikes(String uid, int messageId) {
-        int res = -1;
+    int getMessageLikes(int messageId) {
+        int res = 0;
         try {
-            mGetLikeUser.setString(1, uid);
-            mGetLikeUser.setInt(2, messageId);
-            res = mGetLikeUser.executeUpdate();
+            mGetLikeMessage.setInt(1, messageId);
+            ResultSet rs = mGetLikeMessage.executeQuery();
+            while (rs.next()) {
+                int likes = rs.getInt("likes");
+                System.out.println("given likes is ");
+                System.out.println(likes);
+                res += likes;
+            }
         } catch (SQLException e) {
+            e.printStackTrace();
+            res = -1;
+        }
+        return res;
+    }
+
+    int deleteLike(int uid, int messageId) {
+        int res = 1;
+        try {
+            mDeleteLike.setInt(1, uid);
+            mDeleteLike.setInt(2, messageId);
+            mDeleteLike.executeUpdate();
+        } catch (SQLException e) {
+            res = -1;
             e.printStackTrace();
         }
         return res;
@@ -372,13 +471,17 @@ public class Database {
      * @return All rows, as an ArrayList
      */
     ArrayList<RowData> selectAll() {
-        System.out.println("entered selectAll!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        System.out.println("entered selectAll!!!!!!!!!!!!!!!");
         ArrayList<RowData> res = new ArrayList<RowData>();
         try {
             ResultSet rs = mSelectAll.executeQuery();
             while (rs.next()) { 
+                //res.add(new RowData(rs.getInt("id"), rs.getString("subject"),
+                //    rs.getString("message"), rs.getInt("user_id"), getTotalLikes(rs.getInt("id"))));
+                int likeVote = getMessageLikes(rs.getInt("id"));
                 res.add(new RowData(rs.getInt("id"), rs.getString("subject"),
-                    rs.getString("message"), rs.getString("user_id"), getTotalLikes(rs.getInt("id"))));
+                    rs.getString("message"), rs.getInt("user_id"), likeVote)
+                );
             }
             rs.close();
             return res;
@@ -386,6 +489,70 @@ public class Database {
             System.out.println("caught in exception 1");
             e.printStackTrace();
             System.out.println("caught in exeception 2");
+            return null;
+        }
+    }
+    /**
+     * Query the database for a list of all subjects and their IDs
+     *
+     * @return All rows, as an ArrayList
+     */
+    ArrayList<RowData> selectAllJoin() {
+        ArrayList<RowData> res = new ArrayList<RowData>();
+        try {
+            ResultSet rs = mSelectAllJoin.executeQuery();
+            ResultSetMetaData rsmd = rs.getMetaData();
+            int columnCount = rsmd.getColumnCount();
+
+            for (int i = 1; i <= columnCount; i++ ) {
+                String columnName = rsmd.getColumnName(i);
+                System.out.println("col" + i + ":" + columnName);
+            }
+
+            while (rs.next()) {
+                //res.add(new RowData(rs.getInt("id"), rs.getString("subject"),
+                //    rs.getString("message"), rs.getInt("user_id"), getTotalLikes(rs.getInt("id"))));
+                int likeVote = getMessageLikes(rs.getInt("id"));
+                RowData row = new RowData(rs.getInt("id"), rs.getString("subject"),rs.getString("message"), rs.getInt("user_id"), likeVote);
+                // optional attributes from tblData
+                row.flag = rs.getBoolean("flag");
+                row.mLink = rs.getString("link");
+                // optional attributes from UserData
+                row.username = rs.getString("nickname");
+                row.picture = rs.getString("picture");
+                row.userID = rs.getString("userid");
+                // optional attributes from files
+                row.fileId = rs.getString("fileId");
+                row.fname = rs.getString("fname");
+                row.size = rs.getLong("size");
+                res.add(row);
+            }
+            rs.close();
+            return res;
+        } catch (SQLException e) {
+            System.out.println("caught in exception 1");
+            e.printStackTrace();
+            System.out.println("caught in exeception 2");
+            return null;
+        }
+    }
+
+
+
+    ArrayList<RowData> selectMessagesByUser(int uid) {
+        ArrayList<RowData> res = new ArrayList<RowData>();
+        try {
+            mSelectMessagesByUser.setInt(1, uid);
+            ResultSet rs = mSelectMessagesByUser.executeQuery();
+            while (rs.next()) {
+                int likeVote = getMessageLikes(rs.getInt("id"));
+                res.add(new RowData(rs.getInt("id"), rs.getString("subject"),
+                        rs.getString("message"), rs.getInt("user_id"), likeVote)
+                );
+            }
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
             return null;
         }
     }
@@ -404,7 +571,7 @@ public class Database {
             ResultSet rs = mSelectOne.executeQuery();
             if (rs.next()) {
                 res = new RowData(rs.getInt("id"), rs.getString("subject"),
-                    rs.getString("message"), rs.getString("user_id"), getTotalLikes(id));
+                    rs.getString("message"), rs.getInt("user_id"), getTotalLikes(id));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -523,12 +690,45 @@ public class Database {
         return res;
     }
 
-    User selectOneUser(String uid) {
+    User selectOneUser(String userID) {
         User res = null;
         try {
-            mSelectOneUser.setString(1, uid);
+            mSelectOneUser.setString(1, userID);
             ResultSet rs = mSelectOneUser.executeQuery();
-            res = new User(rs.getString("email"), rs.getString("nickname"), rs.getString("id"), rs.getString("biography"));
+            ResultSetMetaData rsmd = rs.getMetaData();
+            int columnCount = rsmd.getColumnCount();
+
+            for (int i = 1; i <= columnCount; i++ ) {
+                String columnName = rsmd.getColumnName(i);
+                System.out.println("col" + i + ":" + columnName);
+            }
+
+            if (rs.next()) {
+                res = new User(rs.getInt("id"), rs.getString("email"),
+                        rs.getString("nickname"), rs.getString("userID"),
+                        rs.getString("picture"), rs.getString("biography"));
+            }
+
+            rs.close();
+            return res;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    User selectOneUserById(int uid) {
+        User res = null;
+        try {
+            mSelectOneUserById.setInt(1, uid);
+            ResultSet rs = mSelectOneUserById.executeQuery();
+            ResultSetMetaData rsmd = rs.getMetaData();
+            int columnCount = rsmd.getColumnCount();
+            if (rs.next()) {
+                res = new User(rs.getInt("id"), rs.getString("email"),
+                        rs.getString("nickname"), rs.getString("userID"),
+                        rs.getString("picture"), rs.getString("biography"));
+            }
             rs.close();
             return res;
         } catch (SQLException e) {
@@ -543,7 +743,9 @@ public class Database {
         try {
             ResultSet rs = mSelectAllUser.executeQuery();
             while (rs.next()) { 
-                res.add(new User(rs.getString("email"), rs.getString("nickname"), rs.getString("id"), rs.getString("biography")));
+                res.add(new User(rs.getInt("id"), rs.getString("email"),
+                        rs.getString("nickname"), rs.getString("userID"),
+                        rs.getString("picture"), rs.getString("biography")));
             }
             rs.close();
             return res;
@@ -556,13 +758,16 @@ public class Database {
     /**
      * method to insert a single row to the files table in database
      */
-    int insertFileRow(String fileid, long filesize, String url) {
+    int insertFileRow(String fileid, int mid, String mime, String url, String fname, long size) {
+        System.out.println("insertFileRow");
         int res = -1;
         try{
             mInsertFile.setString(1,fileid);
-            mInsertFile.setInt(2, 1);
-            mInsertFile.setLong(3, filesize);
+            mInsertFile.setInt(2, mid);
+            mInsertFile.setString(3, mime);
             mInsertFile.setString(4, url);
+            mInsertFile.setString(5, fname);
+            mInsertFile.setLong(6, size);
             res = mInsertFile.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -579,7 +784,9 @@ public class Database {
         try{
             ResultSet rs = mSelectAllFiles.executeQuery();
             while (rs.next()) { 
-                res.add(new FileUploaded(rs.getString("fileid"), rs.getInt("messageid"), rs.getLong("filesize"), rs.getString("url")));
+                res.add(new FileUploaded(rs.getString("fileid"), rs.getInt("messageid"),
+                        rs.getString("mime"), rs.getString("url"),
+                        rs.getString("fname"), rs.getLong("size")));
             }
             rs.close();
             return res;
@@ -592,24 +799,26 @@ public class Database {
     /**
      * Insert a row into the database
      * 
-     * @param uid The users' id
      * @param email The user's email
      * @param nickname The user's nickname
-     * 
+     * @param userID google ID
+     * @param bio local
+     *
      * @return The number of rows that were inserted
      */
-    int insertUser(String uid, String email, String nickname) {
+    int insertUser(String email, String nickname, String userID, String picture, String bio) {
         int res = -1;
         try {
-            mInsertUser.setString(1, uid);
-            mInsertUser.setString(2, email);
-            mInsertUser.setString(3, nickname);
+            mInsertUser.setString(1, email);
+            mInsertUser.setString(2, nickname);
+            mInsertUser.setString(3, userID);
+            mInsertUser.setString(4, picture);
+            mInsertUser.setString(5, bio);
             res = mInsertUser.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return res;
-        
     }
 
     int updateUser(String uid) {
@@ -659,13 +868,13 @@ public class Database {
         }
     }
 
-    int insertOneLike(String uid, int messageId) {
+    int insertOneLike(int uid, int messageId) {
         int res = -1;
-        if(getUserMessageLikes(uid, messageId) > 0) {
-            return -2;
-        }
+        //if(getUserMessageLikes(uid, messageId) > 0) {
+        //    return -2;
+        //}
         try {
-            mInsertOneLike.setString(1, uid);
+            mInsertOneLike.setInt(1, uid);
             mInsertOneLike.setInt(2, messageId);
             mInsertOneLike.setInt(3, 1);
             res = mInsertOneLike.executeUpdate();
@@ -695,17 +904,6 @@ public class Database {
             rs.next();
             res = rs.getInt("total");
             rs.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return res;
-    }
-
-    int deleteLike(String uid) {
-        int res = -1;
-        try {
-            mDeleteLike.setString(1, uid);
-            res = mDeleteLike.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -756,9 +954,10 @@ public class Database {
         try {
             // Validate the JWT and process it to the Claims
             JwtClaims jwtClaims = jwtConsumer.processToClaims(jwt);
-            res = new User(jwtClaims.getClaimValueAsString("email"),
-                jwtClaims.getClaimValueAsString("name"), jwtClaims.getClaimValueAsString("userID"),
-                jwtClaims.getClaimValueAsString("biography"));
+            // turn off by Sangjun
+            //res = new User(jwtClaims.getClaimValueAsString("email"),
+            //    jwtClaims.getClaimValueAsString("name"), jwtClaims.getClaimValueAsString("userID"),
+            //    jwtClaims.getClaimValueAsString("biography"));
         } catch (InvalidJwtException e) {
             // InvalidJwtException will be thrown, if the JWT failed processing or
             // validation in anyway.

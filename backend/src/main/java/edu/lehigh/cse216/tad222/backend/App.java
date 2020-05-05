@@ -18,6 +18,11 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.drive.DriveScopes;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
@@ -42,10 +47,12 @@ import org.jose4j.lang.JoseException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.PublicKey;
 import java.util.*;
 import java.security.GeneralSecurityException;
+import java.util.regex.Matcher;
 
 
 /**
@@ -54,36 +61,62 @@ import java.security.GeneralSecurityException;
 public class App {
 
     private static Database db;
+    private static int lastId = 0;
     private static final Gson gson = new Gson();
     public static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
     public static final JsonFactory JSON_FACTORY = new JacksonFactory();
-    private static final String SERVICE_ACCOUNT_PKCS12_FILE_PATH = "./ServiceAccountKeyP12.p12";
+    private static final String SERVICE_ACCOUNT_PKCS12_FILE_PATH = "./target/ServiceAccountKeyP12.p12";
     public static final List<String> SCOPES = Collections.singletonList(DriveScopes.DRIVE);
     public static final String APPLICATION_NAME = "Naked Mole Rat backend";
+    protected static String slang = "fuck|shit|bitch|asshole|damn";
 
-    public static String uploadFile(java.io.File UPLOAD_FILE, String name, String mime) throws IOException, GeneralSecurityException {
+
+
+
+    /**
+     * set up file folder, file object, and put file parameters into database
+     *
+     * @param UPLOAD_FILE uploaded file
+     * @param name random name based on current time
+     * @param mime file type (e.g. pdf, png)
+     * @param mid correspond message ID
+     * @param fname upload filename
+     * @param size uploaded file size
+     */
+    public static String uploadFile(java.io.File UPLOAD_FILE, String name, String mime, int mid, String fname, long size) throws IOException, GeneralSecurityException {
         // boolean useDirectUpload = true;
         String ret = null;
 
+        /* debug */
+        System.out.println("UPLOAD_FILE");
+        System.out.println(UPLOAD_FILE.getName());
+        System.out.println("fname");
+        System.out.println(fname);
+        System.out.println("size");
+        System.out.println(size);
+
+        /* set file folder */
         File fileMetadata = new File();
         fileMetadata.setName(name);
         fileMetadata.setMimeType("application/vnd.google-apps.folder");
-
         File folderMade = setup().files().create(fileMetadata)
-            .setFields("id")
-            .execute();
+                .setFields("id")
+                .execute();
         String folderId = folderMade.getId();
 
+        /* set file content */
         com.google.api.services.drive.model.File fmeta = new com.google.api.services.drive.model.File();
         fmeta.setName(name);
-        System.out.println(mime);
         FileContent mediaContent = new FileContent(mime, UPLOAD_FILE);
-
         fmeta.setParents(Collections.singletonList(folderId));
+        File file = setup().files().create(fmeta, mediaContent).setFields("id, parents").execute();
+
+        /* set File ID */
+        System.out.println("File ID executed: " + file.getId());
+
+        /* save file into DB */
         try {
-            File file = setup().files().create(fmeta, mediaContent).setFields("id, parents").execute();
-            System.out.println("File ID executed: " + file.getId());
-            int dbReturned = db.insertFileRow(file.getId(), file.getSize(), name);
+            int dbReturned = db.insertFileRow(file.getId(), mid, mime, name, fname, size);
             if(dbReturned == -1) {
                 System.out.println("Error when inserting file information in database!");
             }
@@ -94,6 +127,9 @@ public class App {
         }
     }
 
+    /**
+     * Subroutine used in uploadFile()
+     */
     public static Drive setup() throws IOException, GeneralSecurityException {
 
         String emailAddress = "internaldriveuser@the-buzz-1584144072767.iam.gserviceaccount.com";
@@ -112,6 +148,13 @@ public class App {
         return service;
     }
 
+    /**
+     * Subroutine used in download (GET)
+     * Return file type
+     *
+     * @param fileId fileId that user want to download
+     */
+
     public static String getMimeType(String fileId) {
         try {
             File file = setup().files().get(fileId).execute();
@@ -123,6 +166,12 @@ public class App {
         return null;
     }
 
+    /**
+     * Subroutine used in download (GET)
+     * Return Byte array from file object
+     *
+     * @param fileId fileId that user want to download
+     */
     public static ByteArrayOutputStream downloadFromDrive(String fileId) {
         try {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -134,8 +183,38 @@ public class App {
         }
     }
 
-    public static void main(String[] args) {
+    /**
+     * see if token is expired
+     * return payload
+     *
+     * @param tokenId google ID token
+     */
+    public static Payload ValidToken(String tokenId) throws GeneralSecurityException, IOException {
+        NetHttpTransport transport = GoogleNetHttpTransport.newTrustedTransport();
+        JacksonFactory jsonFactory = JacksonFactory.getDefaultInstance();
+        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
+                //.setAudience(Collections.singletonList(Util.getClientId()))
+                .build();
 
+
+        System.out.println("tokenId");
+        System.out.println(tokenId);
+        GoogleIdToken idToken = verifier.verify(tokenId);
+        if (idToken != null) {
+            Payload payload = idToken.getPayload();
+            // Check client ID
+            if (!Util.getClientId().contains(payload.getAuthorizedParty()) &&
+                    !Util.getClientIdAndroid().contains(payload.getAuthorizedParty())) {
+                System.out.println("client ID NOT authorized!");
+                return null;
+            }
+            return payload;
+        } else {
+            return null;
+        }
+    }
+
+    public static void main(String[] args) {
 
         // Get the port on which to listen for requests
         Spark.port(getIntFromEnv("PORT", 4567));
@@ -145,21 +224,21 @@ public class App {
         String db_url = env.get("DATABASE_URL");
         System.out.println("database is: " + db_url);
 
-
-        //Properties prop = new Properties();
-        //String config = "backend.properties";
-        //try {
-        //    InputStream input = App.class.getClassLoader().getResourceAsStream(config);
-        //    prop.load(input);
-        //} catch (IOException ex) {
-        //    ex.printStackTrace();
-        //}
-        //String db_url = prop.getProperty("DATABASE_URL");
+        boolean isLocalDB = true;
 
 
-        // String db_url =
-        // "postgres://azexrkxulzlqss:b12fcddc21a71c8cc0b04de34d8ab4bc99a726bdb0b2e455b63865e0cdbb3442@ec2-3-234-109-123.compute-1.amazonaws.com:5432/d9aki869as2d5b";
-        // String cors_enabled = env.get("CORS_ENABLED");
+        if (isLocalDB) {
+            Properties prop = new Properties();
+            String config = "backend.properties";
+            try {
+                InputStream input = App.class.getClassLoader().getResourceAsStream(config);
+                prop.load(input);
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+            db_url = prop.getProperty("DATABASE_URL");
+        }
+
         String cors_enabled = "TRUE";
         if (cors_enabled.equals("TRUE")) {
             final String acceptCrossOriginRequestsFrom = "*";
@@ -180,19 +259,6 @@ public class App {
         db = Database.getDatabase(db_url); // remote Postgres database object
 
         System.out.println(db_url);
-        // dataStore holds all of the data that has been provided via HTTP
-        // requests
-        //
-        // NB: every time we shut down the server, we will lose all data, and
-        // every time we start the server, we'll have an empty dataStore,
-        // with IDs starting over from 0.
-        // final DataStore dataStore = new DataStore(); //local database object
-
-        // Spark.staticFileLocation("/web");
-        /*
-         * Spark.get(" / ", (request, response) -> { res.redirect("/index.html"); return
-         * ""; });
-         */
 
         Spark.get("/", (request, response) -> {
             response.redirect("/messages");
@@ -207,20 +273,28 @@ public class App {
             // ensure status 200 OK, with a MIME type of JSON
             response.status(200);
             response.type("application/json");
-            String jwt = request.queryParams("jwt");
-            String uid = request.queryParams("uid");
-            /*String v = gson.toJson(verify(uid, jwt));
-            if(v.contains("error")) {
-                return v;
-            }*/
 
             if (db == null) {
-                System.out.println("error with DB!!!!!!!!!!!!!!!!!!");
+                System.out.println("error with DB!");
             } else {
                 System.out.println("db is NOT null");
             }
             return gson.toJson(new StructuredResponse("ok", null, db.selectAll()));
         });
+
+        Spark.get("/join", (request, response) -> {
+            // ensure status 200 OK, with a MIME type of JSON
+            response.status(200);
+            response.type("application/json");
+
+            if (db == null) {
+                System.out.println("error with DB!");
+            } else {
+                System.out.println("db is NOT null");
+            }
+            return gson.toJson(new StructuredResponse("ok", null, db.selectAllJoin()));
+        });
+
 
         // GET route that returns everything for a single row in the DataStore.
         // The ":id" suffix in the first parameter to get() becomes
@@ -250,22 +324,8 @@ public class App {
             }
         });
 
-        // POST route for adding a new element to the DataStore. This will read
-        // JSON from the body of the request, turn it into a SimpleRequest
-        // object, extract the title and message, insert them, and return the
-        // ID of the newly created row.
-        // request should have a session_id, validate it against a stored session_id in
-        // the user_table
         Spark.post("/messages", (request, response) -> {
-            String jwt = request.queryParams("jwt");
-            String uid = request.queryParams("uid");
 
-            System.out.println("request.attributes when POST");
-            System.out.println(request.attributes());
-            /*String v = gson.toJson(verify(uid, jwt));
-            if(v.contains("error")) {
-                return v;
-            }*/
             // NB: if gson.Json fails, Spark will reply with status 500 Internal
             // Server Error
             SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
@@ -276,10 +336,50 @@ public class App {
             response.type("application/json");
             // NB: createEntry checks for null title and message
 
-            int newId = db.insertRow(req.mTitle, req.mMessage);
+            System.out.println("request.attributes when POST");
+            System.out.println("userID");
+            System.out.println("Token!");
+            System.out.println(req.tokenId);
+
+            boolean hasUser = true;
+            User u = db.selectOneUser(req.userID);
+            if (u == null) hasUser = false;
+            if (hasUser) {
+                System.out.println("has User!");
+                System.out.println(req.userID);
+                Payload payload = ValidToken(req.tokenId);
+                boolean emailVerified = Boolean.valueOf(payload.getEmailVerified());
+                if (!emailVerified)
+                    return gson.toJson(new StructuredResponse("error", "Google ID Token not vaild!", null));
+            } else {
+                return gson.toJson(new StructuredResponse("error", "User is Not enrolled in our DB", null));
+            }
+
+            System.out.println(req.tokenId);
+            System.out.println("hasUser");
+            System.out.println(hasUser);
+
+
+            System.out.println("link");
+            System.out.println(req.mLink);
+
+            /* slang filtering */
+            boolean flag = false;
+            filteringSlang fs = new filteringSlang(slang);
+            String match = fs.filterText(req.mMessage);
+            if (fs.isSlang) {
+                flag = true;
+                req.mMessage = match;
+            }
+
+            System.out.println("slang?");
+            System.out.println(match);
+
+            int newId = db.insertRow(req.mTitle, req.mMessage, u.getId(), req.mLink, flag);
             if (newId == -1) {
                 return gson.toJson(new StructuredResponse("error", "error performing insertion", null));
             } else {
+                lastId = newId;
                 return gson.toJson(new StructuredResponse("ok", "" + newId, null));
             }
         });
@@ -291,17 +391,30 @@ public class App {
             // a status 500
             int idx = Integer.parseInt(request.params("id"));
             SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
-            String jwt = request.queryParams("jwt");
-            String uid = request.queryParams("uid");
-            /*String v = gson.toJson(verify(uid, jwt));
-            if(v.contains("error")) {
-                return v;
-            }*/
+
+            // should allow actual author to edit the message only, so we check user's profile.
+            boolean hasUser = true;
+            User u = db.selectOneUser(req.userID);
             Database.RowData data = db.selectOne(idx);
-            if(!uid.equals(data.mUser_id)) {
-                return gson.toJson(new StructuredResponse("error", "User tried to update somebody else's comment", null));
+            if (data == null) return gson.toJson(new StructuredResponse("error", "gave wrong id, check URL", null));
+            if (u == null) hasUser = false;
+            if (hasUser) {
+                System.out.println("has User!");
+                System.out.println(req.userID);
+                boolean emailVerified = false;
+                System.out.println(u);
+                System.out.println(u.getId());
+                System.out.println(data);
+                if (data.mUser_id == u.getId()) {
+                    Payload payload = ValidToken(req.tokenId);
+                    emailVerified = Boolean.valueOf(payload.getEmailVerified());
+                }
+                if (!emailVerified)
+                    return gson.toJson(new StructuredResponse("error", "Google ID Token not vaild!", null));
+            } else {
+                return gson.toJson(new StructuredResponse("error", "User mismatch!", null));
             }
-            // ensure status 200 OK, with a MIME type of JSON
+
             response.status(200);
             response.type("application/json");
             int result = db.updateOne(idx, req.mMessage);
@@ -312,21 +425,38 @@ public class App {
             }
         });
 
-        // DELETE route for removing a row from the DataStore
         Spark.delete("/messages/:id", (request, response) -> {
-            String jwt = request.queryParams("jwt");
-            String uid = request.queryParams("uid");
-            /*String v = gson.toJson(verify(uid, jwt));
-            if(v.contains("error")) {
-                return v;
-            }*/
             // If we can't get an ID, Spark will send a status 500
             int idx = Integer.parseInt(request.params("id"));
+            SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
             // ensure status 200 OK, with a MIME type of JSON
             response.status(200);
             response.type("application/json");
             // NB: we won't concern ourselves too much with the quality of the
             // message sent on a successful delete
+
+            // should allow actual author to delete the message only, so we check user's profile.
+            boolean hasUser = true;
+            User u = db.selectOneUser(req.userID);
+            Database.RowData data = db.selectOne(idx);
+            if (data == null) return gson.toJson(new StructuredResponse("error", "gave wrong id, check URL", null));
+            if (u == null) hasUser = false;
+
+            if (hasUser) {
+                System.out.println("has User!");
+                System.out.println(req.userID);
+                boolean emailVerified = false;
+                if (data.mUser_id == u.getId()) {
+                    Payload payload = ValidToken(req.tokenId);
+                    emailVerified = Boolean.valueOf(payload.getEmailVerified());
+                }
+                if (!emailVerified)
+                    return gson.toJson(new StructuredResponse("error", "Google ID Token not vaild!", null));
+            } else {
+                return gson.toJson(new StructuredResponse("error", "User mismatch!", null));
+            }
+
+
             int result = db.deleteRow(idx);
             int likeRes = db.removeMessageLikes(idx);
             if (result == -1) {
@@ -339,8 +469,8 @@ public class App {
         });
 
         Spark.put("/likes/:id", (request, response) -> {
-            String jwt = request.queryParams("jwt");
-            String uid = request.queryParams("uid");
+            //String jwt = request.queryParams("jwt");
+            //String uid = request.queryParams("uid");
             /*String v = gson.toJson(verify(uid, jwt));
             if(v.contains("error")) {
                 return v;
@@ -348,32 +478,52 @@ public class App {
             // If we can't get an ID or can't parse the JSON, Spark will send
             // a status 500
             int idx = Integer.parseInt(request.params("id"));
+            SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
             // ensure status 200 OK, with a MIME type of JSON
             response.status(200);
             response.type("application/json");
             System.out.println("idx is: " + idx);
 
-            /*
-             * try { likes = Integer.parseInt(req.mMessage);
-             * //System.out.println("mMessages is: " + mMessage);
-             * System.out.println("likes is: " + likes); } catch(Throwable e) {
-             * System.out.println("not working!!!!!!!!!!!"); return gson.toJson(new
-             * StructuredResponse("error", "unable to parse body: " + req.mMessage, null));
-             * }
-             */
-            int result = db.insertOneLike(uid, idx);
-            if (result == -1) {
-                return gson.toJson(new StructuredResponse("error", "unable to update likes for message_id " + idx, null));
-            } else if (result == -2) {
-                return gson.toJson(new StructuredResponse("warning", "User with id " + uid + " already liked message_id " + idx, null));
+            boolean hasUser = true;
+            User u = db.selectOneUser(req.userID);
+            if (u == null) hasUser = false;
+            if (hasUser) {
+                System.out.println("has User!");
+                System.out.println(req.userID);
+                Payload payload = ValidToken(req.tokenId);
+                boolean emailVerified = Boolean.valueOf(payload.getEmailVerified());
+                if (!emailVerified)
+                    return gson.toJson(new StructuredResponse("error", "Google ID Token not vaild!", null));
             } else {
-                return gson.toJson(new StructuredResponse("ok", null, result));
+                return gson.toJson(new StructuredResponse("error", "User is Not enrolled in our DB", null));
             }
+
+            String popup = "Maybe you did a vote already before!";
+            int res = db.getUserMessageLikes(u.getId(), idx);
+            if (res < 0) {
+                db.insertOneLike(u.getId(), idx);
+                popup = "Increase Like vote by 1!";
+            }
+            System.out.println("popup!!");
+            System.out.println(popup);
+            int result = db.getMessageLikes(idx);
+            if (result < 0)
+                return gson.toJson(new StructuredResponse("error", "function getMessageLikes() has error!", null));
+            return gson.toJson(new StructuredResponse("ok", popup, result));
+
+            //int result = db.insertOneLike(uid, idx);
+            //if (result == -1) {
+            //    return gson.toJson(new StructuredResponse("error", "unable to update likes for message_id " + idx, null));
+            //} else if (result == -2) {
+            //    return gson.toJson(new StructuredResponse("warning", "User with id " + uid + " already liked message_id " + idx, null));
+            //} else {
+            //    return gson.toJson(new StructuredResponse("ok", null, result));
+            //}
         });
 
         Spark.delete("/likes/:id", (request, response) -> {
-            String jwt = request.queryParams("jwt");
-            String uid = request.queryParams("uid");
+            //String jwt = request.queryParams("jwt");
+            //String uid = request.queryParams("uid");
             /*String v = gson.toJson(verify(uid, jwt));
             if(v.contains("error")) {
                 return v;
@@ -381,12 +531,27 @@ public class App {
             // If we can't get an ID or can't parse the JSON, Spark will send
             // a status 500
             int idx = Integer.parseInt(request.params("id"));
+            SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
             // ensure status 200 OK, with a MIME type of JSON
             response.status(200);
             response.type("application/json");
             System.out.println("idx is: " + idx);
 
-            int result = db.deleteLike(uid);
+            boolean hasUser = true;
+            User u = db.selectOneUser(req.userID);
+            if (u == null) hasUser = false;
+            if (hasUser) {
+                System.out.println("has User!");
+                System.out.println(req.userID);
+                Payload payload = ValidToken(req.tokenId);
+                boolean emailVerified = Boolean.valueOf(payload.getEmailVerified());
+                if (!emailVerified)
+                    return gson.toJson(new StructuredResponse("error", "Google ID Token not vaild!", null));
+            } else {
+                return gson.toJson(new StructuredResponse("error", "User is Not enrolled in our DB", null));
+            }
+
+            int result = db.deleteLike(u.getId(), idx);
             if (result == -1) {
                 return gson.toJson(new StructuredResponse("error", "unable to update likes for message_id " + idx, null));
             } else {
@@ -417,73 +582,126 @@ public class App {
             }
         });
 
-        Spark.post("/users/register", (request, response) -> {
-            String name = request.params("name");
-            String email = "";
-            String uid = "";
-            String secret = "";
-            String bio = "";
-            boolean success = false;//db.registerUser(email, name, uid, bio);
-            if (success) {
-                return gson.toJson(new StructuredResponse("ok", "User " + name + " was registered", uid));
-            } else {
-                return gson.toJson(new StructuredResponse("error",
-                        "User " + name + " was already registered or had an invalid uid", null));
-            }
-        });
-
         Spark.post("/users/login", (request, response) -> {
             response.status(200);
             response.type("application/json");
             String cid = env.get("CLIENT_ID");
             String cis = env.get("CLIENT_SECRET");
-            String idToken = request.queryParams("idToken");
 
-            if (request.queryParams("error") != null) {
-                return gson.toJson(new StructuredResponse("error", "User had invalid credentials", null));
-            }
+            SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
+            System.out.println("request");
+            System.out.println(request.body());
+            System.out.println("tokenId");
+            System.out.println(req.tokenId);
 
-            String code = request.queryParams("code");
-            if (code == null) {
-                return gson.toJson(new StructuredResponse("error", "Code was null", null));
-            }
-            // get the access token by post to Google
-            String body = post("https://oauth2.googleapis.com/token",
-                    ImmutableMap.<String, String>builder().put("code", code).put("client_id", cid)
-                            .put("client_secret", cis)
-                            .put("redirect_uri", Util.SITE + "/messages")
-                            .put("grant_type", "authorization_code").build());
 
-            // get the access token from json and request info from Google
-            JsonObject jsonObject = gson.fromJson(body, JsonObject.class);
+            Payload payload = ValidToken(req.tokenId);
 
-            String accessToken = jsonObject.get("access_token").getAsString();
-            String jsonString = get((new StringBuilder("https://www.googleapis.com/oauth2/v3/userinfo?access_token=")
-                            .append(accessToken).toString()));
-            System.out.println("jsonString is " + jsonString);
-            JsonObject json = gson.fromJson(jsonString, JsonObject.class);
-            String nickname = json.get("name").getAsString();
-            String email = json.get("email").getAsString();
-            final String uid = json.get("sub").getAsString();
-            String bio = "";
+            if (payload != null) {
 
-            if (!email.contains("lehigh.edu")) {
-                return gson.toJson(new StructuredResponse("error", "User " + nickname + " is not part of lehigh.edu", null));
-            }
+                // Print user identifier
+                String userId = payload.getSubject();
+                System.out.println("User ID: " + userId);
 
-            User u = new User(email, nickname, uid, bio);
-            
-            if (db.setUserActive(u)) {
-                return gson.toJson(new AuthResponse(db.produceJWTKey(u), uid));
+                // Get profile information from payload
+                String email = payload.getEmail();
+                boolean emailVerified = Boolean.valueOf(payload.getEmailVerified());
+                String name = (String) payload.get("name");
+                String pictureUrl = (String) payload.get("picture");
+                String locale = (String) payload.get("locale");
+                String familyName = (String) payload.get("family_name");
+                String givenName = (String) payload.get("given_name");
+
+                System.out.println("User ID: " + userId);
+                System.out.println("email: " + email);
+                System.out.println("email Veryfiled: " + emailVerified);
+                System.out.println("name: " + name);
+                System.out.println("locale: " + locale);
+                System.out.println("familyName: " + familyName);
+                System.out.println("givenName: " + givenName);
+                System.out.println("client ID check!");
+                System.out.println(payload.getAuthorizedParty());
+                System.out.println(Util.getClientId());
+
+                if (!email.contains("lehigh.edu")) {
+                    return gson.toJson(new StructuredResponse("error",
+                            "e-mail is not part of lehigh.edu", null));
+                }
+
+                // user already in DB?
+                User u = db.selectOneUser(userId);
+                boolean hasUser = true;
+                if (u == null) {
+                    hasUser = false;
+                    db.insertUser(email, name, userId, pictureUrl, locale);
+                    //u = new User(email, name, userId, locale);
+                }
+
+                //String JWTKey = db.produceJWTKey(u);
+                //String v = gson.toJson(verify(userId, JWTKey));
+                //System.out.println("v: " + v);
+                //return gson.toJson(new AuthResponse(JWTKey, userId));
+                return gson.toJson(new AuthResponse(req.tokenId, userId));
             } else {
-                return gson.toJson(new StructuredResponse("error", "User " + nickname + " was already logged in", null));
+                System.out.println("Invalid ID token or client ID");
+                return gson.toJson(new StructuredResponse("error", "invalid ID token or client ID", null));
             }
         });
 
-        Spark.get("/users/login", (request, response) -> {
+        Spark.get("/history/:user_id", (request, response) -> {
             response.status(200);
             response.type("application/json");
-            return request.queryParams("client_id");
+
+            int user_id = Integer.parseInt(request.params("user_id"));
+            SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
+            System.out.println("History!");
+
+            boolean hasUser = true;
+            User u = db.selectOneUser(req.userID);
+            if (u == null) hasUser = false;
+            if (hasUser) {
+                Payload payload = ValidToken(req.tokenId);
+                boolean emailVerified = Boolean.valueOf(payload.getEmailVerified());
+                if (!emailVerified)
+                    return gson.toJson(new StructuredResponse("error", "Google ID Token not vaild!", null));
+            } else {
+                return gson.toJson(new StructuredResponse("error", "User is Not enrolled in our DB", null));
+            }
+
+            if (db == null) {
+                System.out.println("error with DB!");
+            } else {
+                System.out.println("db is NOT null");
+            }
+            return gson.toJson(new StructuredResponse("ok", null, db.selectMessagesByUser(user_id)));
+        });
+
+        Spark.get("/profile/:user_id", (request, response) -> {
+            response.status(200);
+            response.type("application/json");
+
+            int user_id = Integer.parseInt(request.params("user_id"));
+            SimpleRequest req = gson.fromJson(request.body(), SimpleRequest.class);
+            System.out.println("History!");
+
+            boolean hasUser = true;
+            User u = db.selectOneUser(req.userID);
+            if (u == null) hasUser = false;
+            if (hasUser) {
+                Payload payload = ValidToken(req.tokenId);
+                boolean emailVerified = Boolean.valueOf(payload.getEmailVerified());
+                if (!emailVerified)
+                    return gson.toJson(new StructuredResponse("error", "Google ID Token not vaild!", null));
+            } else {
+                return gson.toJson(new StructuredResponse("error", "User is Not enrolled in our DB", null));
+            }
+
+            if (db == null) {
+                System.out.println("error with DB!");
+            } else {
+                System.out.println("db is NOT null");
+            }
+            return gson.toJson(new StructuredResponse("ok", null, db.selectOneUserById(user_id)));
         });
 
         Spark.delete("/users/logoff", (request, response) -> {
@@ -535,48 +753,14 @@ public class App {
             return gson.toJson(new StructuredResponse("ok", null, db.selectAllActiveUsers()));
         });
 
-        Spark.post("/users/:user_id/bio", (request, response) -> {
-            String jwt = request.queryParams("jwt");
-            String uid = request.queryParams("uid");
-            /*String v = gson.toJson(verify(uid, jwt));
-            if(v.contains("error")) {
-                return v;
-            }*/
-            // ensure status 200 OK, with a MIME type of JSON
-            response.status(200);
-            response.type("application/json");
-            if (db == null) {
-                System.out.println("error with DB!!!!!!!!!!!!!!!!!!");
-            } else {
-                System.out.println("db is NOT null");
-            }
-            return gson.toJson(new StructuredResponse("ok", null, db.selectAllActiveUsers()));
-        });
 
-        Spark.put("/users/:user_id/bio", (request, response) -> {
-            String jwt = request.queryParams("jwt");
-            String uid = request.queryParams("uid");
-            /*String v = gson.toJson(verify(uid, jwt));
-            if(v.contains("error")) {
-                return v;
-            }*/
-            // ensure status 200 OK, with a MIME type of JSON
-            response.status(200);
-            response.type("application/json");
-            if (db == null) {
-                System.out.println("error with DB!!!!!!!!!!!!!!!!!!");
-            } else {
-                System.out.println("db is NOT null");
-            }
-            return gson.toJson(new StructuredResponse("ok", null, db.selectAllActiveUsers()));
-        });
-
-        /**
+        /*
          * POST route to upload files to drive
          */
         Spark.post("/upload", (request, response) -> {
             response.status(200);
             response.type("application/json");
+            int idx = lastId;
             StructuredResponse sResponse = new StructuredResponse(response);
                 try {
                     String time = "" + java.lang.System.currentTimeMillis();
@@ -599,12 +783,21 @@ public class App {
                     boolean hasFile = false;
                     boolean hasWritten = false;
                     String ret = "null";
-
+                    String fname = null;
+                    long size = 0;
 
 
                     while (iter.hasNext()) {
                         FileItem item = iter.next();
+                        System.out.println(item);
                         if (item.getFieldName().equals("upload_file")) {
+                            System.out.println(item);
+                            fname = item.getName();
+                            size = item.getSize();
+                            System.out.println("fname");
+                            System.out.println("size");
+                            System.out.println(fname);
+                            System.out.println(size);
                             uploadedFile = new java.io.File("uploads/" + upload.getName());
                             item.write(uploadedFile);
                             hasFile = true;
@@ -615,7 +808,8 @@ public class App {
 
                         if (!hasWritten && hasMime && hasFile) {
                             hasWritten = true;
-                            ret = uploadFile(uploadedFile, time, mime);
+                            //ret = uploadFile(uploadedFile, time, mime);
+                            ret = uploadFile(uploadedFile, time, mime, idx, fname, size);
                         }
 
                     }
@@ -637,7 +831,7 @@ public class App {
         });
 
 
-        /**
+        /*
          * GET route for downloading files using their specific file id
          */
         Spark.get("/file/:fileId", (request, response) -> {
@@ -653,14 +847,14 @@ public class App {
                 return response;
         });
 
-        /**
+        /*
          * GET route to get back all the file ids for all the files that have been uploaded so far
          */
         Spark.get("/files", (request, response) -> {
             response.status(200);
             response.type("application/json");
             if (db == null) {
-                System.out.println("error with DB!!!!!!!!!!!!!!!!!!");
+                System.out.println("error with DB!!");
             } else {
                 System.out.println("db is NOT null");
             }
@@ -676,17 +870,8 @@ public class App {
      * Get an integer environment varible if it exists, and otherwise return the
      * default value.
      * 
-     * @envar The name of the environment variable to get.
-     * @defaultVal The integer value to use as the default if envar isn't found
-     * 
-     * @returns The best answer we could come up with for a value for envar
-     */
-    /**
-     * Get an integer environment varible if it exists, and otherwise return the
-     * default value.
-     * 
-     * @envar The name of the environment variable to get.
-     * @defaultVal The integer value to use as the default if envar isn't found
+     * @param envar The name of the environment variable to get.
+     * @param defaultVal The integer value to use as the default if envar isn't found
      * 
      * @returns The best answer we could come up with for a value for envar
      */
@@ -794,4 +979,6 @@ public class App {
 
         return "Verification successful";
     }
+
+
 }
