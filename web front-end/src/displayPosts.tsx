@@ -10,6 +10,8 @@ const DisplayPosts = (props: any): JSX.Element => {
   const herokuUrl = "https://cors-anywhere.herokuapp.com/https://limitless-ocean-62391.herokuapp.com/";
   //const herokuUrl = "http://localhost:4567/";
   const arraysOfMessages: Object[] = props.messagePost;// arrays of the messages to display
+  const arraysOfFiles: Object[] = props.filePost;// arrays of the files to display
+  const selectedFile = props.filePost[0]; // selected file
   let arraytoReturn: JSX.Element[] = [];// same as above but this one will be returned
   /**
    * This function deals with the necessary activities that take place after the up/down vote button is clicked
@@ -84,7 +86,7 @@ const DisplayPosts = (props: any): JSX.Element => {
         </text>
         <button
           onClick={downloadFile}
-          value={"1tlF1YkVXpANufTM6ROA4WKwPWEjusu0e"}
+          value={selectedFile}
           name={`file${input.mId}`}
           >
               Download File

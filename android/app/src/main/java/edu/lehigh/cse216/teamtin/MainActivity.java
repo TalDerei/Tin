@@ -41,11 +41,14 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -244,6 +247,8 @@ public class MainActivity extends AppCompatActivity {
      *  Post a message with JSONObject
      */
     public void postJsonRequestBackend(String result, String[] files) {
+        String[] censored = {"frick", "heck", "satan", "haxor", "broseph", "crap"}; // censored words
+        Set<String> messageSet = new HashSet<String>(Arrays.asList(result.split(" ")));// convert words array to a hashSet
         RequestQueue queue = Volley.newRequestQueue(this);
         JSONObject object = new JSONObject();
 
@@ -251,6 +256,11 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d("who", profileName);
         try {
+            // check if message has censored words
+            for(int i=0;i<censored.length;++i) {
+                if(messageSet.contains(censored[i]))
+                    throw new Exception("Censored word"+censored[i]+"detected!");
+            }
             if (files != null && files.length > 0){
                 File f = new File(files[0]);
                 byte[] content = FileUtils.readFileToByteArray(f);
@@ -296,7 +306,7 @@ public class MainActivity extends AppCompatActivity {
             //input your API parameters
             object.put("mTitle", profileName);
             object.put("mMessage", result);
-        } catch (JSONException | IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
