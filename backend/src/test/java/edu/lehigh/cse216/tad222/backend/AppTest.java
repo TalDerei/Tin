@@ -35,7 +35,8 @@ public class AppTest extends TestCase {
      * Rigourous Test :-)
      */
     public void testJWTVerify() {
-        User u = new User("email", "nickname", "a", "This is fake");
+        //User u = new User("email", "nickname", "a", "This is fake");
+        User u = new User(0, "email", "nickname", "a", "This is fake", "!");
         RsaJsonWebKey rsaJsonWebKey = null;
         try {
             rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
@@ -75,7 +76,7 @@ public class AppTest extends TestCase {
 
     public void verifyDatabaseJWTProduction(){
         MockDatabase db = new MockDatabase();
-        User u = new User("email", "nickname", "b", "This is fake");
+        User u = new User(0, "email", "nickname", "b", "This is fake", "!");
         String jwt = "";
         try {
             jwt = db.produceJWTKey(u);

@@ -32,7 +32,7 @@ public class StructuredResponse {
      * 
      * @param status The status of the response, typically "ok" or "error"
      * @param message The message to go along with an error status
-     * @param object An object with additional data to send to the client
+     * @param data An object with additional data to send to the client
      */
     public StructuredResponse(String status, String message, Object data) {
         mStatus = (status != null) ? status : "invalid";

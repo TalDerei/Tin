@@ -17,16 +17,17 @@ public class CombinedDataRow {
          */
         String mMessage;
 
-        String mUser_id;
+        //String mUser_id;
+        int mUser_id;
 
-        int mLikes;
+    int mLikes;
 
         String mNickname;
 
         /**
          * Construct a CombinedDataRow object by providing values for its fields
          */
-        public CombinedDataRow(int id, String subject, String message, String uid, int likes, String nickname) {
+        public CombinedDataRow(int id, String subject, String message, int uid, int likes, String nickname) {
             mId = id;
             mSubject = subject;
             mMessage = message;

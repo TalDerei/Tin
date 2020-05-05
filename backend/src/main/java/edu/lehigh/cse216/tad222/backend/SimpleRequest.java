@@ -17,4 +17,20 @@ public class SimpleRequest {
      * The message being provided by the client.
      */
     public String mMessage;
+
+    /**
+     * hyper link
+     */
+    public String mLink;
+
+    /**
+     * Google ID
+     */
+    public String userID;
+
+    /**
+     * Google ID Token
+     */
+    public String tokenId;
+
 }
