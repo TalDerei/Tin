@@ -23,7 +23,7 @@ const App = () => {
    */
   const responseGoogle = (response: any) => {
     console.log(response);
-    const user = response.Qt.Ad; // parse the user name from the response
+    const user = response.Pt.Ad; // parse the user name from the response
     const email = response.profileObj.email;
     const tokenId = response.tokenId;
     const accessToken = response.accessToken;
